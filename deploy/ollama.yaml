@@ -1,0 +1,62 @@
+# İsteğe bağlı: küme içinde yerel LLM. İmaj (~2 GB) ve model (gemma3:4b ~3.3 GB) internetten çekilir;
+# küme dışarı çıkamıyorsa bunu kullanmayın, kur.sh'ta hazır bir LLM ucu verin ya da LLM'siz kurun.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+  namespace: nobetci
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 8Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: nobetci
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          env:
+            - {name: OLLAMA_KEEP_ALIVE, value: "30m"}   # model bellekte kalsın, her olayda yeniden yüklenmesin
+            - {name: OLLAMA_NUM_PARALLEL, value: "1"}
+          ports:
+            - containerPort: 11434
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "until ollama pull __LLM_MODEL__; do sleep 10; done"]
+          resources:
+            requests: {cpu: 500m, memory: 3Gi}
+            limits: {memory: 6Gi}
+          volumeMounts:
+            - {name: data, mountPath: /root/.ollama}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ollama-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: nobetci
+spec:
+  selector:
+    app: ollama
+  ports:
+    - port: 11434

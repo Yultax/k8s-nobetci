@@ -1,0 +1,119 @@
+# kur.sh bu dosyadaki __BÜYÜK_HARFLİ__ yer tutucuları doldurup uygular.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nobetci
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nobetci
+  namespace: nobetci
+---
+# Salt okunur: olay bağlamı için pod durumu, loglar ve Kubernetes olayları.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nobetci
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events", "nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nobetci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nobetci
+subjects:
+  - kind: ServiceAccount
+    name: nobetci
+    namespace: nobetci
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nobetci-data
+  namespace: nobetci
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nobetci
+  namespace: nobetci
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # tek yazarlı SQLite; iki kopya aynı anda çalışmasın
+  selector:
+    matchLabels:
+      app: nobetci
+  template:
+    metadata:
+      labels:
+        app: nobetci
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccountName: nobetci
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      containers:
+        - name: nobetci
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NOBETCI_CLUSTER
+              value: "__CLUSTER__"
+            - name: NOBETCI_PROM_URL
+              value: "__PROM_URL__"
+            - name: NOBETCI_LLM_URL
+              value: "__LLM_URL__"
+            - name: NOBETCI_LLM_MODEL
+              value: "__LLM_MODEL__"
+            - name: NOBETCI_WEBHOOK_URL
+              value: "__WEBHOOK_URL__"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8080}
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            periodSeconds: 30
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 500m, memory: 384Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nobetci-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nobetci
+  namespace: nobetci
+spec:
+  selector:
+    app: nobetci
+  ports:
+    - port: 80
+      targetPort: 8080

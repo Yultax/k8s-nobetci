@@ -1,0 +1,53 @@
+# Demo için bilerek sorun çıkaran üç iş yükü. Kaldırmak için: kubectl delete ns nobetci-demo
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nobetci-demo
+---
+# 25 dk sakin, sonra 6 dk tam yük: "ani CPU artışı"
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: cpu-patlama, namespace: nobetci-demo}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: cpu-patlama}}
+  template:
+    metadata: {labels: {app: cpu-patlama}}
+    spec:
+      containers:
+        - name: uygulama
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do sleep 1500; timeout 360 sh -c 'while :; do :; done'; done"]
+          resources: {requests: {cpu: 10m, memory: 8Mi}, limits: {cpu: "1", memory: 32Mi}}
+---
+# Dakikada ~4 MiB sızdırır: önce "limit dolacak" tahmini, yaklaşık bir saat sonra OOMKilled
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bellek-sizinti, namespace: nobetci-demo}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: bellek-sizinti}}
+  template:
+    metadata: {labels: {app: bellek-sizinti}}
+    spec:
+      containers:
+        - name: uygulama
+          image: busybox:1.36
+          command: ["sh", "-c", "x=; while true; do x=\"$x$(head -c 1048576 /dev/zero | tr '\\0' a)\"; sleep 15; done"]
+          resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 256Mi}}
+---
+# Açılıştan 20 sn sonra hata verip çıkar: CrashLoopBackOff
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: cokme, namespace: nobetci-demo}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: cokme}}
+  template:
+    metadata: {labels: {app: cokme}}
+    spec:
+      containers:
+        - name: uygulama
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'veritabanina baglaniliyor: db:5432'; sleep 20; echo 'HATA: baglanti reddedildi (db:5432)'; exit 1"]
+          resources: {requests: {cpu: 5m, memory: 8Mi}, limits: {memory: 32Mi}}
