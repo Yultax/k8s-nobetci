@@ -35,5 +35,9 @@ class Store:
         next_id = (self.db.execute("SELECT MAX(id) FROM incidents").fetchone()[0] or 0) + 1
         return rows("closed IS NULL"), rows("closed IS NOT NULL ORDER BY closed DESC LIMIT 50"), next_id
 
+    def get(self, incident_id: int) -> Incident | None:
+        row = self.db.execute("SELECT data FROM incidents WHERE id = ?", (incident_id,)).fetchone()
+        return Incident(**json.loads(row[0])) if row else None
+
     def count_since(self, ts: float) -> int:
         return self.db.execute("SELECT COUNT(*) FROM incidents WHERE json_extract(data, '$.opened') >= ?", (ts,)).fetchone()[0]

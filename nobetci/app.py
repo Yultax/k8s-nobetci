@@ -7,13 +7,13 @@ import time
 import traceback
 
 from .config import Clock, Config
-from .engine import Engine
+from .engine import WINDOW, Engine
 from .incident import IncidentManager
 from .kube import Kube
 from .llm import LLM, LLMError, build_context
 from .notify import Notifier
 from .prom import Prom
-from .signals import fmt
+from .signals import GAUGE, GAUGES, fmt, workload_of
 from .store import Store
 
 
@@ -36,6 +36,8 @@ class App:
         self._jobs: queue.Queue[int] = queue.Queue()
         self._pending: set[int] = set()
         self._view: dict = {"now": self.clock.now(), "ready": False}
+        self._charts: dict[str, dict] = {}
+        self._cycle = 0
 
     def cycle(self, now: float) -> None:
         started = time.time()
@@ -58,26 +60,66 @@ class App:
 
     def _engine_view(self, now: float, seconds: float) -> dict:
         e = self.engine
+        self._cycle += 1
+        charts = {}
+        for name, ns, ent in list(e.series):
+            c = e.chart(name, ns, ent, now)
+            if c:
+                charts[f"{name}|{ns}|{ent}"] = c
+        self._charts = charts
+        pods = sorted({(ns, ent) for (name, ns, ent) in e.series if GAUGE[name].scope == "pod"})
         nodes = sorted({ent for (name, _, ent) in e.series if name == "node_cpu"})
-        top = [{"namespace": ns, "pod": pod, "cpu": cpu, "mem": e.last("pod_mem", ns, pod)} for ns, pod, cpu in e.top("pod_cpu")]
+        table = []
+        for ns, pod in pods:
+            row = {"ns": ns, "pod": pod, "workload": workload_of(pod)}
+            for sig in ("pod_cpu", "pod_mem", "pod_net_rx", "pod_net_tx"):
+                row[sig] = e.last(sig, ns, pod)
+                z = e.last_z(sig, ns, pod)
+                row[sig + "_z"] = None if z is None else round(z, 1)
+            row["limit"] = e.limits.get((ns, pod))
+            table.append(row)
+        st = e.stats
         return {
-            "ready": True, "now": now, "cycle_seconds": round(seconds, 2), "errors": list(e.errors),
-            "series": len(e.series), "pods": sum(1 for k in e.series if k[0] == "pod_cpu"),
-            "profiles": len(e.profiles), "suppressed": e.suppressed,
-            "nodes": [c for n in nodes for c in (e.chart("node_cpu", "", n, now), e.chart("node_mem", "", n, now)) if c],
-            "top": top,
+            "ready": True, "cycle": self._cycle, "now": now, "interval": self.cfg.interval,
+            "detector": {"z": self.cfg.z, "persist": self.cfg.persist, "window": WINDOW, "warmup": self.cfg.warmup,
+                         "quiet": self.cfg.quiet, "fill_horizon": self.cfg.fill_horizon},
+            "errors": list(e.errors),
+            "pipeline": {
+                "source": {"url": self.cfg.prom_url, "series": len(e.series), "pods": len(pods), "nodes": len(nodes),
+                           "profiles": len(e.profiles), "queries": st.get("queries", 0),
+                           "query_ms": round(st.get("query_ms", 0))},
+                "detect": {"candidates": st.get("candidates", 0), "suppressed": st.get("suppressed", 0),
+                           "suppressed_total": e.suppressed, "fills": st.get("fills", 0),
+                           "checks": st.get("checks", {}), "findings": st.get("findings", 0)},
+                "cycle_seconds": round(seconds, 3),
+            },
+            "heat": {sig.name: e.heat(sig.name) for sig in GAUGES if sig.scope == "pod"},
+            "nodes": [c for n in nodes for c in (charts.get(f"node_cpu||{n}"), charts.get(f"node_mem||{n}")) if c],
+            "pods": table,
         }
 
+    def ping(self) -> dict:
+        return {"ready": self._view.get("ready", False), "cycle": self._view.get("cycle", 0), "now": self.clock.now()}
+
+    def series(self, key: str) -> dict | None:
+        return self._charts.get(key)
+
+    def incident(self, incident_id: int) -> dict | None:
+        with self.lock:
+            inc = self.manager.get(incident_id) or self.store.get(incident_id)
+            return inc.to_dict() if inc else None
+
     def state(self) -> dict:
-        """Web ve /metrics için tutarlı, kopyalanmış durum."""
+        """Ekran ve /metrics için tutarlı, kopyalanmış durum."""
         with self.lock:
             view = dict(self._view)
             view["open"] = [i.to_dict() for i in sorted(self.manager.open.values(), key=lambda i: (-i.severity, i.opened))]
-            view["closed"] = [i.to_dict() | {"charts": {}} for i in self.manager.closed[:20]]
+            view["closed"] = [i.to_dict() | {"charts": {}} for i in self.manager.closed if i.closed >= view["now"] - 86400]
             view["count_24h"] = self.store.count_since(view["now"] - 86400)
         view["cluster"] = self.cfg.cluster
         view["tz"] = self.cfg.tz_offset
         view["kube"] = self.kube is not None
+        view["notify"] = dict(self.notifier.counts) | {"webhook": bool(self.cfg.webhook_url)}
         view["llm"] = {"enabled": self.llm.enabled, "model": self.llm.model, "calls": self.llm.calls,
                        "failures": self.llm.failures, "error": self.llm.last_error, "busy": len(self._pending)}
         return view
@@ -92,8 +134,9 @@ class App:
                     continue
                 data, sig = inc.to_dict(), inc.signature
                 others = [i.title for i in self.manager.open.values() if i.id != inc_id]
-                top = [f"{t['namespace']}/{t['pod']}: {fmt(t['cpu'], 'cores')} CPU, {fmt(t['mem'] or 0, 'bytes')} bellek"
-                       for t in self._view.get("top", [])[:5]] if inc.scope == "node" else []
+                pods = sorted(self._view.get("pods", []), key=lambda r: -(r["pod_cpu"] or 0))[:5]
+                top = [f"{t['ns']}/{t['pod']}: {fmt(t['pod_cpu'] or 0, 'cores')} CPU, {fmt(t['pod_mem'] or 0, 'bytes')} bellek"
+                       for t in pods] if inc.scope == "node" else []
             summary = None
             try:
                 summary = self.llm.summarise(build_context(data, others, top, self.kube, self.cfg, data["last_seen"]))

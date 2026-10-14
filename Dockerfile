@@ -1,5 +1,6 @@
 # Bağımlılık yok: yalnızca Python standart kütüphanesi. İmaj ~50 MB.
-FROM python:3.12-alpine
+ARG BASE=python:3.12-alpine
+FROM ${BASE}
 WORKDIR /app
 COPY nobetci ./nobetci
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1

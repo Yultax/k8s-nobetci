@@ -24,16 +24,21 @@ class Jump:
     score: float
 
 
+def baseline(window: list[float], *, min_abs: float, z: float, rel_floor: float = 0.05) -> tuple[float, float]:
+    """Pencerenin "normal"i ve ölçeği. Ölçek MAD'den gelir; düz serilerde sıfıra inmesin diye
+    medyanın %5'i ve min_abs/z ile tabanlanır. Eşik zarfı: normal ± z * ölçek."""
+    med, mad = median_mad(window)
+    return med, max(1.4826 * mad, rel_floor * abs(med), min_abs / z)
+
+
 def detect_jump(values: list[float], *, min_abs: float, z: float = 5.0, persist: int = 2,
                 warmup: int = 20, window: int = 60, rel_floor: float = 0.05) -> Jump | None:
-    """Son `persist` noktanın tamamı, önceki `window` noktanın medyanından
-    z * ölçek kadar uzaktaysa sıçrama döner. Ölçek MAD'den gelir; düz serilerde
-    sıfıra inmesin diye medyanın %5'i ve min_abs ile tabanlanır."""
+    """Son `persist` noktanın tamamı, önceki `window` noktanın normalinden
+    z * ölçek kadar uzaktaysa sıçrama döner."""
     if len(values) < warmup + persist:
         return None
     recent = values[-persist:]
-    med, mad = median_mad(values[-(window + persist):-persist])
-    scale = max(1.4826 * mad, rel_floor * abs(med), min_abs / z)
+    med, scale = baseline(values[-(window + persist):-persist], min_abs=min_abs, z=z, rel_floor=rel_floor)
     zs = [(v - med) / scale for v in recent]
     if min(zs) > z:
         return Jump("up", recent[-1], med, min(zs))

@@ -28,15 +28,31 @@ Prometheus ──► toplama ──► tespit ──► olay birleştirme ──
 
 ## Kurulum (kubectl'in bağlı olduğu makinede)
 
+Sunucuya tek dosya taşınır; kod dosyanın içine gömülüdür:
+
 ```bash
-./kur.sh --kesif   # yalnızca inceler: Prometheus, gerekli ölçümler, docker, dış erişim
-./kur.sh           # derler, kümeye yükler, kurar
-./kur.sh --demo    # denemek için sorun çıkaran üç iş yükü
-./kur.sh --kaldir
+tools/paketle.sh                       # burada: dist/nobetci-kurulum.sh üretir (~80 KB)
+scp dist/nobetci-kurulum.sh sunucu:    # sunucuya taşı
+./nobetci-kurulum.sh                   # sunucuda: menü
 ```
 
-Sihirbaz Prometheus'u kendisi bulur, kind kümesinde imajı node'a doğrudan yükler (registry gerekmez),
-LLM için üç seçenek sunar: LLM'siz, hazır bir OpenAI uyumlu uç ya da küme içinde Ollama.
+Menü: kur/güncelle, ekranı ağda aç, canlı bildirimleri izle, durum, demo sorunları kur/kaldır,
+kümeyi incele, kaldır. Aynı işler alt komutla da yapılır (`./nobetci-kurulum.sh kur`, `ekran`, `izle`…).
+
+Sihirbaz Prometheus'u kendisi bulur ve gereken ölçümlerin varlığını denetler; Docker temel imajı
+çekemezse yereldeki bir Python imajını kullanır; kind kümesinde imajı doğrudan node'a yükler
+(registry gerekmez). Verilen cevaplar `~/.nobetci/ayarlar` dosyasına yazılır, güncellemede varsayılan olur.
+Ekran, oturum kapansa da çalışan bir `port-forward` ile `http://<sunucu>:8080` adresinde açılır.
+
+## Ekran
+
+- **Çalışma hattı:** Prometheus → dedektörler → saatlik profil filtresi → olaylar → bildirim; her ölçüm
+  turunda aşama sayıları güncellenir, aşamaya tıklayınca nasıl çalıştığını gerçek parametrelerle anlatır.
+- **Olay ayrıntısı:** neden alarm verdiği (normal, sapma, eşik), eşik zarflı grafikler (artı imleci
+  bütün grafiklerde eşzamanlı), bellek için limite dolma tahmini, bulgu zaman çizelgesi, kopyalanabilir komutlar.
+- **Sapma haritası:** pod × son 60 ölçüm; renk değerin kendi normalinden sapması (mavi düşüş, kırmızı artış).
+- **Node grafikleri, olay zaman çizelgesi (1/6/24 sa), sıralanabilir pod tablosu.** Satıra tıklayınca pod görünümü açılır.
+- Namespace filtresi, pod arama, açık/koyu tema, yeni olayda isteğe bağlı ses; kısayollar `j`/`k`, `/`, `Esc`, `?`.
 
 ## Küme olmadan deneme
 
@@ -63,3 +79,4 @@ En sık gerekenler: `PROM_URL`, `LLM_URL`, `LLM_MODEL`, `WEBHOOK_URL`, `NS_EXCLU
 - Profil en az 3 günlük Prometheus geçmişi ister; daha azında yalnızca yakın geçmişe bakılır.
 - Yeni doğan pod'da ilk ~20 dakika istatistiksel tespit yapılmaz (durum kontrolleri çalışır).
 - Prophet yok: aynı işi (mevsimsellik) bağımlılıksız saatlik profil görüyor.
+- LLM yorumcusu kodda duruyor ama sihirbaz kurmuyor; `NOBETCI_LLM_URL` ile açılır.

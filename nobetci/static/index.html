@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nöbetçi</title>
+<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23898781'/%3E%3C/svg%3E">
+<style>
+:root{--font:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --good:#0ca30c;--warning:#fab219;--critical:#d03b3b;--info:#898781}
+:root[data-theme=dark]{color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--raised:#232321;--ink:#f0efec;--ink2:#c3c2b7;
+  --muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--series:#3987e5;--envelope:rgba(195,194,183,.10);
+  --sel:rgba(57,135,229,.16);--out:rgba(250,178,25,.16);
+  --h-mid:#383835;--h-u1:#6b3230;--h-u2:#b93c3b;--h-u3:#e66767;--h-d1:#2d4766;--h-d2:#2f6cb8;--h-d3:#6da7ec;--h-na:#222220}
+:root[data-theme=light]{color-scheme:light;--page:#f9f9f7;--surface:#fcfcfb;--raised:#f3f2ee;--ink:#0b0b0b;--ink2:#52514e;
+  --muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--series:#2a78d6;--envelope:rgba(82,81,78,.09);
+  --sel:rgba(42,120,214,.10);--out:rgba(250,178,25,.22);
+  --h-mid:#f0efec;--h-u1:#f3c5c1;--h-u2:#e8807c;--h-u3:#c93535;--h-d1:#b7d3f6;--h-d2:#6da7ec;--h-d3:#256abf;--h-na:#f4f3ef}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 var(--font)}
+button{font:inherit;color:inherit}
+.wrap{max-width:1480px;margin:0 auto;padding:0 20px 56px}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}.ink2{color:var(--ink2)}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--series);outline-offset:2px;border-radius:4px}
+
+/* üst çubuk */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);margin:0 -20px 18px;padding:10px 20px}
+.top .in{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;font-size:16px}
+.brand svg{display:block}
+.cluster{font:12px var(--mono);color:var(--ink2);background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:2px 8px}
+.live{display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:12px;margin-left:auto}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--good);position:relative}
+.pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--good);opacity:0;animation:ping 2s infinite}
+.live.stale .pulse{background:var(--muted)}.live.stale .pulse::after{display:none}
+.live.down .pulse{background:var(--critical)}.live.down .pulse::after{border-color:var(--critical)}
+@keyframes ping{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.6);opacity:0}}
+.ring{display:block}
+.ring circle{fill:none;stroke-width:2.5}
+.icon-btn{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;color:var(--ink2)}
+.icon-btn:hover{color:var(--ink);background:var(--raised)}
+.icon-btn[aria-pressed=true]{color:var(--ink);border-color:var(--series)}
+
+/* durum etiketi: renk her zaman simge ve yazıyla birlikte */
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--ink)}
+.chip i{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;color:#fff;font:700 10px/1 var(--font);font-style:normal;flex:none}
+.chip i.critical{background:var(--critical)}.chip i.warning{background:var(--warning);color:#0b0b0b}
+.chip i.info{background:var(--info)}.chip i.good{background:var(--good)}
+.pill{padding:5px 10px 5px 6px;border-radius:999px;border:1px solid var(--border);background:var(--surface)}
+
+.banner{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:10px;margin-bottom:14px;
+  background:var(--surface);border:1px solid var(--border);font-size:13px}
+.banner:empty{display:none}
+
+h2{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0}
+.sec{margin-top:28px}
+.sec-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.sec-head p{margin:0;color:var(--muted);font-size:12.5px}
+.sec-head .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+
+/* hat şeridi */
+.pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr) 64px) minmax(0,1fr);align-items:stretch}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;gap:2px;min-width:0;transition:border-color .2s}
+.stage:hover{border-color:color-mix(in srgb,var(--series) 50%,var(--border))}
+.stage[aria-expanded=true]{border-color:var(--series)}
+.stage .k{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;display:flex;gap:6px;align-items:center}
+.stage .k b{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--raised);color:var(--ink2);font-size:10px}
+.stage .t{font-weight:650}
+.stage .big{font-size:26px;font-weight:650;line-height:1.15;margin-top:4px}
+.stage .big small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:4px}
+.stage .rows{margin-top:6px;display:grid;grid-template-columns:1fr auto;gap:1px 10px;font-size:12px;color:var(--ink2)}
+.stage .rows .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.stage .rows .v.hot::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warning);margin-right:6px;vertical-align:1px}
+.stage .sub{font-size:12px;color:var(--ink2)}
+.arrow{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.arrow .lbl{font-size:11px;color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.arrow .line{position:relative;width:100%;height:2px;background:var(--axis)}
+.arrow .line::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left:7px solid var(--axis);border-right:0}
+.arrow .pkt{position:absolute;top:-3px;left:0;width:8px;height:8px;border-radius:50%;background:var(--series);opacity:0;
+  animation:flow .9s ease-in-out forwards;box-shadow:0 0 0 2px var(--page)}
+@keyframes flow{0%{left:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:calc(100% - 8px);opacity:0}}
+.explain{margin-top:10px;padding:14px 16px;font-size:13px;color:var(--ink2);display:none}
+.explain.on{display:block}
+.explain b{color:var(--ink)}
+.explain code{font:12px var(--mono);background:var(--raised);padding:1px 5px;border-radius:4px;color:var(--ink)}
+
+/* filtreler */
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.filters select,.filters input[type=search]{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;font:inherit;font-size:13px}
+.filters input[type=search]{width:240px}
+.filters label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink2);cursor:pointer}
+.filters .kbd{margin-left:auto;font-size:12px;color:var(--muted)}
+kbd{font:11px var(--mono);border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--ink2);background:var(--surface)}
+
+/* olaylar + ayrıntı */
+.main{display:grid;grid-template-columns:350px minmax(0,1fr);gap:16px;margin-top:14px;align-items:start}
+.list{padding:6px}
+.tabs{display:flex;gap:4px;padding:4px;margin-bottom:4px}
+.tab{border:0;background:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--ink2)}
+.tab[aria-selected=true]{background:var(--raised);color:var(--ink);font-weight:600}
+.tab .n{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:4px}
+.items{display:flex;flex-direction:column;gap:2px;max-height:620px;overflow:auto}
+.item{display:grid;grid-template-columns:18px 1fr auto;gap:2px 10px;padding:10px 10px 10px 8px;border-radius:8px;cursor:pointer;
+  border:0;background:none;text-align:left;width:100%;border-left:3px solid transparent}
+.item:hover{background:var(--raised)}
+.item[aria-current=true]{background:var(--sel);border-left-color:var(--series)}
+.item .who{font:12.5px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .age{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.item .what{grid-column:2/4;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .spark{grid-column:2/4;margin-top:4px}
+.item.new{animation:flash 1.6s ease-out 2}
+@keyframes flash{0%{background:var(--out)}100%{background:transparent}}
+.empty{color:var(--muted);font-size:13px;padding:18px 12px}
+
+.detail{padding:18px 20px;min-height:420px}
+.d-head{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.d-head h3{margin:0;font-size:18px;font-weight:650}
+.d-head .who{font:14px var(--mono);color:var(--ink2)}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--raised);color:var(--ink2);border:1px solid var(--border)}
+.badge.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--critical);margin-right:6px;vertical-align:1px}
+.why{margin-top:14px;display:grid;gap:8px}
+.why .w{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:13.5px}
+.why .w .src{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+.why .gone{opacity:.6}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:18px 0 6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.key-line{width:16px;height:2px;background:var(--series);border-radius:1px}
+.key-dash{width:16px;height:0;border-top:1.5px dashed var(--muted)}
+.key-env{width:16px;height:10px;background:var(--envelope);border-radius:2px;outline:1px solid var(--border)}
+.key-out{width:16px;height:10px;background:var(--out);border-radius:2px}
+.key-mark{width:1px;height:12px;background:var(--ink2)}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(380px,100%),1fr));gap:14px}
+.fig{min-width:0}
+.fig .cap{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin-bottom:2px}
+.fig .cap .e{font-family:var(--mono);color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart{position:relative;width:100%;outline:none}
+.chart svg{display:block;font:11px var(--font)}
+.chart:focus-visible{outline:2px solid var(--series);outline-offset:4px}
+.cols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;margin-top:18px}
+.box h4{margin:0 0 8px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);font-weight:650}
+.box p{margin:4px 0;font-size:13.5px}
+.cmds{display:flex;flex-direction:column;gap:4px}
+.cmd{display:flex;align-items:center;gap:8px;background:var(--raised);border-radius:8px;padding:6px 6px 6px 10px}
+.cmd code{flex:1;font:12px var(--mono);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.cmd button{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:2px 8px;font-size:11.5px;cursor:pointer;color:var(--ink2);flex:none}
+.cmd button.ok{color:var(--good);border-color:var(--good)}
+.tline{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.tline td{padding:5px 8px 5px 0;border-bottom:1px solid var(--grid);vertical-align:top}
+.tline td.t{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.calm{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:30px 8px}
+.calm .hero{font-size:52px;font-weight:650;line-height:1}
+.calm .hero small{font-size:18px;font-weight:500;color:var(--ink2);margin-left:8px}
+.statrow{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}
+.statrow div{display:flex;flex-direction:column}
+.statrow b{font-size:20px;font-weight:650}
+.statrow span{font-size:12px;color:var(--ink2)}
+.back{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12.5px;color:var(--ink2);margin-left:auto}
+.back:hover{color:var(--ink)}
+.rel{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rel button{border:1px solid var(--border);background:var(--raised);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12.5px}
+
+/* sapma haritası */
+.heat{padding:14px 16px 12px}
+.sig-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.sig-tabs button{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12.5px;color:var(--ink2)}
+.sig-tabs button[aria-selected=true]{background:var(--raised);color:var(--ink);border-color:var(--series)}
+.sig-tabs .cnt{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--warning);color:#0b0b0b;font-size:10.5px;font-weight:700;margin-left:6px}
+.scale{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);min-width:280px}
+.scale .sw{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.scale .sw i{height:10px;border-radius:2px}
+.scale .lb{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.scale .lb span:first-child{text-align:left}.scale .lb span:last-child{text-align:right}
+.scale .th{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.scale .th i{height:3px;border-radius:1px}
+.hgrid{--lbl:250px;display:flex;flex-direction:column;margin-top:10px}
+.hrow{display:grid;grid-template-columns:var(--lbl) minmax(0,1fr) 128px;align-items:center;gap:10px;height:22px;border-radius:5px;cursor:pointer}
+.hrow:hover,.hrow.hl{background:var(--sel)}
+.hrow.head{height:18px;cursor:default;background:none}
+.hrow .lb{display:flex;gap:6px;align-items:baseline;min-width:0;padding-left:6px}
+.hrow .lb .ns{font-size:11px;color:var(--muted);flex:none}
+.hrow .lb .pod{font:12px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cells{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));gap:2px;height:16px}
+.cells i{display:block;border-radius:2px;min-width:0}
+.cells i:hover{outline:1.5px solid var(--ink);outline-offset:0;position:relative;z-index:1}
+.ticks{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));font-size:10.5px;color:var(--muted);height:16px}
+.ticks span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.hrow .val{display:flex;justify-content:flex-end;gap:8px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums;padding-right:6px}
+.zb{display:inline-flex;align-items:center;gap:4px;color:var(--ink2);font-size:11.5px;min-width:46px;justify-content:flex-end}
+.zb i{width:8px;height:8px;border-radius:2px}
+.more{border:0;background:none;color:var(--series);cursor:pointer;font-size:12.5px;padding:8px 6px}
+
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.pad{padding:14px 16px}
+.tl svg{display:block;font:11px var(--font)}
+
+table.pods{width:100%;border-collapse:collapse;font-size:13px}
+table.pods th{font-size:11.5px;font-weight:600;color:var(--ink2);text-align:right;padding:8px 10px;border-bottom:1px solid var(--grid);white-space:nowrap}
+table.pods th:first-child,table.pods td:first-child{text-align:left}
+table.pods th button{all:unset;cursor:pointer}
+table.pods th button:hover{color:var(--ink)}
+table.pods th[aria-sort] button::after{content:" ↓";color:var(--series)}
+table.pods th[aria-sort=ascending] button::after{content:" ↑"}
+table.pods td{padding:7px 10px;border-bottom:1px solid var(--grid);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.pods tbody tr{cursor:pointer}
+table.pods tbody tr:hover{background:var(--sel)}
+table.pods .pod{font-family:var(--mono);font-size:12.5px}
+.meter{display:inline-block;width:54px;height:6px;border-radius:3px;background:var(--grid);vertical-align:1px;margin-left:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--series);border-radius:3px}
+.meter.hot i{background:var(--warning)}.meter.crit i{background:var(--critical)}
+
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:9px 11px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);min-width:170px;max-width:320px;display:none}
+.tip .h{color:var(--muted);font-size:11px;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.tip .v{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.tip .v b{font-size:15px;font-weight:650}
+.tip .v .key-line{width:12px}
+.tip .r{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;color:var(--ink2)}
+.tip .r span:nth-child(even){text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.help{position:absolute;right:20px;top:54px;width:300px;padding:14px 16px;font-size:13px;display:none;z-index:30}
+.help.on{display:block}
+.help div{display:flex;justify-content:space-between;padding:3px 0;color:var(--ink2)}
+.dim{opacity:.55;transition:opacity .3s}
+
+@media (max-width:1100px){
+  .pipe{grid-template-columns:1fr;gap:0}
+  .arrow{height:34px;flex-direction:row;gap:10px}
+  .arrow .line{width:2px;height:100%}
+  .arrow .line::after{right:-4px;top:auto;bottom:-1px;border:5px solid transparent;border-top:7px solid var(--axis);border-bottom:0}
+  .arrow .pkt{left:-3px!important;top:0;animation-name:flowv}
+  @keyframes flowv{0%{top:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:calc(100% - 8px);opacity:0}}
+  .main,.row2,.cols{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:0 12px 40px}.top{margin:0 -12px 14px;padding:10px 12px}
+  .cells{grid-template-columns:repeat(30,minmax(0,1fr));gap:1px}.cells i:nth-child(-n+30){display:none}
+  .hrow.head{display:none}
+  .hgrid{--lbl:130px}.hrow{grid-template-columns:var(--lbl) minmax(0,1fr) 64px}.hrow .lb .ns{display:none}.zb{display:none}
+  .filters input[type=search]{width:100%}.filters .kbd{display:none}
+  .live .txt{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div class="in">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--series)" stroke-width="1.6"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--series)" stroke-width="1.2" opacity=".55"/><path d="M12 12 L19.5 5.5" stroke="var(--series)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="1.8" fill="var(--series)"/></svg>
+      Nöbetçi <span class="cluster" id="cluster">…</span>
+    </div>
+    <div class="live stale" id="live"><span class="pulse"></span><span class="txt" id="liveTxt">bağlanıyor…</span>
+      <svg class="ring" width="20" height="20" viewBox="0 0 20 20" aria-label="sonraki ölçüme kalan süre"><circle cx="10" cy="10" r="7.5" stroke="var(--grid)"/><circle id="ringArc" cx="10" cy="10" r="7.5" stroke="var(--series)" stroke-dasharray="47.12" stroke-dashoffset="47.12" transform="rotate(-90 10 10)" stroke-linecap="round"/></svg>
+    </div>
+    <span id="status"></span>
+    <button class="icon-btn" id="soundBtn" aria-pressed="false" title="Yeni olayda ses çal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    <button class="icon-btn" id="themeBtn" title="Açık / koyu tema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
+    <button class="icon-btn" id="helpBtn" title="Kısayollar" aria-expanded="false">?</button>
+  </div></header>
+  <div class="card help" id="help">
+    <div><span>Sonraki / önceki olay</span><span><kbd>j</kbd> <kbd>k</kbd></span></div>
+    <div><span>Pod ara</span><kbd>/</kbd></div>
+    <div><span>Pod görünümünden çık</span><kbd>Esc</kbd></div>
+    <div><span>Grafikte gezin (odaktayken)</span><span><kbd>←</kbd> <kbd>→</kbd></span></div>
+  </div>
+
+  <div id="banner" class="banner" role="status"></div>
+
+  <section>
+    <div class="sec-head"><h2>Çalışma hattı</h2><p>Her ölçüm turunda veri soldan sağa akar. Bir aşamaya tıklayınca nasıl çalıştığını anlatır.</p></div>
+    <div class="pipe" id="pipe"></div>
+    <div class="card explain" id="explain"></div>
+  </section>
+
+  <div class="filters" role="search">
+    <select id="nsSel" aria-label="Namespace"></select>
+    <input type="search" id="q" placeholder="Pod ara…" aria-label="Pod ara">
+    <label><input type="checkbox" id="hideSys"> Sistem namespace'lerini gizle</label>
+    <span class="kbd">Kısayollar: <kbd>j</kbd>/<kbd>k</kbd> olaylar · <kbd>/</kbd> ara · <kbd>?</kbd></span>
+  </div>
+
+  <section class="main">
+    <div class="card list">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="items" id="items"></div>
+    </div>
+    <div class="card detail" id="detail"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>Sapma haritası</h2><p>Satırlar pod, sütunlar son 60 ölçüm (sağda şimdi). Renk, o anki değerin kendi normalinden ne kadar saptığını gösterir; en çok sapanlar üstte.</p></div>
+    <div class="card heat">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+        <div class="sig-tabs" id="sigTabs" role="tablist"></div>
+        <div class="scale" id="scale"></div>
+      </div>
+      <div class="hgrid" id="hgrid"></div>
+    </div>
+  </section>
+
+  <section class="sec row2">
+    <div>
+      <div class="sec-head"><h2>Node</h2><p>Gri şerit eşik zarfı: çizgi dışına çıkarsa tespit edilir.</p></div>
+      <div class="card pad"><div class="charts" id="nodes"></div></div>
+    </div>
+    <div>
+      <div class="sec-head"><h2>Olay zaman çizelgesi</h2><p>Her çubuk bir olay; uzunluğu ne kadar sürdüğü.</p>
+        <div class="right sig-tabs" id="tlRange" role="tablist"></div></div>
+      <div class="card pad tl" id="timeline"></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>Pod'lar</h2><p>Sapma, değerin kendi normalinden kaç ölçek uzakta olduğudur; ±<span id="zTxt">5</span> eşiktir.</p></div>
+    <div class="card" style="overflow-x:auto"><table class="pods" id="pods"></table></div>
+  </section>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------- yardımcılar
+const $ = (s) => document.querySelector(s);
+const SVGNS = "http://www.w3.org/2000/svg";
+function mk(ns, tag, attrs, kids) {
+  const e = ns ? document.createElementNS(ns, tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") ns ? e.setAttribute("class", v) : (e.className = v);
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of [kids].flat(Infinity)) {
+    if (c == null || c === false) continue;
+    e.append(c instanceof Node ? c : document.createTextNode(String(c)));  // veri her zaman metin olarak eklenir
+  }
+  return e;
+}
+const h = (tag, attrs, ...kids) => mk(null, tag, attrs, kids);
+const put = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter((k) => k != null && k !== false));
+const s = (tag, attrs, ...kids) => mk(SVGNS, tag, attrs, kids);
+
+const MiB = 1048576;
+const SIG = {
+  pod_cpu: {t: "CPU", long: "CPU kullanımı", unit: "cores"},
+  pod_mem: {t: "Bellek", long: "bellek kullanımı", unit: "bytes"},
+  pod_net_rx: {t: "Ağ giriş", long: "gelen ağ trafiği", unit: "bps"},
+  pod_net_tx: {t: "Ağ çıkış", long: "giden ağ trafiği", unit: "bps"},
+  node_cpu: {t: "Node CPU", long: "node CPU kullanımı", unit: "cores"},
+  node_mem: {t: "Node bellek", long: "node bellek kullanımı", unit: "bytes"},
+};
+const SEV = {1: ["info", "i", "Bilgi"], 2: ["warning", "▲", "Uyarı"], 3: ["critical", "!", "Kritik"]};
+const SYS_NS = /^(kube-.*|monitoring|local-path-storage|nobetci|ingress-nginx|cert-manager)$/;
+
+function fmt(v, unit) {
+  if (v == null || !isFinite(v)) return "–";
+  if (unit === "cores") return v < 1 ? `${Math.round(v * 1000)}m` : `${v.toFixed(2)} çekirdek`;
+  if (unit === "bytes") return v < 1024 * MiB ? `${Math.round(v / MiB)} MiB` : `${(v / MiB / 1024).toFixed(2)} GiB`;
+  if (unit === "bps") return v < 1e6 ? `${Math.round(v / 1e3)} KB/s` : `${(v / 1e6).toFixed(1)} MB/s`;
+  return (+v).toFixed(2);
+}
+function fmtTick(v, unit) {
+  if (v === 0) return "0";
+  if (unit === "cores") return v < 1 ? `${Math.round(v * 1000)}m` : `${+v.toFixed(2)}`;
+  if (unit === "bytes" && v >= 1024 * MiB) return `${+(v / MiB / 1024).toFixed(1)} GiB`;
+  return fmt(v, unit);
+}
+function dur(sec) {
+  const m = Math.floor(Math.max(0, sec) / 60);
+  if (m < 1) return "1 dk'dan az";
+  if (m < 60) return `${m} dk`;
+  return m % 60 ? `${Math.floor(m / 60)} sa ${m % 60} dk` : `${Math.floor(m / 60)} sa`;
+}
+const ago = (sec) => sec < 60 ? `${Math.max(0, Math.round(sec))} sn` : dur(sec);
+function clock(ts, withSec) {
+  const d = new Date((ts + S.tz * 3600) * 1000).toISOString();
+  return withSec ? d.slice(11, 19) : d.slice(11, 16);
+}
+const signed = (z) => z == null ? "–" : (z > 0 ? "+" : z < 0 ? "−" : "") + Math.abs(z).toFixed(1);
+function textW(str, weight = 400) {
+  const c = textW.c || (textW.c = document.createElement("canvas").getContext("2d"));
+  c.font = `${weight} 11px system-ui,-apple-system,"Segoe UI",sans-serif`;
+  return Math.ceil(c.measureText(str).width);
+}
+function niceTicks(max, unit) {
+  const k = unit === "bytes" ? (max >= 2048 * MiB ? 1024 * MiB : MiB) : 1, m = max / k, raw = m / 3;
+  const p = 10 ** Math.floor(Math.log10(raw)), r = raw / p;
+  const step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * p;
+  const out = [];
+  for (let i = 0; i <= Math.ceil(m / step - 1e-9); i++) out.push(i * step * k);
+  return out;
+}
+function zColor(z) {
+  if (z == null) return "var(--h-na)";
+  const Z = S.det.z, a = Math.abs(z), d = z > 0 ? "u" : "d";
+  if (a < Z * 0.4) return "var(--h-mid)";
+  return `var(--h-${d}${a < Z ? 1 : a < Z * 1.6 ? 2 : 3})`;
+}
+function chip(sev, label) {
+  const [cls, icon, text] = typeof sev === "number" ? SEV[sev] : sev;
+  return h("span", {class: "chip"}, h("i", {class: cls, "aria-hidden": "true"}, icon), label ?? text);
+}
+
+// ---------------------------------------------------------------- durum
+const store = (k, v) => v === undefined ? JSON.parse(localStorage.getItem("nobetci." + k) ?? "null") : localStorage.setItem("nobetci." + k, JSON.stringify(v));
+const S = {
+  st: null, cycle: -1, tz: 3, det: {z: 5, persist: 2, window: 60, warmup: 20},
+  sel: null, tab: "open", heatSig: "pod_cpu", heatAll: false, sort: {key: "pod_cpu", dir: -1},
+  filter: {ns: "", q: "", hideSys: store("hideSys") ?? false}, seen: null,
+  lastCycleAt: Date.now(), period: 60000, pingNow: 0, pingAt: Date.now(), online: null,
+  sound: store("sound") ?? false, explain: null, podCharts: null,
+};
+const serverNow = () => S.pingNow + (Date.now() - S.pingAt) / 1000 * speed();
+const speed = () => S.st ? Math.max(1, S.st.interval * 1000 / S.period) : 1;
+
+// ---------------------------------------------------------------- ipucu kutusu
+const tip = $("#tip");
+function showTip(node, x, y) {
+  put(tip, node);
+  tip.style.display = "block";
+  const r = tip.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+  let left = x + 16, top = y - r.height - 12;
+  if (left + r.width > vw - 8) left = x - r.width - 16;
+  if (top < 8) top = y + 18;
+  if (top + r.height > vh - 8) top = vh - r.height - 8;
+  tip.style.left = `${Math.max(8, left)}px`;
+  tip.style.top = `${top}px`;
+}
+const hideTip = () => { tip.style.display = "none"; };
+function tipBody(head, value, rows) {
+  return h("div", null,
+    h("div", {class: "h"}, head),
+    value && h("div", {class: "v"}, h("span", {class: "key-line"}), h("b", null, value[0]), h("span", {class: "muted"}, value[1])),
+    rows?.length && h("div", {class: "r"}, rows.flatMap(([k, v]) => [h("span", null, k), h("span", null, v)])));
+}
+
+// ---------------------------------------------------------------- çizgi grafik
+// Katmanlar: eşik dışı anlar (sarı şerit), eşik zarfı (gri), normal (kesikli), limit ve tahmin, değer çizgisi.
+const sizeObs = new ResizeObserver((entries) => entries.forEach((e) => e.target._draw?.()));
+const groups = new Map();
+function lineChart(c, o = {}) {
+  const box = h("div", {class: "chart", tabindex: "0", role: "img", "aria-label": `${c.entity} ${c.title} grafiği`});
+  let g = null, kbIdx = null;
+  const group = o.group && (groups.get(o.group) || groups.set(o.group, new Set()).get(o.group));
+  const peer = {setCross};
+  group?.add(peer);
+
+  function setCross(t) {
+    if (!g) return;
+    if (t == null) { g.cross.setAttribute("visibility", "hidden"); g.dot.setAttribute("visibility", "hidden"); return; }
+    const i = nearest(c.ts, t);
+    const X = g.x(c.ts[i]);
+    g.cross.setAttribute("x1", X); g.cross.setAttribute("x2", X);
+    g.cross.setAttribute("visibility", "visible");
+    if (c.vs[i] != null) {
+      g.dot.setAttribute("cx", X); g.dot.setAttribute("cy", g.y(c.vs[i])); g.dot.setAttribute("visibility", "visible");
+    }
+    return i;
+  }
+  function tipFor(i) {
+    const Z = S.det.z, v = c.vs[i], m = c.med?.[i], sc = c.sc?.[i];
+    const rows = [];
+    if (m != null) {
+      const z = (v - m) / sc;
+      rows.push(["normal", fmt(m, c.unit)], ["eşik zarfı", `${fmt(Math.max(0, m - Z * sc), c.unit)} – ${fmt(m + Z * sc, c.unit)}`],
+        ["sapma", `${signed(z)} · ${Math.abs(z) >= Z ? "eşik dışı" : "eşik içinde"}`]);
+    } else rows.push(["normal", `ısınıyor (${S.det.warmup} ölçüm gerekir)`]);
+    if (c.limit) rows.push(["limit", `${fmt(c.limit, c.unit)} · %${Math.round(100 * v / c.limit)}`]);
+    return tipBody(clock(c.ts[i], true), [fmt(v, c.unit), c.title], rows);
+  }
+  function hover(t, cx, cy) {
+    group ? group.forEach((p) => p.setCross(t)) : setCross(t);
+    const i = nearest(c.ts, t);
+    showTip(tipFor(i), cx, cy);
+  }
+  function leave() { group ? group.forEach((p) => p.setCross(null)) : setCross(null); hideTip(); }
+
+  box._draw = function draw() {
+    const W = Math.max(240, box.clientWidth), H = o.height || 172;
+    const {ts, vs} = c, med = c.med || [], sc = c.sc || [], n = ts.length, Z = S.det.z;
+    if (!n) { put(box, h("div", {class: "empty"}, "Bu seri için veri yok.")); return; }
+    const t0 = ts[0], tLast = ts[n - 1], vLast = vs[n - 1];
+    const proj = o.eta != null && c.limit ? Math.min(o.eta, 3600) : 0;
+    const t1 = Math.max(tLast + proj, t0 + 60);
+    const up = med.map((m, i) => m == null ? null : m + Z * sc[i]);
+    const lo = med.map((m, i) => m == null ? null : Math.max(0, m - Z * sc[i]));
+    const vmax = Math.max(0, ...vs.filter((v) => v != null));
+    const cap = Math.max(vmax * 1.5, 1e-9);  // çok geniş zarf çizgiyi ezmesin; zarf üstten kırpılır
+    let top = Math.max(vmax, ...up.filter((v) => v != null).map((v) => Math.min(v, cap)), c.limit || 0);
+    if (!(top > 0)) top = 1;
+    const ticks = niceTicks(top * 1.04, c.unit), yMax = ticks[ticks.length - 1];
+    const mLast0 = med[n - 1];
+    const rTexts = [fmt(vLast, c.unit), mLast0 != null ? `normal ${fmt(mLast0, c.unit)}` : "", c.limit ? `limit ${fmt(c.limit, c.unit)}` : ""];
+    const L = Math.max(30, ...ticks.map((t) => textW(fmtTick(t, c.unit)))) + 12;
+    const R = Math.max(...rTexts.map((t) => textW(t, 600))) + 18, T = 22, B = 22, pw = W - L - R, ph = H - T - B;
+    const x = (t) => L + (t - t0) / (t1 - t0) * pw;
+    const y = (v) => T + (1 - Math.min(Math.max(v, 0), yMax) / yMax) * ph;
+    const svg = s("svg", {width: W, height: H, viewBox: `0 0 ${W} ${H}`});
+    const mid = (i) => i <= 0 ? x(ts[0]) : i >= n ? x(ts[n - 1]) : (x(ts[i - 1]) + x(ts[i])) / 2;
+
+    // eşik dışı anlar
+    let start = null;
+    for (let i = 0; i <= n; i++) {
+      const out = i < n && med[i] != null && Math.abs((vs[i] - med[i]) / sc[i]) >= Z;
+      if (out && start == null) start = i;
+      if (!out && start != null) {
+        svg.append(s("rect", {x: mid(start), y: T, width: Math.max(3, mid(i) - mid(start)), height: ph, fill: "var(--out)"}));
+        start = null;
+      }
+    }
+    // eşik zarfı
+    const segs = (arr) => { const out = []; let cur = []; arr.forEach((v, i) => { if (v == null) { cur.length && out.push(cur); cur = []; } else cur.push(i); }); cur.length && out.push(cur); return out; };
+    for (const seg of segs(up)) {
+      const d = seg.map((i, k) => `${k ? "L" : "M"}${x(ts[i]).toFixed(1)},${y(up[i]).toFixed(1)}`).join("") +
+        seg.slice().reverse().map((i) => `L${x(ts[i]).toFixed(1)},${y(lo[i]).toFixed(1)}`).join("") + "Z";
+      svg.append(s("path", {d, fill: "var(--envelope)"}));
+    }
+    // ızgara ve eksenler
+    for (const tv of ticks) {
+      svg.append(s("line", {x1: L, x2: W - R, y1: y(tv), y2: y(tv), stroke: tv === 0 ? "var(--axis)" : "var(--grid)"}));
+      svg.append(s("text", {x: L - 6, y: y(tv) + 4, "text-anchor": "end", fill: "var(--muted)", class: "num"}, fmtTick(tv, c.unit)));
+    }
+    const span = t1 - t0, stepX = span <= 7200 ? 1800 : span <= 6 * 3600 ? 3600 : 3 * 3600, off = S.tz * 3600;
+    for (let t = Math.ceil((t0 + off) / stepX) * stepX - off; t <= tLast - stepX * 0.3; t += stepX)
+      if (x(t) > L + 20) svg.append(s("text", {x: x(t), y: H - 6, "text-anchor": "middle", fill: "var(--muted)", class: "num"}, clock(t)));
+    svg.append(s("text", {x: x(tLast), y: H - 6, "text-anchor": proj ? "middle" : "end", fill: "var(--ink2)"}, "şimdi"));
+    // normal
+    for (const seg of segs(med)) {
+      if (seg.length < 2) continue;
+      svg.append(s("path", {d: seg.map((i, k) => `${k ? "L" : "M"}${x(ts[i]).toFixed(1)},${y(med[i]).toFixed(1)}`).join(""),
+        fill: "none", stroke: "var(--muted)", "stroke-width": 1.2, "stroke-dasharray": "4 3"}));
+    }
+    const labels = [];
+    // limit ve dolma tahmini
+    if (c.limit) {
+      svg.append(s("line", {x1: L, x2: W - R, y1: y(c.limit), y2: y(c.limit), stroke: "var(--critical)", "stroke-width": 1.2, "stroke-dasharray": "6 3"}));
+      labels.push({y: y(c.limit), text: `limit ${fmt(c.limit, c.unit)}`, color: "var(--ink2)"});
+    }
+    if (proj) {
+      svg.append(s("rect", {x: x(tLast), y: T, width: x(t1) - x(tLast), height: ph, fill: "var(--raised)", opacity: .5}));
+      const tEnd = tLast + proj, vEnd = vLast + (c.limit - vLast) * (proj / o.eta);
+      svg.append(s("line", {x1: x(tLast), y1: y(vLast), x2: x(tEnd), y2: y(vEnd), stroke: "var(--series)", "stroke-width": 2, "stroke-dasharray": "5 4"}));
+      if (o.eta <= 3600) svg.append(s("circle", {cx: x(tEnd), cy: y(vEnd), r: 4, fill: "var(--surface)", stroke: "var(--critical)", "stroke-width": 2}));
+      svg.append(s("text", {x: x(tEnd) - 4, y: y(vEnd) - 8, "text-anchor": "end", fill: "var(--ink)", "font-weight": 600},
+        `≈ ${dur(o.eta)} sonra dolar`));
+    }
+    // tespit anı
+    if (o.since && o.since >= t0 && o.since <= tLast) {
+      const X = x(o.since), right = X > L + pw * 0.62;
+      svg.append(s("line", {x1: X, x2: X, y1: T - 8, y2: T + ph, stroke: "var(--ink2)", "stroke-width": 1}));
+      svg.append(s("text", {x: X + (right ? -5 : 5), y: T - 10, "text-anchor": right ? "end" : "start", fill: "var(--ink2)"}, `tespit ${clock(o.since)}`));
+    }
+    // değer
+    for (const seg of segs(vs)) {
+      svg.append(s("path", {d: seg.map((i, k) => `${k ? "L" : "M"}${x(ts[i]).toFixed(1)},${y(vs[i]).toFixed(1)}`).join(""),
+        fill: "none", stroke: "var(--series)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"}));
+    }
+    svg.append(s("circle", {cx: x(tLast), cy: y(vLast), r: 4, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2}));
+    labels.push({y: y(vLast), text: fmt(vLast, c.unit), color: "var(--ink)", weight: 650});
+    const mLast = med[n - 1];
+    if (mLast != null) labels.push({y: y(mLast), text: `normal ${fmt(mLast, c.unit)}`, color: "var(--muted)"});
+    labels.sort((a, b) => a.y - b.y);
+    let prev = -Infinity;
+    for (const lb of labels) { lb.y = Math.max(lb.y + 4, prev + 13); prev = lb.y; }
+    const over = prev - (T + ph + 4);
+    for (const lb of labels) {
+      svg.append(s("text", {x: W - R + 10, y: lb.y - Math.max(0, over), fill: lb.color, "font-weight": lb.weight || 400, class: "num"}, lb.text));
+    }
+    // fareyle gezinme
+    const cross = s("line", {y1: T, y2: T + ph, stroke: "var(--ink2)", "stroke-width": 1, visibility: "hidden"});
+    const dot = s("circle", {r: 4, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden"});
+    const hit = s("rect", {x: L, y: 0, width: pw, height: H, fill: "transparent"});
+    hit.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect();
+      hover(t0 + (e.clientX - r.left - L) / pw * (t1 - t0), e.clientX, e.clientY);
+    });
+    hit.addEventListener("pointerleave", leave);
+    svg.append(cross, dot, hit);
+    g = {x, y, cross, dot};
+    put(box, svg);
+  };
+  box.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    kbIdx = Math.min(c.ts.length - 1, Math.max(0, (kbIdx ?? c.ts.length - 1) + (e.key === "ArrowLeft" ? -1 : 1)));
+    const r = box.getBoundingClientRect();
+    hover(c.ts[kbIdx], r.left + g.x(c.ts[kbIdx]), r.top + 30);
+  });
+  box.addEventListener("blur", () => { kbIdx = null; leave(); });
+  sizeObs.observe(box);
+  return box;
+}
+function nearest(ts, t) {
+  let lo = 0, hi = ts.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; ts[m] < t ? (lo = m) : (hi = m); }
+  return Math.abs(ts[lo] - t) <= Math.abs(ts[hi] - t) ? lo : hi;
+}
+function sparkline(vs, w = 300, ht = 22) {
+  const v = vs.filter((a) => a != null);
+  if (v.length < 2) return null;
+  const mx = Math.max(...v), mn = Math.min(...v), k = (w - 4) / (vs.length - 1);
+  const d = vs.map((a, i) => a == null ? "" : `${i ? "L" : "M"}${(2 + i * k).toFixed(1)},${(ht - 3 - (mx > mn ? (a - mn) / (mx - mn) : .5) * (ht - 6)).toFixed(1)}`).join("");
+  return s("svg", {width: "100%", height: ht, viewBox: `0 0 ${w} ${ht}`, preserveAspectRatio: "none", "aria-hidden": "true"},
+    s("path", {d, fill: "none", stroke: "var(--series)", "stroke-width": 1.5, "vector-effect": "non-scaling-stroke"}));
+}
+function figure(c, o) {
+  const sig = SIG[c.signal] || {t: c.title};
+  return h("div", {class: "fig"}, h("div", {class: "cap"}, h("b", null, sig.t), h("span", {class: "e"}, c.entity)), lineChart(c, o));
+}
+function chartLegend(extra) {
+  return h("div", {class: "legend"},
+    h("span", null, h("i", {class: "key-line"}), "değer"),
+    h("span", null, h("i", {class: "key-dash"}), "normal (son 60 ölçümün medyanı)"),
+    h("span", null, h("i", {class: "key-env"}), `eşik zarfı (normal ± ${S.det.z} ölçek)`),
+    h("span", null, h("i", {class: "key-out"}), "eşik dışı"),
+    extra);
+}
+
+// ---------------------------------------------------------------- filtre
+const visible = (ns, pod) => (!S.filter.ns || ns === S.filter.ns) && !(S.filter.hideSys && SYS_NS.test(ns)) &&
+  (!S.filter.q || (pod || "").toLowerCase().includes(S.filter.q) || (ns || "").toLowerCase().includes(S.filter.q));
+const incVisible = (i) => i.scope === "node" || visible(i.namespace, Object.values(i.findings).map((f) => f.pod || f.workload).join(" ") + " " + i.workload);
+
+// ---------------------------------------------------------------- üst çubuk
+function renderTop() {
+  const st = S.st, open = st.open.filter(incVisible);
+  $("#cluster").textContent = st.cluster;
+  const worst = Math.max(0, ...open.map((i) => i.severity));
+  put($("#status"), h("span", {class: "pill chip"},
+    ...(worst ? chip(worst, `${SEV[worst][2]} · ${open.length} açık olay`).childNodes : chip(["good", "✓", "Sakin"]).childNodes)));
+  document.title = `${open.length ? `(${open.length}) ` : ""}Nöbetçi · ${st.cluster}`;
+  const color = {0: "%230ca30c", 1: "%23898781", 2: "%23fab219", 3: "%23d03b3b"}[worst];
+  $("#favicon").href = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='${color}'/%3E%3C/svg%3E`;
+  const b = $("#banner");
+  put(b, ...st.errors.slice(0, 2).map((e) => h("div", null, chip(3, "Prometheus hatası"), " ", h("span", {class: "mono ink2"}, e))));
+  if (S.online === false) put(b, chip(3, "Bağlantı koptu"), " Nöbetçiye ulaşılamıyor, yeniden deneniyor. Son bilinen durum gösteriliyor.");
+  $("#zTxt").textContent = S.det.z;
+}
+function tick() {
+  if (!S.st) return;
+  const since = (Date.now() - S.lastCycleAt) / 1000 * speed();
+  const live = $("#live");
+  live.className = "live" + (S.online === false ? " down" : since > S.st.interval * 2.5 ? " stale" : "");
+  $("#liveTxt").textContent = `Son ölçüm ${clock(S.st.now, true)} · ${ago(since)} önce`;
+  const frac = Math.min(1, (Date.now() - S.lastCycleAt) / S.period);
+  $("#ringArc").setAttribute("stroke-dashoffset", (47.12 * (1 - frac)).toFixed(2));
+  const now = serverNow();
+  document.querySelectorAll("[data-since]").forEach((e) => { e.textContent = dur(now - +e.dataset.since); });
+}
+
+// ---------------------------------------------------------------- hat şeridi
+const EXPLAIN = {
+  source: () => [h("b", null, "Kaynak · Prometheus. "), `Her ${S.st.interval} saniyede bir Prometheus'a ~${S.st.pipeline.source.queries} sorgu atılır: pod ve node başına CPU, bellek, ağ (cAdvisor) ve pod durumları (kube-state-metrics). `,
+    "Nöbetçi ölçüm saklamaz; açılışta son 3 saati ve saatlik profil için son 7 günü Prometheus'tan okur. Kaynak: ", h("code", null, S.st.pipeline.source.url)],
+  detect: () => [h("b", null, "Dedektörler. "), `Sıçrama/düşüş: her seri için son ${S.det.window} ölçümün medyanı "normal", medyandan sapmaların medyanı (MAD) "ölçek" kabul edilir. `,
+    `Son ${S.det.persist} ölçümün hepsi normalden ${S.det.z} ölçekten fazla uzaksa aday olur; düşüş için ayrıca değerin normalin yarısının altına inmesi gerekir. `,
+    `Limit tahmini: bellek son 20–60 ölçümde düz bir çizgi gibi artıyorsa eğimle limite kalan süre hesaplanır, ${dur(S.det.fill_horizon)} içindeyse bildirilir. `,
+    "Durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya, Ready olmayan node, CPU kısılması."],
+  filter: () => [h("b", null, "Saatlik profil. "), "Her iş yükü için son 7 günün her saatinde görülen en düşük ve en yüksek değerlerin günler arası medyanı tutulur. ",
+    "Aday sıçrama bu saat için olağan aralıktaysa (ör. her gece 03:00'te çalışan yedekleme) bastırılır. Tek bir günün anomalisi medyanı bozmaz. En az 3 günlük geçmiş gerekir."],
+  incidents: () => [h("b", null, "Olay birleştirme. "), "Aynı iş yükünün (Deployment, StatefulSet…) ya da aynı node'un bulguları tek olayda toplanır: çöken bir pod'un OOMKilled, CrashLoopBackOff ve CPU düşüşü üç ayrı alarm değil, tek olaydır. ",
+    `Olay, ${dur(S.det.quiet)} boyunca yeni bulgu gelmezse kapanır. Seviye yalnızca yükselir.`],
+  notify: () => [h("b", null, "Bildirim. "), "Bu ekran (her ölçümde güncellenir), terminal akışı (", h("code", null, "kubectl -n nobetci logs -f deploy/nobetci"), ") ve tanımlıysa webhook. ",
+    "Önerilen komutlar kurallardan gelir; LLM ", S.st.llm.enabled ? `açık (${S.st.llm.model}).` : "kapalı."],
+};
+function renderPipe() {
+  const p = S.st.pipeline, src = p.source, d = p.detect, ck = Object.values(d.checks).reduce((a, b) => a + b, 0);
+  const cand = d.candidates + d.fills + ck, openN = S.st.open.length, nt = S.st.notify;
+  const stage = (key, no, k, t, big, unit, body) => h("button", {class: "stage", "aria-expanded": String(S.explain === key),
+    onclick: () => { S.explain = S.explain === key ? null : key; renderPipe(); }},
+    h("span", {class: "k"}, h("b", null, no), k), h("span", {class: "t"}, t), h("span", {class: "big"}, big, h("small", null, unit)), body);
+  const rows = (list, hot = true) => h("span", {class: "rows"}, list.flatMap(([a, b]) => [h("span", null, a), h("span", {class: "v" + (hot && b > 0 ? " hot" : "")}, b)]));
+  const arrow = (label, delay) => h("div", {class: "arrow", "aria-hidden": "true"}, h("span", {class: "lbl"}, label),
+    h("span", {class: "line"}, h("span", {class: "pkt", style: `animation-delay:${delay}s`})));
+  put($("#pipe"), 
+    stage("source", 1, "Kaynak", "Prometheus", src.series, "seri", h("span", {class: "sub"}, `${src.pods} pod · ${src.nodes} node`, h("br"), `${src.queries} sorgu · ${src.query_ms} ms`)),
+    arrow(`${src.series} seri`, 0),
+    stage("detect", 2, "Tespit", "Dedektörler", cand, "aday", rows([["Sıçrama / düşüş", d.candidates], ["Limit tahmini", d.fills], ["Durum kontrolü", ck]])),
+    arrow(`${cand} aday`, .25),
+    stage("filter", 3, "Filtre", "Saatlik profil", d.suppressed ? `−${d.suppressed}` : "0", "olağan", h("span", {class: "sub"}, `${src.profiles} iş yükü profili`, h("br"), `toplam ${d.suppressed_total} bastırıldı`)),
+    arrow(`${d.findings} bulgu`, .5),
+    stage("incidents", 4, "Birleştirme", "Olaylar", openN, "açık", h("span", {class: "sub"}, `son 24 saatte ${S.st.count_24h} olay`, h("br"), "aynı iş yükü → tek olay")),
+    arrow(`${openN} olay`, .75),
+    stage("notify", 5, "Çıkış", "Bildirim", nt.terminal || 0, "mesaj", rows([["Ekran", "canlı"], ["Terminal", nt.terminal || 0], ["Webhook", nt.webhook ? (nt.webhook_ok || 0) : "kapalı"]], false)),
+  );
+  const ex = $("#explain");
+  ex.className = "card explain" + (S.explain ? " on" : "");
+  ex.replaceChildren(...(S.explain ? EXPLAIN[S.explain]() : []));
+}
+
+// ---------------------------------------------------------------- olay listesi
+function incidents() {
+  return {open: S.st.open.filter(incVisible), closed: S.st.closed.filter(incVisible)};
+}
+function topFinding(inc) {
+  const order = ["node_notready", "oom", "waiting", "fill", "unavailable", "pending", "restart", "spike", "drop", "throttle"];
+  return Object.values(inc.findings).sort((a, b) => b.severity - a.severity || order.indexOf(a.kind) - order.indexOf(b.kind) || a.first_seen - b.first_seen)[0];
+}
+function renderList() {
+  const {open, closed} = incidents();
+  const tab = (key, label, n) => h("button", {class: "tab", role: "tab", "aria-selected": String(S.tab === key),
+    onclick: () => { S.tab = key; renderList(); }}, label, h("span", {class: "n"}, n));
+  put($("#tabs"), tab("open", "Açık", open.length), tab("closed", "Kapanan · 24 sa", closed.length));
+  const list = S.tab === "open" ? open : closed;
+  const items = list.map((inc) => {
+    const f = topFinding(inc), first = Object.values(inc.charts || {})[0];
+    const more = Object.keys(inc.findings).length - 1;
+    return h("button", {class: "item" + (S.fresh?.has(inc.id) ? " new" : ""), "aria-current": String(S.sel?.type === "inc" && S.sel.id === inc.id),
+      onclick: () => select({type: "inc", id: inc.id})},
+      chip(inc.severity, ""),
+      h("span", {class: "who"}, `#${inc.id} ${inc.entity}`),
+      inc.closed ? h("span", {class: "age"}, dur(inc.closed - inc.opened)) : h("span", {class: "age", "data-since": inc.opened}, dur(serverNow() - inc.opened)),
+      h("span", {class: "what"}, f.title + (more ? ` · +${more} bulgu` : "")),
+      first && h("span", {class: "spark"}, sparkline(first.vs.slice(-60))));
+  });
+  put($("#items"), ...(items.length ? items : [h("div", {class: "empty"}, S.tab === "open" ? "Açık olay yok." : "Son 24 saatte kapanan olay yok.")]));
+}
+
+// ---------------------------------------------------------------- ayrıntı
+function explainFinding(f, unit) {
+  const Z = S.det.z, d = f.detail;
+  switch (f.kind) {
+    case "spike": case "drop": {
+      const up = f.kind === "spike";
+      return `Son ${S.det.persist} ölçümün hepsi, önceki ${S.det.window} ölçümün normalinin (${fmt(d.baseline, unit)}) ${up ? "çok üstünde" : "çok altında"}: ` +
+        `şu an ${fmt(d.value, unit)}. Sapma ${signed(up ? d.score : -d.score)}, eşik ±${Z}.` + (up ? "" : " Değer normalin yarısının da altına indi.");
+    }
+    case "fill": return `Bellek son ölçümlerde düz bir çizgi gibi artıyor. Bu eğimle ${fmt(d.limit, "bytes")} limitine yaklaşık ${dur(d.eta)} sonra ulaşır; limit dolunca konteyner OOMKilled olur.`;
+    case "oom": return "kube-state-metrics, konteynerin son kapanış nedenini OOMKilled olarak bildiriyor ve son 10 dakikada yeniden başladı.";
+    case "waiting": return `kube-state-metrics, konteynerin bekleme nedenini bildiriyor: ${f.title.split(": ").pop()}.`;
+    case "restart": return "Yeniden başlama sayacı son 10 dakikada arttı.";
+    case "pending": return "Pod 10 dakikadır Pending durumunda; zamanlayıcı yerleştirecek node bulamıyor.";
+    case "unavailable": return "Deployment'ın istenen kopya sayısı 10 dakikadır karşılanamıyor.";
+    case "node_notready": return "Node'un Ready koşulu true değil.";
+    case "throttle": return "CPU periyotlarının yarısından fazlasında konteyner limit yüzünden bekletildi.";
+  }
+  return f.title;
+}
+function select(sel, scroll) {
+  S.sel = sel;
+  history.replaceState(null, "", sel ? (sel.type === "inc" ? `#olay-${sel.id}` : `#pod-${sel.ns}/${sel.pod}`) : "#");
+  renderList(); renderDetail(); renderHeat();
+  if (scroll) $("#detail").scrollIntoView({behavior: "smooth", block: "start"});
+}
+async function renderDetail() {
+  const box = $("#detail");
+  [...box.querySelectorAll(".chart")].forEach((e) => sizeObs.unobserve(e));
+  groups.delete("inc"); groups.delete("pod");
+  const sel = S.sel;
+  if (sel?.type === "pod") return renderPod(box, sel);
+  let inc = sel?.type === "inc" && [...S.st.open, ...S.st.closed].find((i) => i.id === sel.id);
+  if (!inc) return renderCalm(box);
+  if (inc.closed && !Object.keys(inc.charts || {}).length) {
+    box.classList.add("dim");
+    const full = await fetch(`/api/incident?id=${inc.id}`).then((r) => r.ok ? r.json() : null).catch(() => null);
+    box.classList.remove("dim");
+    if (S.sel !== sel) return;
+    if (full) inc = full;
+  }
+  const findings = Object.values(inc.findings).sort((a, b) => b.severity - a.severity || a.first_seen - b.first_seen);
+  const charts = Object.values(inc.charts || {});
+  const sinceOf = (c) => Math.min(...findings.filter((f) => f.signal === c.signal && (f.pod || f.workload) === c.entity).map((f) => f.first_seen));
+  const fill = findings.find((f) => f.kind === "fill" && f.active);
+  put(box, 
+    h("div", {class: "d-head"}, chip(inc.severity), h("h3", null, `#${inc.id}`), h("span", {class: "who"}, inc.entity),
+      inc.closed ? h("span", {class: "badge"}, `kapandı · ${dur(inc.closed - inc.opened)} sürdü`)
+        : h("span", {class: "badge live"}, h("span", {"data-since": inc.opened}, dur(serverNow() - inc.opened)), " sürüyor")),
+    h("div", {class: "why"}, findings.map((f) => h("div", {class: "w" + (f.active || inc.closed ? "" : " gone")}, chip(f.severity, ""),
+      h("div", null, h("b", null, `${f.pod || f.workload}: `), f.title,
+        h("span", {class: "src"}, explainFinding(f, SIG[f.signal]?.unit) + (f.active || inc.closed ? "" : ` · ${clock(f.last_seen)}'den beri görülmüyor`)))))),
+    charts.length ? [chartLegend(h("span", null, h("i", {class: "key-mark"}), "tespit anı")),
+      h("div", {class: "charts"}, charts.map((c) => figure(c, {group: "inc", since: sinceOf(c),
+        eta: fill && c.signal === "pod_mem" && c.entity === fill.pod ? fill.detail.eta : null})))] : null,
+    h("div", {class: "cols"},
+      h("div", {class: "box"}, h("h4", null, inc.summary.source === "llm" ? `Yorum · ${inc.summary.model}` : "Olası neden ve öneri"),
+        h("p", null, inc.summary.neden), h("p", null, h("b", null, "Öneri: "), inc.summary.oneri),
+        h("h4", {style: "margin-top:16px"}, "Bulgu zaman çizelgesi"),
+        h("table", {class: "tline"}, findings.slice().sort((a, b) => a.first_seen - b.first_seen).map((f) => h("tr", null,
+          h("td", {class: "t"}, `${clock(f.first_seen)}–${clock(f.last_seen)}`), h("td", null, chip(f.severity, "")), h("td", null, `${f.pod || f.workload}: ${f.title}`))))),
+      h("div", {class: "box"}, h("h4", null, "İlk bakılacak komutlar"), h("div", {class: "cmds"}, inc.commands.map(cmdRow)))));
+}
+function cmdRow(text) {
+  const btn = h("button", {onclick: async () => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const ta = h("textarea", {style: "position:fixed;opacity:0"}, text); document.body.append(ta); ta.select();
+      ok = document.execCommand("copy"); ta.remove();
+    }
+    btn.textContent = ok ? "kopyalandı" : "kopyalanamadı"; btn.classList.toggle("ok", ok);
+    setTimeout(() => { btn.textContent = "kopyala"; btn.classList.remove("ok"); }, 1500);
+  }}, "kopyala");
+  return h("div", {class: "cmd"}, h("code", null, text), btn);
+}
+function renderCalm(box) {
+  const st = S.st, last = st.closed[0];
+  put(box, h("div", {class: "calm"},
+    chip(["good", "✓", "Her şey yolunda"]),
+    h("div", {class: "hero"}, st.open.length || "0", h("small", null, "açık olay")),
+    h("div", {class: "ink2"}, last ? ["Son olay ", h("span", {"data-since": last.closed}, dur(serverNow() - last.closed)), " önce kapandı."] : "Bu oturumda henüz olay yok."),
+    h("div", {class: "statrow"},
+      h("div", null, h("b", null, st.pipeline.source.pods), h("span", null, "izlenen pod")),
+      h("div", null, h("b", null, st.pipeline.source.series), h("span", null, "izlenen seri")),
+      h("div", null, h("b", null, st.count_24h), h("span", null, "son 24 saatte olay")),
+      h("div", null, h("b", null, st.pipeline.detect.suppressed_total), h("span", null, "olağan sayılıp bastırıldı"))),
+    h("p", {class: "muted", style: "margin-top:18px;max-width:560px"}, "Bir pod'un ayrıntısını görmek için sapma haritasında ya da tablodaki satırına tıklayın.")));
+}
+async function renderPod(box, sel) {
+  const row = S.st.pods.find((r) => r.ns === sel.ns && r.pod === sel.pod);
+  const sigs = ["pod_cpu", "pod_mem", "pod_net_rx", "pod_net_tx"];
+  box.classList.add("dim");
+  const charts = await Promise.all(sigs.map((k) => fetch(`/api/series?k=${encodeURIComponent(`${k}|${sel.ns}|${sel.pod}`)}`).then((r) => r.ok ? r.json() : null).catch(() => null)));
+  box.classList.remove("dim");
+  if (S.sel !== sel) return;
+  const related = [...S.st.open, ...S.st.closed].filter((i) => i.namespace === sel.ns && Object.values(i.findings).some((f) => f.pod === sel.pod || (!f.pod && f.workload === row?.workload)));
+  const stat = (k) => h("div", null, h("b", null, fmt(row?.[k], SIG[k].unit), k === "pod_mem" && row?.limit ? h("span", {class: "muted", style: "font-size:13px;font-weight:400"}, ` / ${fmt(row.limit, "bytes")}`) : null),
+    h("span", null, `${SIG[k].t} · sapma ${signed(row?.[k + "_z"])}`));
+  put(box, 
+    h("div", {class: "d-head"}, h("span", {class: "badge"}, "pod"), h("h3", {class: "mono", style: "font-size:16px"}, sel.pod), h("span", {class: "who"}, sel.ns),
+      h("button", {class: "back", onclick: () => select(S.st.open[0] ? {type: "inc", id: S.st.open[0].id} : null)}, "← olaylara dön")),
+    h("div", {class: "statrow"}, sigs.map(stat)),
+    related.length ? h("div", {class: "rel"}, related.map((i) => h("button", {onclick: () => select({type: "inc", id: i.id})}, chip(i.severity, `#${i.id} ${topFinding(i).title}`)))) : null,
+    chartLegend(),
+    h("div", {class: "charts"}, charts.map((c, i) => c ? figure(c, {group: "pod", height: 150}) : h("div", {class: "empty"}, `${SIG[sigs[i]].t}: veri yok`))));
+}
+
+// ---------------------------------------------------------------- sapma haritası
+function renderHeat() {
+  const st = S.st, Z = S.det.z;
+  const tabs = Object.keys(st.heat).map((k) => {
+    const hot = st.heat[k].rows.filter((r) => visible(r.ns, r.pod) && r.peak >= Z).length;
+    return h("button", {role: "tab", "aria-selected": String(S.heatSig === k), onclick: () => { S.heatSig = k; S.heatAll = false; renderHeat(); }},
+      SIG[k].t, hot ? h("span", {class: "cnt", title: `${hot} pod son 15 ölçümde eşik dışına çıktı`}, hot) : null);
+  });
+  put($("#sigTabs"), ...tabs);
+  const sw = ["d3", "d2", "d1", "mid", "u1", "u2", "u3"];
+  put($("#scale"), 
+    h("div", {class: "sw"}, sw.map((k) => h("i", {style: `background:var(--h-${k})`}))),
+    h("div", {class: "th"}, sw.map((k) => h("i", {style: `background:${/[23]$/.test(k) ? "var(--ink2)" : "transparent"}`}))),
+    h("div", {class: "lb"}, h("span", null, "← düşüş"), h("span"), h("span"), h("span", null, "normal"), h("span"), h("span"), h("span", null, "artış →")),
+    h("div", {style: "text-align:center"}, `altı çizili tonlar eşik dışı (sapma ≥ ${Z})`));
+  const data = st.heat[S.heatSig], unit = SIG[S.heatSig].unit;
+  const rows = data.rows.filter((r) => visible(r.ns, r.pod));
+  const shown = S.heatAll ? rows : rows.slice(0, 16);
+  const tickRow = h("div", {class: "hrow head"}, h("span"), h("div", {class: "ticks"},
+    data.ts.map((t, i) => h("span", {style: `grid-column:${i + 1}`}, t != null && i % 15 === 0 && i < 50 ? clock(t) : ""))), h("span", {class: "muted", style: "font-size:11px;text-align:right;padding-right:6px"}, "şimdi"));
+  const els = shown.map((r) => {
+    const sel = S.sel?.type === "pod" && S.sel.ns === r.ns && S.sel.pod === r.pod;
+    const cells = h("div", {class: "cells"}, r.z.map((z, i) => h("i", {style: `background:${zColor(z)}`, "data-i": i})));
+    cells.addEventListener("pointermove", (e) => {
+      const i = +e.target.dataset?.i;
+      if (isNaN(i)) return;
+      const z = r.z[i], t = data.ts[i];
+      showTip(tipBody(t ? clock(t, true) : "", [fmt(r.v[i], unit), `${r.pod}`],
+        z == null ? [["normal", r.v[i] == null ? "veri yok" : `ısınıyor (${S.det.warmup} ölçüm gerekir)`]] :
+          [["normal", fmt(r.med[i], unit)], ["sapma", `${signed(z)} · ${Math.abs(z) >= Z ? "eşik dışı" : "eşik içinde"}`]]), e.clientX, e.clientY);
+    });
+    cells.addEventListener("pointerleave", hideTip);
+    const zl = r.z[r.z.length - 1];
+    return h("div", {class: "hrow" + (sel ? " hl" : ""), title: "", onclick: () => select({type: "pod", ns: r.ns, pod: r.pod}, true)},
+      h("span", {class: "lb", title: `${r.ns}/${r.pod}`}, h("span", {class: "ns"}, r.ns), h("span", {class: "pod"}, r.pod)),
+      cells,
+      h("span", {class: "val"}, fmt(r.v[r.v.length - 1], unit), h("span", {class: "zb"}, h("i", {style: `background:${zColor(zl)}`}), signed(zl))));
+  });
+  const rest = rows.length - shown.length;
+  put($("#hgrid"), tickRow, ...(els.length ? els : [h("div", {class: "empty"}, "Filtreye uyan pod yok.")]),
+    rest > 0 || S.heatAll ? h("button", {class: "more", onclick: () => { S.heatAll = !S.heatAll; renderHeat(); }}, S.heatAll ? "Daha az göster" : `${rest} pod daha göster (hepsi normal aralıkta olabilir)`) : null);
+}
+
+// ---------------------------------------------------------------- node ve zaman çizelgesi
+function renderNodes() {
+  const box = $("#nodes");
+  [...box.querySelectorAll(".chart")].forEach((e) => sizeObs.unobserve(e));
+  groups.delete("node");
+  put(box, ...(S.st.nodes.length ? S.st.nodes.map((c) => figure(c, {group: "node", height: 150})) : [h("div", {class: "empty"}, "Node ölçümü yok (cAdvisor id=\"/\" serisi bulunamadı).")]));
+}
+function renderTimeline() {
+  const box = $("#timeline");
+  box._draw = () => {
+    const now = S.st.now, W = Math.max(300, box.clientWidth - 32);
+    const day = [...S.st.open, ...S.st.closed].filter(incVisible).filter((i) => (i.closed ?? now) >= now - 86400);
+    const earliest = Math.min(now, ...day.map((i) => i.opened));
+    const auto = [3600, 6 * 3600, 86400].find((r) => now - earliest <= r * 0.95) || 86400;
+    const span = S.tlRange || auto, t0 = now - span;
+    put($("#tlRange"), [[3600, "1 sa"], [6 * 3600, "6 sa"], [86400, "24 sa"]].map(([r, t]) => h("button", {role: "tab",
+      "aria-selected": String(span === r), onclick: () => { S.tlRange = r; box._draw(); }}, t)));
+    const all = day.filter((i) => (i.closed ?? now) >= t0).sort((a, b) => a.opened - b.opened);
+    if (!all.length) { put(box, h("div", {class: "empty"}, `Son ${dur(span)} içinde olay yok.`)); return; }
+    const L = 4, R = 4, x = (t) => L + (Math.max(t, t0) - t0) / span * (W - L - R);
+    const lanes = [], laneH = 24, T = 6;
+    for (const inc of all) {
+      const x0 = x(inc.opened), x1 = Math.max(x0 + 4, x(inc.closed ?? now)), lw = inc.entity.length * 6.4 + 14;
+      let lane = lanes.findIndex((end) => end < x0 - 4);
+      if (lane < 0) { lane = lanes.length; lanes.push(0); }
+      lanes[lane] = x1 + lw;
+      inc._g = {x0, x1, lane, labelLeft: x1 + lw > W};
+    }
+    const H = T + lanes.length * laneH + 26;
+    const svg = s("svg", {width: W, height: H});
+    const st = span <= 3600 ? 900 : span <= 6 * 3600 ? 3600 : 3 * 3600;
+    for (let t = Math.ceil((t0 + S.tz * 3600) / st) * st - S.tz * 3600; t < now - st * 0.4; t += st) {
+      svg.append(s("line", {x1: x(t), x2: x(t), y1: T, y2: H - 20, stroke: "var(--grid)"}),
+        s("text", {x: x(t), y: H - 5, "text-anchor": "middle", fill: "var(--muted)", class: "num"}, clock(t)));
+    }
+    svg.append(s("line", {x1: x(now), x2: x(now), y1: T - 4, y2: H - 20, stroke: "var(--ink2)"}),
+      s("text", {x: x(now), y: H - 5, "text-anchor": "end", fill: "var(--ink2)"}, "şimdi"));
+    for (const inc of all) {
+      const {x0, x1, lane, labelLeft} = inc._g, yy = T + lane * laneH + 6;
+      const sel = S.sel?.type === "inc" && S.sel.id === inc.id;
+      const bar = s("rect", {x: x0, y: yy, width: x1 - x0, height: 12, rx: 3, fill: `var(--${SEV[inc.severity][0]})`,
+        stroke: sel ? "var(--ink)" : "none", "stroke-width": 1.5, style: "cursor:pointer"});
+      const label = s("text", {x: labelLeft ? x0 - 6 : x1 + 6, y: yy + 10, "text-anchor": labelLeft ? "end" : "start", fill: "var(--ink2)", class: "mono", style: "cursor:pointer;font-size:11px"},
+        inc.entity + (inc.closed ? "" : " · sürüyor"));
+      const g = s("g", {tabindex: 0, role: "button", "aria-label": `Olay ${inc.id}: ${inc.entity}`}, bar, label);
+      g.addEventListener("click", () => select({type: "inc", id: inc.id}, true));
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter") select({type: "inc", id: inc.id}, true); });
+      g.addEventListener("pointermove", (e) => showTip(tipBody(`#${inc.id} · ${clock(inc.opened)} – ${inc.closed ? clock(inc.closed) : "sürüyor"}`,
+        null, [["seviye", SEV[inc.severity][2]], ["süre", dur((inc.closed ?? now) - inc.opened)], ["olay", topFinding(inc).title]]), e.clientX, e.clientY));
+      g.addEventListener("pointerleave", hideTip);
+      svg.append(g);
+    }
+    put(box, svg, h("div", {class: "legend", style: "margin:8px 0 0"}, [3, 2, 1].map((v) => chip(v))));
+  };
+  sizeObs.observe(box);
+  box._draw();
+}
+
+// ---------------------------------------------------------------- pod tablosu
+function renderTable() {
+  const cols = [["pod", "Pod"], ["pod_cpu", "CPU"], ["pod_cpu_z", "CPU sapma"], ["pod_mem", "Bellek"], ["pod_mem_z", "Bellek sapma"], ["pod_net_rx", "Ağ giriş"], ["pod_net_tx", "Ağ çıkış"]];
+  const {key, dir} = S.sort;
+  const rows = S.st.pods.filter((r) => visible(r.ns, r.pod)).sort((a, b) => {
+    const va = key.endsWith("_z") ? Math.abs(a[key] ?? 0) : a[key], vb = key.endsWith("_z") ? Math.abs(b[key] ?? 0) : b[key];
+    return (typeof va === "string" ? va.localeCompare(vb) : (va ?? -1) - (vb ?? -1)) * dir;
+  });
+  const head = h("tr", null, cols.map(([k, t]) => h("th", {"aria-sort": key === k ? (dir > 0 ? "ascending" : "descending") : null},
+    h("button", {onclick: () => { S.sort = {key: k, dir: key === k ? -dir : k === "pod" ? 1 : -1}; renderTable(); }}, t))));
+  const z = (v) => h("span", {class: "zb"}, h("i", {style: `background:${zColor(v)}`}), signed(v));
+  const body = rows.map((r) => {
+    const pct = r.limit ? r.pod_mem / r.limit : null;
+    return h("tr", {onclick: () => select({type: "pod", ns: r.ns, pod: r.pod}, true)},
+      h("td", null, h("span", {class: "muted", style: "font-size:11.5px;margin-right:8px"}, r.ns), h("span", {class: "pod"}, r.pod)),
+      h("td", null, fmt(r.pod_cpu, "cores")), h("td", null, z(r.pod_cpu_z)),
+      h("td", null, fmt(r.pod_mem, "bytes"), pct != null ? h("span", {class: "meter" + (pct > .9 ? " crit" : pct > .75 ? " hot" : ""), title: `limitin %${Math.round(pct * 100)}'i`}, h("i", {style: `width:${Math.min(100, pct * 100)}%`})) : null),
+      h("td", null, z(r.pod_mem_z)), h("td", null, fmt(r.pod_net_rx, "bps")), h("td", null, fmt(r.pod_net_tx, "bps")));
+  });
+  put($("#pods"), h("thead", null, head), h("tbody", null, body.length ? body : h("tr", null, h("td", {colspan: 7, class: "empty"}, "Filtreye uyan pod yok."))));
+}
+
+function renderFilters() {
+  const nss = [...new Set(S.st.pods.map((r) => r.ns))].sort();
+  const sel = $("#nsSel");
+  sel.replaceChildren(h("option", {value: ""}, "Tüm namespace'ler"), ...nss.map((n) => h("option", {value: n, selected: n === S.filter.ns}, n)));
+}
+
+// ---------------------------------------------------------------- veri akışı
+function beep() {
+  try {
+    const ac = new AudioContext(), o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.value = .06;
+    o.start(); o.frequency.setValueAtTime(660, ac.currentTime + .12); o.stop(ac.currentTime + .25);
+  } catch {}
+}
+function renderAll() {
+  renderTop(); renderPipe(); renderFilters(); renderList(); renderDetail(); renderHeat(); renderNodes(); renderTimeline(); renderTable(); tick();
+}
+async function load() {
+  const st = await fetch("/api/state", {cache: "no-store"}).then((r) => r.json());
+  if (!st.ready) { S.st = null; put($("#detail"), h("div", {class: "empty"}, "Prometheus geçmişi yükleniyor…")); return; }
+  const ids = new Set(st.open.map((i) => i.id));
+  S.fresh = S.seen ? new Set([...ids].filter((i) => !S.seen.has(i))) : new Set();
+  if (S.fresh.size && S.sound) beep();
+  S.seen = new Set([...(S.seen || []), ...ids]);
+  S.st = st; S.tz = st.tz; S.det = st.detector; S.cycle = st.cycle;
+  S.pingNow = st.now; S.pingAt = Date.now();
+  if (!S.sel && st.open.length) S.sel = {type: "inc", id: st.open[0].id};
+  if (S.sel?.type === "inc" && S.fresh.size && !st.open.some((i) => i.id === S.sel.id)) S.sel = {type: "inc", id: st.open[0].id};
+  renderAll();
+}
+async function ping() {
+  try {
+    const p = await fetch("/api/ping", {cache: "no-store"}).then((r) => r.json());
+    const was = S.online; S.online = true;
+    S.pingNow = p.now; S.pingAt = Date.now();
+    if (p.ready && p.cycle !== S.cycle) {
+      if (S.cycle > 0) S.period = Math.min(10 * 60000, Math.max(1000, Date.now() - S.lastCycleAt));
+      S.lastCycleAt = Date.now();
+      await load();
+    } else if (was === false && S.st) renderTop();
+  } catch {
+    if (S.online !== false) { S.online = false; if (S.st) renderTop(); }
+  }
+  tick();
+}
+
+// ---------------------------------------------------------------- olaylar ve başlangıç
+const theme = store("theme") || "dark";
+document.documentElement.dataset.theme = theme;
+$("#themeBtn").onclick = () => {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = t; store("theme", t);
+};
+$("#soundBtn").setAttribute("aria-pressed", String(S.sound));
+$("#soundBtn").onclick = () => { S.sound = !S.sound; store("sound", S.sound); $("#soundBtn").setAttribute("aria-pressed", String(S.sound)); if (S.sound) beep(); };
+$("#helpBtn").onclick = () => { const on = $("#help").classList.toggle("on"); $("#helpBtn").setAttribute("aria-expanded", String(on)); };
+$("#hideSys").checked = S.filter.hideSys;
+$("#hideSys").onchange = (e) => { S.filter.hideSys = e.target.checked; store("hideSys", S.filter.hideSys); S.st && renderAll(); };
+$("#nsSel").onchange = (e) => { S.filter.ns = e.target.value; renderAll(); };
+$("#q").oninput = (e) => { S.filter.q = e.target.value.trim().toLowerCase(); renderAll(); };
+document.addEventListener("keydown", (e) => {
+  const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName);
+  if (e.key === "Escape") { if (typing) document.activeElement.blur(); if (S.sel?.type === "pod") select(S.st.open[0] ? {type: "inc", id: S.st.open[0].id} : null); $("#help").classList.remove("on"); return; }
+  if (typing || !S.st || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+  else if (e.key === "?") $("#helpBtn").click();
+  else if (e.key === "j" || e.key === "k") {
+    const {open, closed} = incidents(), list = S.tab === "open" ? open : closed;
+    if (!list.length) return;
+    const i = list.findIndex((x) => S.sel?.type === "inc" && x.id === S.sel.id);
+    const j = i < 0 ? 0 : Math.min(list.length - 1, Math.max(0, i + (e.key === "j" ? 1 : -1)));
+    select({type: "inc", id: list[j].id});
+  }
+});
+const m = location.hash.match(/^#(?:olay-(\d+)|pod-([^/]+)\/(.+))$/);
+if (m) S.sel = m[1] ? {type: "inc", id: +m[1]} : {type: "pod", ns: decodeURIComponent(m[2]), pod: decodeURIComponent(m[3])};
+ping();
+setInterval(ping, 2000);
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
