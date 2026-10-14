@@ -28,15 +28,21 @@ Prometheus ──► toplama ──► tespit ──► olay birleştirme ──
 
 ## Kurulum (kubectl'in bağlı olduğu makinede)
 
-Sunucuya tek dosya taşınır; kod dosyanın içine gömülüdür:
+Tek dosya indirilir; kod dosyanın içine gömülüdür:
 
 ```bash
-tools/paketle.sh                       # burada: dist/nobetci-kurulum.sh üretir (~80 KB)
-scp dist/nobetci-kurulum.sh sunucu:    # sunucuya taşı
-./nobetci-kurulum.sh                   # sunucuda: menü
+mkdir -p ~/nobetci && cd ~/nobetci
+curl -fsSLO https://github.com/Yultax/k8s-nobetci/releases/latest/download/nobetci-kurulum.sh
+curl -fsSLO https://github.com/Yultax/k8s-nobetci/releases/latest/download/SHA256SUMS
+sha256sum -c SHA256SUMS && chmod +x nobetci-kurulum.sh
+./nobetci-kurulum.sh        # menü
 ```
 
-Menü: kur/güncelle, ekranı ağda aç, canlı bildirimleri izle, durum, demo sorunları kur/kaldır,
+Güncelleme: `./nobetci-kurulum.sh guncelle` son sürümü indirir, özetini doğrular, kendini yeniler ve
+kayıtlı ayarlarla soru sormadan yeniden kurar (olay kayıtları korunur). `durum` yeni sürüm varsa söyler.
+Yeni sürüm yayınlamak: `nobetci/__init__.py` içindeki `__version__` artırılır, commit'lenir, `tools/yayinla.sh`.
+
+Menü: kur/güncelle, GitHub'dan güncelle, ekranı ağda aç, canlı bildirimleri izle, durum, demo sorunları kur/kaldır,
 kümeyi incele, kaldır. Aynı işler alt komutla da yapılır (`./nobetci-kurulum.sh kur`, `ekran`, `izle`…).
 
 Sihirbaz Prometheus'u kendisi bulur ve gereken ölçümlerin varlığını denetler; Docker temel imajı

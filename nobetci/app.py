@@ -6,6 +6,7 @@ import threading
 import time
 import traceback
 
+from . import __version__
 from .config import Clock, Config
 from .engine import WINDOW, Engine
 from .incident import IncidentManager
@@ -117,6 +118,7 @@ class App:
             view["closed"] = [i.to_dict() | {"charts": {}} for i in self.manager.closed if i.closed >= view["now"] - 86400]
             view["count_24h"] = self.store.count_since(view["now"] - 86400)
         view["cluster"] = self.cfg.cluster
+        view["version"] = __version__
         view["tz"] = self.cfg.tz_offset
         view["kube"] = self.kube is not None
         view["notify"] = dict(self.notifier.counts) | {"webhook": bool(self.cfg.webhook_url)}

@@ -6,12 +6,14 @@
 #   ./kur.sh durum        durum özeti             ./kur.sh ekran-kapat
 #   ./kur.sh izle         canlı bildirimler       ./kur.sh demo | demo-kaldir
 #   ./kur.sh kesif        yalnızca incele         ./kur.sh kaldir
+#   ./kur.sh guncelle     GitHub'daki son sürümle kendini yenileyip yeniden kurar
 #
 # EVET=1 ile bütün sorularda varsayılan kabul edilir.
 # tools/paketle.sh bu betiğin sonuna kodu gömer; tek dosya olarak taşınır (dist/nobetci-kurulum.sh).
 set -uo pipefail
 
-VERSION=0.2.1
+VERSION=dev   # tools/paketle.sh nobetci/__init__.py içindeki sürümü yazar
+REPO="${NOBETCI_REPO:-Yultax/k8s-nobetci}"
 HOME_DIR="${NOBETCI_HOME:-$HOME/.nobetci}"
 CONF="$HOME_DIR/ayarlar"
 mkdir -p "$HOME_DIR"
@@ -220,8 +222,9 @@ cmd_kur() {
   for _ in 1 2 3 4 5 6 7 8 9 10; do [ "$(api /healthz)" = ok ] && break; sleep 2; done
   [ "$(api /healthz)" = ok ] && ok "sağlık kontrolü geçti" || warn "sağlık kontrolüne yanıt yok"
 
-  printf '\n  %sKurulum tamam.%s\n' "$G$B" "$N"
-  if confirm "Ekranı şimdi ağda açayım mı (port $PORT)?"; then cmd_ekran; fi
+  printf '\n  %sKurulum tamam (sürüm %s).%s\n' "$G$B" "$VERSION" "$N"
+  if [ -n "$(ekran_pid)" ]; then cmd_ekran_kapat >/dev/null; cmd_ekran   # yeni pod'a yeniden bağlansın
+  elif confirm "Ekranı şimdi ağda açayım mı (port $PORT)?"; then cmd_ekran; fi
   info "Canlı bildirimler: $ME izle   ·   Durum: $ME durum   ·   Deneme sorunları: $ME demo"
 }
 
@@ -264,6 +267,39 @@ cmd_durum() {
   local state; state=$(api /metrics | grep '^nobetci_open_incidents' | awk '{s+=$2} END {print s+0}')
   info "açık olay: ${state:-?}"
   [ -n "$(ekran_pid)" ] && ok "ekran açık: http://$(my_ip):$PORT" || info "ekran kapalı ($ME ekran ile açılır)"
+  local latest; latest=$(latest_version)
+  if [ -z "$latest" ]; then info "sürüm $VERSION (GitHub'a ulaşılamadı, yeni sürüm denetlenemedi)"
+  elif [ "$latest" != "$VERSION" ]; then warn "yeni sürüm var: $VERSION → $latest  ($ME guncelle)"
+  else ok "sürüm $VERSION (güncel)"; fi
+}
+
+latest_version() { # GitHub'daki son sürüm (ör. 0.3.0); ulaşılamazsa boş
+  curl -fsSL -m 8 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null |
+    grep -m1 '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/'
+}
+
+cmd_guncelle() {
+  need_cluster
+  local url="https://github.com/$REPO/releases/latest/download" dir new
+  dir="$(dirname "$SELF")"
+  step 1/3 "Son sürüm indiriliyor ($REPO)"
+  curl -fsSL -m 60 "$url/nobetci-kurulum.sh" -o "$dir/.yeni.sh" && curl -fsSL -m 20 "$url/SHA256SUMS" -o "$dir/.yeni.sums" ||
+    { rm -f "$dir/.yeni.sh" "$dir/.yeni.sums"; die "GitHub'dan indirilemedi"; }
+  if [ "$(sha256sum "$dir/.yeni.sh" | cut -d' ' -f1)" != "$(grep nobetci-kurulum.sh "$dir/.yeni.sums" | cut -d' ' -f1)" ]; then
+    rm -f "$dir/.yeni.sh" "$dir/.yeni.sums"; die "özet tutmuyor; dosya bozuk inmiş olabilir, hiçbir şey değiştirilmedi"
+  fi
+  rm -f "$dir/.yeni.sums"
+  new=$(grep -m1 '^VERSION=' "$dir/.yeni.sh" | sed -E 's/^VERSION=([^ ]+).*/\1/')
+  ok "indirildi ve doğrulandı: $new"
+  if [ "$new" = "$VERSION" ] && [ "${ZORLA:-}" != 1 ]; then
+    rm -f "$dir/.yeni.sh"; ok "zaten güncel ($VERSION). Yine de yeniden kurmak için: ZORLA=1 $ME guncelle"; return
+  fi
+  step 2/3 "Kendini yeniliyor: $VERSION → $new"
+  cp "$SELF" "$HOME_DIR/onceki-$VERSION.sh"
+  chmod +x "$dir/.yeni.sh" && mv -f "$dir/.yeni.sh" "$SELF"   # aynı klasörde mv: çalışan betiğin altından dosya değişmez
+  ok "eski sürüm saklandı: $HOME_DIR/onceki-$VERSION.sh (geri dönmek için onu çalıştırıp 'kur' deyin)"
+  step 3/3 "Kayıtlı ayarlarla yeniden kurulum"
+  exec env EVET=1 "$SELF" kur
 }
 
 cmd_izle() { need_cluster; kubectl -n nobetci logs -f deploy/nobetci --tail=40; }
@@ -286,18 +322,19 @@ menu() {
     [ -n "$(ekran_pid)" ] && st="$st · ekran ${B}http://$(my_ip):$PORT${N}"
     printf '\n  %sNöbetçi%s %sv%s%s · %s · %s\n\n' "$B" "$N" "$D" "$VERSION" "$N" "$(kubectl config current-context 2>/dev/null)" "$st"
     printf '  1) Kur / güncelle\n  2) Ekranı ağda aç\n  3) Canlı bildirimleri izle\n  4) Durum\n'
-    printf '  5) Demo sorunları kur\n  6) Demo sorunları kaldır\n  7) Kümeyi incele (bir şey değiştirmez)\n  8) Ekranı kapat\n  9) Kaldır\n  q) Çık\n\n'
+    printf '  5) Demo sorunları kur\n  6) Demo sorunları kaldır\n  7) Kümeyi incele (bir şey değiştirmez)\n  8) Ekranı kapat\n  9) Kaldır\n'
+    printf "  g) GitHub'dan güncelle\n  q) Çık\n\n"
     local c; read -rp "  Seçim: " c </dev/tty
     case "$c" in
       1) (cmd_kur); [ -f "$CONF" ] && . "$CONF" ;; 2) cmd_ekran ;; 3) cmd_izle ;; 4) cmd_durum ;; 5) cmd_demo ;; 6) cmd_demo_kaldir ;;
-      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
+      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; g|G) cmd_guncelle ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
     esac
   done
 }
 
 case "${1:-menu}" in
   menu) menu ;; kur) cmd_kur ;; ekran) cmd_ekran ;; ekran-kapat) cmd_ekran_kapat ;; durum) cmd_durum ;;
-  izle) cmd_izle ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
+  izle) cmd_izle ;; guncelle) cmd_guncelle ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
   *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
 exit $?

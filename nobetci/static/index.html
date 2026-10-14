@@ -253,7 +253,7 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
   <header class="top"><div class="in">
     <div class="brand">
       <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--series)" stroke-width="1.6"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--series)" stroke-width="1.2" opacity=".55"/><path d="M12 12 L19.5 5.5" stroke="var(--series)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="1.8" fill="var(--series)"/></svg>
-      Nöbetçi <span class="cluster" id="cluster">…</span>
+      Nöbetçi <span class="cluster" id="cluster">…</span><span class="muted" id="ver" style="font-size:12px;font-weight:400"></span>
     </div>
     <div class="live stale" id="live"><span class="pulse"></span><span class="txt" id="liveTxt">bağlanıyor…</span>
       <svg class="ring" width="20" height="20" viewBox="0 0 20 20" aria-label="sonraki ölçüme kalan süre"><circle cx="10" cy="10" r="7.5" stroke="var(--grid)"/><circle id="ringArc" cx="10" cy="10" r="7.5" stroke="var(--series)" stroke-dasharray="47.12" stroke-dashoffset="47.12" transform="rotate(-90 10 10)" stroke-linecap="round"/></svg>
@@ -631,6 +631,7 @@ const incVisible = (i) => i.scope === "node" || visible(i.namespace, Object.valu
 function renderTop() {
   const st = S.st, open = st.open.filter(incVisible);
   $("#cluster").textContent = st.cluster;
+  $("#ver").textContent = st.version ? `v${st.version}` : "";
   const worst = Math.max(0, ...open.map((i) => i.severity));
   put($("#status"), h("span", {class: "pill chip"},
     ...(worst ? chip(worst, `${SEV[worst][2]} · ${open.length} açık olay`).childNodes : chip(["good", "✓", "Sakin"]).childNodes)));
