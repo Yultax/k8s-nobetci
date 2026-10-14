@@ -1,0 +1,2250 @@
+<!doctype html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nöbetçi · Keşif</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%2367e8f9' stroke-width='2'/%3E%3Ccircle cx='8' cy='8' r='2' fill='%2367e8f9'/%3E%3C/svg%3E">
+<style>
+:root{--font:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ok:#34d399;--warn:#fbbf24;--crit:#f87171;--info:#94a3b8;--flow:#67e8f9;--metric:#c4b5fd;--brain:#fbbf24;--up:#f87171;--down:#60a5fa}
+:root[data-theme=dark]{color-scheme:dark;--page:#06080c;--page2:#0b1018;--surface:#0e131b;--raised:#151c27;--ink:#e8edf5;--ink2:#a9b4c4;
+  --muted:#6b7789;--line:rgba(148,170,210,.13);--line2:rgba(148,170,210,.24);--node:#0d141e;--node2:#111b28;--dot:rgba(148,170,210,.07);
+  --shadow:0 18px 50px rgba(0,0,0,.45);--glass:rgba(12,17,25,.78)}
+:root[data-theme=light]{color-scheme:light;--page:#eef1f6;--page2:#f7f8fb;--surface:#ffffff;--raised:#f2f4f8;--ink:#0d1420;--ink2:#465366;
+  --muted:#7b8696;--line:rgba(20,40,80,.12);--line2:rgba(20,40,80,.22);--node:#ffffff;--node2:#f5f7fb;--dot:rgba(20,40,80,.07);
+  --shadow:0 18px 40px rgba(20,40,80,.12);--glass:rgba(255,255,255,.82);--flow:#0891b2;--metric:#7c3aed;--brain:#d97706;--ok:#059669;--warn:#d97706;--crit:#dc2626}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(1200px 700px at 15% -10%,color-mix(in srgb,var(--flow) 9%,transparent),transparent 60%),
+  radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--metric) 8%,transparent),transparent 60%),var(--page);
+  background-repeat:no-repeat;background-attachment:fixed;color:var(--ink);font:14px/1.5 var(--font);overflow-x:hidden}
+html{background:var(--page)}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+.mono{font-family:var(--mono)}.muted{color:var(--muted)}.ink2{color:var(--ink2)}.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
+
+/* üst çubuk */
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;padding:10px 18px;flex-wrap:wrap;
+  background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.01em;text-decoration:none}
+.brand small{font-weight:500;color:var(--muted);font-size:12px}
+.chipc{font:12px var(--mono);color:var(--ink2);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+.tabs{display:flex;gap:4px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:9px;color:var(--ink2);font-weight:600;font-size:13px;display:flex;gap:8px;align-items:center}
+.tabs button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line2),0 4px 14px rgba(0,0,0,.18)}
+.tabs button .k{width:8px;height:8px;border-radius:50%}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+.live .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:beat 2s infinite}
+.live.down .dot{background:var(--crit);animation:none}
+@keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 70%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.ibtn{display:inline-grid;place-items:center;min-width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);padding:0 8px;font-size:12px;gap:6px}
+.ibtn:hover{color:var(--ink);border-color:var(--line2)}
+.ibtn[aria-pressed=true]{color:var(--ink);border-color:color-mix(in srgb,var(--flow) 60%,transparent);background:color-mix(in srgb,var(--flow) 10%,var(--surface))}
+.view{display:none}.view.on{display:block}
+
+/* harita */
+.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100vh - 57px);min-height:560px}
+.stage{position:relative;overflow:hidden;border-right:1px solid var(--line)}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#map.drag{cursor:grabbing}#map.hover{cursor:pointer}
+.hud{position:absolute;z-index:3;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hud.tl{top:12px;left:12px;right:12px}.hud.br{right:12px;bottom:64px;flex-direction:column}
+.seg{display:flex;gap:2px;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{border:0;background:none;color:var(--ink2);font-size:12px;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.seg button .sw{width:10px;height:3px;border-radius:2px}
+.seg button[aria-pressed=true]{background:var(--raised);color:var(--ink)}
+.seg button[aria-pressed=false] .sw{opacity:.35}
+.seg .lbl{font-size:11px;color:var(--muted);padding:0 6px 0 8px;align-self:center;text-transform:uppercase;letter-spacing:.06em}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line2);
+  border-radius:10px;padding:8px 10px;font-size:12px;max-width:300px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s}
+.tip.on{opacity:1}.tip b{font-size:13px}.tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
+.ticker{position:absolute;left:0;right:0;bottom:0;height:52px;z-index:3;display:flex;align-items:center;gap:10px;padding:0 12px;
+  background:linear-gradient(transparent,var(--glass) 30%);overflow:hidden}
+.ticker .ttl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap}
+.ticker .rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.ev{flex:none;display:flex;align-items:center;gap:7px;font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 8px;color:var(--ink2);animation:slidein .5s ease both}
+.ev:hover{border-color:var(--line2);color:var(--ink)}
+.ev i{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}.ev.Warning i{background:var(--warn)}
+.ev b{color:var(--ink);font-weight:600}
+@keyframes slidein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.simbar{position:absolute;left:50%;top:60px;transform:translateX(-50%);z-index:4;width:min(620px,calc(100% - 24px));display:none;
+  background:var(--glass);backdrop-filter:blur(14px);border:1px solid color-mix(in srgb,var(--brain) 55%,transparent);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.simbar.on{display:block;animation:slidein .35s ease}
+.simbar .h{display:flex;gap:10px;align-items:center;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--brain);font-weight:700}
+.simbar .c{font-size:14px;margin:6px 0 8px;min-height:42px}
+.simbar .steps{display:flex;gap:5px}.simbar .steps i{flex:1;height:3px;border-radius:2px;background:var(--line2)}.simbar .steps i.on{background:var(--brain)}
+.simbar .h button{margin-left:auto}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);z-index:2;pointer-events:none}
+
+/* yan panel */
+.side{overflow-y:auto;background:color-mix(in srgb,var(--surface) 70%,transparent);padding:18px 18px 40px}
+.side h3{margin:0 0 2px;font-size:19px;letter-spacing:-.01em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kind{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.kind i{width:9px;height:9px;border-radius:3px}
+.lead{color:var(--ink2);margin:10px 0 14px}
+.lead b{color:var(--ink)}
+.box{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;margin:12px 0}
+.box h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.learn{border-color:color-mix(in srgb,var(--flow) 30%,var(--line));background:color-mix(in srgb,var(--flow) 5%,var(--surface))}
+.learn h4{color:var(--flow)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.stat{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;transition:border-color .2s,transform .2s}
+.stat:hover{border-color:var(--line2);transform:translateY(-1px)}
+.stat .v{font-size:24px;font-weight:700;line-height:1.1}.stat .l{font-size:12px;color:var(--ink2)}
+.stat .s{font-size:11px;color:var(--muted)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btn{border:1px solid var(--line2);background:var(--raised);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600;display:inline-flex;gap:8px;align-items:center}
+.btn:hover{border-color:var(--flow)}
+.btn.pri{background:color-mix(in srgb,var(--flow) 16%,var(--surface));border-color:color-mix(in srgb,var(--flow) 55%,transparent)}
+.btn.sim{background:color-mix(in srgb,var(--brain) 12%,var(--surface));border-color:color-mix(in srgb,var(--brain) 50%,transparent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px 2px 7px;border-radius:999px;border:1px solid var(--line)}
+.status i{width:8px;height:8px;border-radius:50%}
+.chain{display:flex;flex-direction:column;gap:0}
+.chain button{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--raised);border-radius:10px;padding:7px 10px;text-align:left;font-size:13px}
+.chain button:hover{border-color:var(--line2)}
+.chain button small{color:var(--muted);margin-left:auto}
+.chain .ar{height:14px;margin-left:22px;border-left:2px dashed var(--line2)}
+.life{display:flex;gap:4px;margin-top:6px}
+.life div{flex:1;text-align:center;font-size:10.5px;color:var(--muted)}
+.life div i{display:block;height:5px;border-radius:3px;background:var(--line2);margin-bottom:5px}
+.life div.on i{background:var(--ok)}.life div.on{color:var(--ink2)}
+.cmd{display:flex;align-items:center;gap:8px;font:12px var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:6px}
+.cmd code{flex:1;overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.cmd button{border:0;background:none;color:var(--muted);font-size:11px}.cmd button:hover{color:var(--ink)}
+.spark{display:grid;grid-template-columns:80px 1fr 64px;gap:8px;align-items:center;font-size:12px;padding:6px 0;border-top:1px solid var(--line)}
+.spark:first-of-type{border-top:0}
+.spark canvas{width:100%;height:34px}
+.spark .z{text-align:right;font:12px var(--mono)}
+.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2);margin:2px 4px 2px 0;font-family:var(--mono)}
+.gl{display:flex;flex-direction:column;gap:6px}
+.gl button{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+.gl button:hover{border-color:var(--line2)}
+.gl button b{display:block;font-size:13px}.gl button.ss b{display:inline;font-size:inherit}.gl button span{font-size:12px;color:var(--ink2)}
+.gl button .ic{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 10px var(--mono);color:#0b0f16}
+.back{display:block;border:0;background:none;color:var(--muted);font-size:12px;padding:0;margin-bottom:10px}
+.back:hover{color:var(--ink)}
+.inc{border-left:3px solid var(--crit);padding-left:10px;margin:8px 0;font-size:13px}
+.inc.s2{border-color:var(--warn)}.inc.s1{border-color:var(--info)}
+
+/* beyin */
+.page{max-width:1400px;margin:0 auto;padding:22px 20px 70px}
+.hero{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 18px}
+.hero h1{margin:0;font-size:28px;letter-spacing:-.02em}
+.hero p{margin:6px 0 0;color:var(--ink2);max-width:780px}
+.flowcard{position:relative;border:1px solid var(--line);background:linear-gradient(180deg,var(--surface),var(--page2));border-radius:18px;padding:10px;overflow:hidden}
+#flow{display:block;width:100%;height:auto}
+#flow .st rect{fill:var(--node2);stroke:var(--line2);stroke-width:1.2;transition:stroke .25s,fill .25s}
+#flow .st:hover rect,#flow .st.sel rect{stroke:var(--flow)}
+#flow .st.sel rect{fill:color-mix(in srgb,var(--flow) 10%,var(--node2))}
+#flow .st.lit rect{stroke:var(--brain);fill:color-mix(in srgb,var(--brain) 12%,var(--node2))}
+#flow .st{cursor:pointer}
+#flow text{fill:var(--ink);font:600 13px var(--font)}
+#flow text.s{fill:var(--muted);font:500 11px var(--font)}
+#flow text.n{fill:var(--flow);font:700 15px var(--mono)}
+#flow path.e{fill:none;stroke:var(--line2);stroke-width:1.6}
+#flow .lane{fill:var(--muted);font:700 10px var(--font);letter-spacing:.12em}
+.flowbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 8px 4px}
+.flowbar .cap{flex:1;min-width:240px;font-size:13px;color:var(--ink2)}
+.flowbar .cap b{color:var(--brain)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;margin-top:16px}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 18px}
+.card h2{margin:0 0 4px;font-size:16px}
+.card .sub{color:var(--ink2);font-size:13px;margin:0 0 10px}
+.explain h3{margin:0 0 6px;font-size:18px}
+.explain p{color:var(--ink2);margin:8px 0}
+.explain .why{border-left:3px solid var(--brain);padding:2px 0 2px 12px;margin:12px 0;color:var(--ink)}
+.formula{font:13px var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.lab{margin-top:16px}
+.labhead{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.labhead select{background:var(--raised);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 10px;font:inherit;max-width:100%}
+#labc{display:block;width:100%;height:330px;margin-top:10px;touch-action:pan-y}
+.ctrls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:12px}
+.ctrl label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)}
+.ctrl label b{font:600 13px var(--mono);color:var(--ink)}
+.ctrl input[type=range]{width:100%;accent-color:var(--flow)}
+.ctrl .h{font-size:11px;color:var(--muted)}
+.verdict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.verdict .stat .v{font-size:22px}
+.math{font:12.5px/1.7 var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:12px;min-height:94px}
+.math .hl{color:var(--brain)}.math .ok{color:var(--ok)}.math .no{color:var(--muted)}.math .bad{color:var(--crit)}
+.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px}
+.mini h4{margin:0 0 4px;font-size:14px}.mini p{margin:0;font-size:13px;color:var(--ink2)}
+
+/* ölçüm kataloğu */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ink2)}
+.filters button[aria-pressed=true]{border-color:var(--flow);color:var(--ink);background:color-mix(in srgb,var(--flow) 10%,var(--surface))}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.mc{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .2s}
+.mc:hover{border-color:var(--line2);transform:translateY(-2px)}
+.mc .t{display:flex;gap:8px;align-items:flex-start}
+.mc .t h4{margin:0;font-size:15px;flex:1}
+.mc p{margin:0;font-size:13px;color:var(--ink2)}
+.mc .sc{font-size:13px;border-left:3px solid var(--metric);padding-left:10px;color:var(--ink)}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.det{background:color-mix(in srgb,var(--metric) 16%,transparent);color:var(--metric)}
+.tag.have{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tag.no{background:var(--raised);color:var(--muted)}
+.tag.now{background:color-mix(in srgb,var(--flow) 16%,transparent);color:var(--flow)}
+.mc details summary{cursor:pointer;font-size:12px;color:var(--muted)}
+.sech{display:flex;align-items:baseline;gap:12px;margin:28px 0 4px;flex-wrap:wrap}
+.sech h2{margin:0;font-size:18px}.sech p{margin:0;color:var(--ink2);font-size:13px}
+
+@media (max-width:980px){
+  .mapwrap{grid-template-columns:1fr;height:auto}
+  .stage{height:72vh;min-height:460px;border-right:0;border-bottom:1px solid var(--line)}
+  .side{max-height:none}
+  .grid2,.cards3{grid-template-columns:1fr}
+  .ctrls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .top{gap:10px;padding:8px 12px}.tabs button{padding:6px 9px}.live .t{display:none}
+  .hud .seg .lbl{display:none}
+}
+@media (max-width:560px){.tabs button .x{display:none}.brand small{display:none}.verdict{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/" title="Olay ekranına dön">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--flow)" stroke-width="1.6"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--metric)" stroke-width="1.2" opacity=".8"/><path d="M12 12 L19.5 5.5" stroke="var(--flow)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="1.8" fill="var(--flow)"/></svg>
+    Nöbetçi <small>keşif</small>
+  </a>
+  <span class="chipc" id="cluster">…</span>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="map" aria-selected="true"><span class="k" style="background:var(--flow)"></span>Küme<span class="x"> haritası</span></button>
+    <button role="tab" data-tab="brain" aria-selected="false"><span class="k" style="background:var(--brain)"></span><span class="x">Nöbetçinin </span>beyni</button>
+    <button role="tab" data-tab="metrics" aria-selected="false"><span class="k" style="background:var(--metric)"></span>Ne izleyelim<span class="x">?</span></button>
+  </nav>
+  <div class="right">
+    <div class="live" id="live"><span class="dot"></span><span class="t" id="liveT">bağlanıyor…</span></div>
+    <a class="ibtn" href="/" title="Olay ekranı">Olaylar</a>
+    <button class="ibtn" id="themeBtn" title="Açık / koyu tema" aria-label="Tema"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<!-- 1. küme haritası -->
+<section class="view on" id="v-map">
+  <div class="mapwrap">
+    <div class="stage" id="stage">
+      <canvas id="map" aria-label="Kümenin canlı haritası"></canvas>
+      <div class="empty" id="empty">küme okunuyor…</div>
+      <div class="hud tl">
+        <div class="seg" id="layers"><span class="lbl">Katman</span>
+          <button data-l="traffic" aria-pressed="true"><span class="sw" style="background:var(--flow)"></span>Trafik</button>
+          <button data-l="metrics" aria-pressed="true"><span class="sw" style="background:var(--metric)"></span>Ölçüm yolu</button>
+          <button data-l="owners" aria-pressed="false"><span class="sw" style="background:var(--ink2)"></span>Sahiplik</button>
+          <button data-l="heat" aria-pressed="true"><span class="sw" style="background:var(--up)"></span>Sapma</button>
+        </div>
+        <div class="seg"><button id="sysBtn" aria-pressed="true" title="kube-system gibi sistem namespace'lerini göster">Sistem pod'ları</button></div>
+        <div class="seg"><button id="tourBtn" aria-pressed="false">▶ Turu başlat</button></div>
+      </div>
+      <div class="hud br">
+        <div class="seg" style="flex-direction:column"><button id="zin" aria-label="Yakınlaş" title="Yakınlaş"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button id="zout" aria-label="Uzaklaş" title="Uzaklaş"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button id="zfit" aria-label="Sığdır" title="Hepsini sığdır"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 5V2h3M9 2h3v3M12 9v3H9M5 12H2V9"/></svg></button></div>
+      </div>
+      <div class="simbar" id="simbar"><div class="h"><span id="simT">Simülasyon</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">kümeye dokunmaz, yalnızca anlatır</span><button class="ibtn" id="simX">Bitir</button></div>
+        <div class="c" id="simC"></div><div class="steps" id="simS"></div></div>
+      <div class="ticker"><span class="ttl">Kubernetes olayları</span><div class="rail" id="rail"></div></div>
+    </div>
+    <aside class="side" id="side" aria-live="polite"></aside>
+  </div>
+</section>
+
+<!-- 2. nöbetçinin beyni -->
+<section class="view" id="v-brain">
+  <div class="page">
+    <div class="hero"><div><h1>Nöbetçinin beyni</h1>
+      <p>Her ölçüm turunda veri soldan sağa akar: Prometheus'tan gelen yüzlerce seri, istatistiksel süzgeçlerden geçerek birkaç anlamlı bulguya, bulgular da tek tek olaylara dönüşür. Bir aşamaya tıkla; ne yaptığını bu turun gerçek sayılarıyla anlatır.</p></div></div>
+    <div class="flowcard">
+      <svg id="flow" viewBox="0 0 1515 372" role="img" aria-label="Tespit hattı"></svg>
+      <div class="flowbar"><button class="btn sim" id="replay">▶ Bir turu adım adım oynat</button><div class="cap" id="flowcap">Gerçek bir tur bitince akış kendiliğinden oynar.</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card explain" id="explain"></div>
+      <div class="card">
+        <h2>Bu turda ne oldu?</h2><p class="sub">Son ölçüm turunun gerçek sayıları; her tur yenilenir.</p>
+        <div class="stats" id="cyc" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div id="openInc"></div>
+      </div>
+    </div>
+
+    <div class="card lab">
+      <div class="labhead"><div style="flex:1;min-width:260px"><h2>Algoritma laboratuvarı</h2>
+        <p class="sub" style="margin:0">Kümedeki gerçek bir seriyi seç; nöbetçinin "anomali" kararını adım adım izle, eşikleri değiştirip sonucun nasıl değiştiğini gör. Ayarlar yalnızca bu sayfada; nöbetçinin kendisi değişmez.</p></div>
+        <select id="labPod" aria-label="Pod"></select>
+        <div class="seg" id="labSig"></div>
+      </div>
+      <canvas id="labc"></canvas>
+      <div class="btnrow">
+        <button class="btn pri" id="scan">▶ Taramayı oynat</button>
+        <button class="btn" id="injSpike" title="Seriye yapay, kalıcı bir sıçrama ekler">+ Yapay sıçrama</button>
+        <button class="btn" id="injOne" title="Tek noktalık bir aykırı değer ekler">+ Tek aykırı nokta</button>
+        <button class="btn" id="injReset">Gerçek veriye dön</button>
+        <button class="btn" id="cmpMean" aria-pressed="false" title="Ortalama ± standart sapma zarfını da çiz">Ortalama ile karşılaştır</button>
+      </div>
+      <div class="ctrls">
+        <div class="ctrl"><label>Eşik (z) <b id="zV"></b></label><input type="range" id="zR" min="2" max="12" step="0.5"><div class="h">normalden kaç "ölçek" uzak alarm sayılsın</div></div>
+        <div class="ctrl"><label>Kalıcılık <b id="pV"></b></label><input type="range" id="pR" min="1" max="6" step="1"><div class="h">kaç ardışık nokta eşiği aşmalı</div></div>
+        <div class="ctrl"><label>Pencere <b id="wV"></b></label><input type="range" id="wR" min="15" max="120" step="5"><div class="h">"normal" kaç geçmiş noktadan hesaplanır</div></div>
+        <div class="ctrl"><label>Isınma <b id="uV"></b></label><input type="range" id="uR" min="5" max="60" step="5"><div class="h">bu kadar nokta birikmeden karar verilmez</div></div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="math" id="math">Grafiğin üzerinde gezin ya da taramayı oynat: her noktada nöbetçinin hesabı burada yazar.</div>
+    </div>
+
+    <div class="cards3">
+      <div class="mini"><h4>Neden ortalama değil medyan?</h4><p>Tek bir dev sıçrama ortalamayı ve standart sapmayı şişirir, zarf genişler ve sonraki sıçramalar görünmez olur. Medyan ve MAD (sapmaların medyanı) aykırı değerlerden etkilenmez. Laboratuvarda "Ortalama ile karşılaştır"ı açıp farkı gör.</p></div>
+      <div class="mini"><h4>Neden "kalıcılık"?</h4><p>Ölçümler gürültülüdür. Tek noktalık bir zıplama çoğu zaman anlamsızdır (bir GC, bir log patlaması). Eşiği art arda iki kez aşmak gerçek bir durum değişikliğine işaret eder. "Tek aykırı nokta" ekleyip alarm üretmediğini gör.</p></div>
+      <div class="mini"><h4>Bu bir "makine öğrenmesi" mi?</h4><p>Gözetimsiz (etiketsiz) bir anomali tespitidir: her serinin "normal"ini kendi geçmişinden öğrenir, model eğitmez ve kara kutu değildir. Her karar yeniden hesaplanabilir. LLM yalnızca sonucu insan diliyle anlatır, karar vermez.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. ne izleyelim -->
+<section class="view" id="v-metrics">
+  <div class="page">
+    <div class="hero"><div><h1>Ne izliyoruz, ne izleyebiliriz?</h1>
+      <p>Nöbetçi şu an pod ve node başına 6 sinyali istatistiksel olarak, 7 durumu da kuralla izliyor. Aşağıda projeye eklenebilecek ölçümler var. <span class="tag have">bu kümede var</span> rozeti, verinin kümedeki Prometheus'ta zaten bulunduğunu gösterir; yani yalnızca nöbetçiye öğretmek kalıyor.</p></div></div>
+    <div class="sech"><h2>Şu an izlenenler</h2><p>Sayılar nöbetçi başladığından beri üretilen bulgular.</p></div>
+    <div class="mgrid" id="mNow"></div>
+    <div class="sech"><h2>Eklenebilecek ölçümler</h2><p id="catState">Prometheus'a soruluyor…</p></div>
+    <div class="filters" id="mFilt"></div>
+    <div class="mgrid" id="mAdd"></div>
+    <div class="sech"><h2>Projeyi bir üst seviyeye taşıyacak fikirler</h2><p>Yeni ölçümden çok, var olan veriyi daha akıllı kullanmak.</p></div>
+    <div class="mgrid" id="mIdeas"></div>
+  </div>
+</section>
+
+<div class="tip" id="tip"></div>
+<script>
+"use strict";
+/* ============================================================== yardımcılar */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const store = (k, v) => { try { return v === undefined ? JSON.parse(localStorage.getItem("nobetci." + k) ?? "null") : localStorage.setItem("nobetci." + k, JSON.stringify(v)); } catch { return null; } };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const MiB = 1048576;
+const fmt = {
+  cores: (v) => v == null ? "—" : v < 1 ? `${Math.round(v * 1000)}m` : `${v.toFixed(2)} çekirdek`,
+  bytes: (v) => v == null ? "—" : v < 1024 * MiB ? `${Math.round(v / MiB)} MiB` : `${(v / MiB / 1024).toFixed(2)} GiB`,
+  bps: (v) => v == null ? "—" : v < 1e6 ? `${Math.round(v / 1e3)} KB/s` : `${(v / 1e6).toFixed(1)} MB/s`,
+};
+const UNIT = {cpu: "cores", mem: "bytes", rx: "bps", tx: "bps"};
+function ago(iso) {
+  if (!iso) return "—";
+  const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+  if (s < 60) return "az önce";
+  if (s < 3600) return `${Math.floor(s / 60)} dk önce`;
+  if (s < 86400) return `${Math.floor(s / 3600)} sa önce`;
+  return `${Math.floor(s / 86400)} gün önce`;
+}
+const age = (iso) => iso ? ago(iso).replace(" önce", "").replace("az", "1 dk'dan az") : "—";
+const copyBtn = (cmd) => `<div class="cmd"><code>${esc(cmd)}</code><button data-copy="${esc(cmd)}">kopyala</button></div>`;
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-copy]");
+  if (!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy).then(() => { b.textContent = "kopyalandı"; setTimeout(() => (b.textContent = "kopyala"), 1400); });
+});
+
+/* ============================================================== bilgi tabanı
+   Haritadaki her şeye tıklayınca çıkan açıklamalar. g: haritadaki kısa simge. */
+const G = {
+  cluster: {t: "Küme (cluster)", c: "#67e8f9", d: `Birlikte yönetilen makineler (<b>node</b>) ve onları yöneten <b>kontrol düzlemi</b>. Sen "bu uygulamadan 2 kopya çalışsın" dersin; nereye konacağına, çökerse yeniden başlatılmasına, trafiğin dağıtılmasına Kubernetes karar verir.<br><br>Buna <b>istenen durum</b> (desired state) yaklaşımı denir: hedefi yazarsın, denetleyiciler gerçeği sürekli hedefe yaklaştırır. Bir pod'u silsen bile geri gelir, çünkü hedef değişmedi.`},
+  node: {t: "Node", c: "#94a3b8", d: `Pod'ların üzerinde çalıştığı makine (fiziksel ya da sanal). Her node'da iki temel süreç vardır: <b>kubelet</b> (pod'ları başlatan ve izleyen ajan) ve <b>konteyner çalışma ortamı</b> (containerd).<br><br>Bu kümede tek node var (kind): kontrol düzlemi de uygulamalar da aynı makinede. Üretimde birden çok node olur; biri çökerse pod'lar diğerlerine taşınır.`},
+  namespace: {t: "Namespace", c: "#a78bfa", d: `Kümeyi mantıksal bölmelere ayırır. Aynı adlı nesneler farklı namespace'lerde yaşayabilir; yetki (RBAC) ve kaynak kotası namespace başına verilir.<br><br><b>kube-system</b> Kubernetes'in kendi bileşenleri içindir. Haritada her namespace kendi rengindeki çerçevedir; bir namespace birden çok node'a yayılabilir.`},
+  pod: {t: "Pod", c: "#2dd4bf", d: `Kubernetes'in en küçük çalıştırma birimi: bir ya da birkaç konteyner, ortak bir IP adresi ve ortak depolama.<br><br>Pod'lar <b>geçicidir</b>: ölür, yerine yenisi (yeni ad, yeni IP) gelir. Bu yüzden uygulamalar pod'a değil, önündeki <b>Service</b>'e bağlanır.<br><br>Haritada dairenin büyüklüğü bellek kullanımını, dış halka CPU kullanımını, içindeki sıvı seviyesi bellek limitinin ne kadarının dolduğunu gösterir.`},
+  container: {t: "Konteyner", c: "#2dd4bf", d: `İmajdan (uygulama + bağımlılıkları) başlatılan yalıtılmış süreç. Linux çekirdeğinin <b>namespaces</b> (yalıtım) ve <b>cgroups</b> (kaynak sınırı) özellikleriyle çalışır; sanal makine değildir, çekirdeği paylaşır.`},
+  Deployment: {t: "Deployment", c: "#38bdf8", d: `"Bu imajdan N kopya çalışsın" diyen tarif. Pod'ları doğrudan yaratmaz: bir <b>ReplicaSet</b> yaratır, pod'ları o yaratır.<br><br>Yeni sürüm çıkınca yeni bir ReplicaSet açar ve pod'ları kademeli olarak değiştirir (<b>rolling update</b>). Sorun çıkarsa eski ReplicaSet'e döner (<b>rollback</b>). Durumsuz uygulamalar (web, api) için kullanılır.`},
+  ReplicaSet: {t: "ReplicaSet", c: "#38bdf8", d: `Belirli bir pod şablonundan tam N kopya olmasını sağlayan denetleyici. Pod silinirse yenisini yaratır.<br><br>Pod adındaki ortadaki parça ReplicaSet'tendir: <span class="mono">web-<b>7d9f8b6c5d</b>-x2k4p</span>. Sondaki 5 karakter pod'a özel rastgele ektir. Nöbetçi, pod yeniden doğsa da geçmişi kaybetmemek için bu ekleri silip iş yükü adıyla çalışır.`},
+  StatefulSet: {t: "StatefulSet", c: "#f472b6", d: `Kalıcı kimlik isteyen uygulamalar (veritabanı, kuyruk, önbellek) için. Pod'lar sıralı ve sabit adlıdır (<span class="mono">cache-0, cache-1</span>), her biri kendi diskini korur. Pod ölürse <b>aynı adla</b> ve aynı diskle geri gelir.`},
+  DaemonSet: {t: "DaemonSet", c: "#a3e635", d: `Her node'da tam bir kopya çalıştırır. Ağ eklentisi, kube-proxy, log toplayıcı, node-exporter gibi "her makinede olmalı" işleri için. Kümeye yeni node eklenince oraya da kendiliğinden kurulur.`},
+  Static: {t: "Statik pod", c: "#fb923c", d: `API sunucusu üzerinden değil, kubelet'in diskteki bir dosyadan (<span class="mono">/etc/kubernetes/manifests</span>) doğrudan başlattığı pod.<br><br>Kontrol düzleminin kendisi (API server, etcd, scheduler, controller-manager) böyle başlar. Bu, tavuk-yumurta sorununu çözer: API server çalışmadan pod yaratılamaz, API server da bir pod'dur.`},
+  Job: {t: "Job", c: "#e879f9", d: `Bir kez çalışıp biten iş (yedekleme, göç betiği). Başarıyla bitene kadar pod yaratır. <b>CronJob</b> bunu zamanlanmış hâle getirir.`},
+  Pod: {t: "Sahipsiz pod", c: "#94a3b8", d: `Bir denetleyiciye bağlı olmayan, elle yaratılmış pod. Silinirse ya da node'u çökerse <b>geri gelmez</b>; üretimde hemen hiç kullanılmaz.`},
+  service: {t: "Service", c: "#67e8f9", d: `Değişen pod'ların önüne konan <b>sabit adres</b>: bir sanal IP (ClusterIP) ve DNS adı (ör. <span class="mono">web.demo.svc</span>).<br><br>Etiket seçicisi (<b>selector</b>) ile eşleşen ve <b>Ready</b> olan pod'lara trafiği dağıtır. Pod ölüp yenisi gelse de adres değişmez. Haritadaki akan noktalar bu yönlendirmeyi temsil eder; kırmızı kesik çizgi, hazır olmadığı için trafik gönderilmeyen pod'dur.`},
+  ClusterIP: {t: "ClusterIP", d: "Yalnızca küme içinden erişilen sanal IP. En yaygın tür."},
+  NodePort: {t: "NodePort", d: "Her node'un aynı portunu (30000–32767) dışarı açar; küme dışından node IP'si ve bu portla erişilir."},
+  LoadBalancer: {t: "LoadBalancer", d: "Bulut sağlayıcıdan dış bir yük dengeleyici ister; dışarıya tek, sabit bir IP verir."},
+  Headless: {t: "Headless", d: "Sanal IP yok (clusterIP: None); DNS doğrudan pod IP'lerini döner. StatefulSet'lerde her pod'a adıyla ulaşmak için kullanılır."},
+  kubelet: {t: "kubelet", c: "#94a3b8", g: "kubelet", d: `Her node'daki ajan. API server'dan "bu node'da şu pod'lar çalışmalı" bilgisini izler, konteyner çalışma ortamına başlatır, sağlık kontrollerini (<b>liveness / readiness probe</b>) yapar ve durumu geri bildirir.<br><br>İçindeki <b>cAdvisor</b> her konteynerin CPU, bellek ve ağ kullanımını ölçer. Nöbetçinin istatistik yaptığı ham ölçümler buradan gelir (mor yol).`},
+  runtime: {t: "Konteyner çalışma ortamı", c: "#94a3b8", g: "runtime", d: `İmajı çeker, konteyneri çekirdek özellikleriyle başlatır (containerd). Bellek limitini aşan konteyneri <b>Linux çekirdeği</b> öldürür; Kubernetes bunu <b>OOMKilled</b> olarak raporlar.<br><br>kubelet ve containerd pod değil, node üzerinde doğrudan çalışan süreçlerdir. Bu yüzden haritada node'un başlığında duruyorlar.`},
+  apiserver: {t: "API server", c: "#fb923c", g: "API", d: `Kümenin <b>tek kapısı</b>: kubectl dahil herkes onunla konuşur. İstekleri doğrular, yetkiyi denetler, durumu etcd'ye yazar.<br><br>Diğer bileşenler birbirleriyle konuşmaz; API server'ı <b>izleyerek</b> (watch) çalışır. Scheduler yeni pod görür, node seçer, API'ye yazar; kubelet bunu görür, konteyneri başlatır.`},
+  etcd: {t: "etcd", c: "#fb923c", g: "etcd", d: `Kümenin <b>hafızası</b>: bütün nesnelerin (pod, service, secret…) saklandığı dağıtık anahtar-değer veritabanı. etcd kaybolursa küme her şeyi unutur; en önemli yedek etcd yedeğidir. Disk yavaşlığına çok duyarlıdır.`},
+  scheduler: {t: "Scheduler", c: "#fb923c", g: "sch", d: `Yeni pod'lara <b>node seçer</b>: kaynak istekleri (requests) sığıyor mu, taint/toleration, affinity kuralları… Bir pod <b>Pending</b> kalıyorsa genelde scheduler uygun bir node bulamamıştır.`},
+  controller: {t: "Controller manager", c: "#fb923c", g: "ctl", d: `Denetleyicilerin evi: ReplicaSet, Deployment, Node, Job denetleyicileri… Her biri sürekli "istenen durum ile gerçek durum aynı mı?" diye bakar ve farkı kapatır. Buna <b>reconcile döngüsü</b> denir ve Kubernetes'in kalbidir.`},
+  coredns: {t: "CoreDNS", c: "#64748b", g: "dns", d: `Küme içi DNS: <span class="mono">web.demo.svc.cluster.local</span> gibi adları Service IP'lerine çevirir. DNS bozulursa servisler birbirini bulamaz; çok sık rastlanan bir arıza kaynağıdır.`},
+  proxy: {t: "kube-proxy", c: "#64748b", g: "prx", d: `Her node'da, Service'in sanal IP'sine gelen trafiği iptables/IPVS kurallarıyla gerçek pod IP'lerine yönlendirir. Service'in "sihri" budur. DaemonSet olarak çalışır.`},
+  cni: {t: "Ağ eklentisi (CNI)", c: "#64748b", g: "net", d: `Her pod'a IP verir ve node'lar arasında pod trafiğini taşır (kindnet, Calico, Cilium, Flannel…). DaemonSet olarak her node'da çalışır.`},
+  storage: {t: "Depolama sağlayıcı", c: "#64748b", g: "disk", d: `Kalıcı disk isteyen pod'lara (PersistentVolumeClaim) disk ayırır. kind'de node'un diskinden klasör veren local-path-provisioner kullanılır. Nöbetçinin olay kayıtları da böyle bir diskte durur.`},
+  prometheus: {t: "Prometheus", c: "#c4b5fd", g: "prom", d: `Ölçüm veritabanı. Belirli aralıklarla hedeflerini <b>kazır</b> (scrape: HTTP ile <span class="mono">/metrics</span> okur) ve zaman serisi olarak saklar.<br><br>Nöbetçi veriyi doğrudan pod'lardan değil, buradan <b>PromQL</b> sorgularıyla alır. Mor yol: kubelet/cAdvisor → Prometheus → nöbetçi.`},
+  ksm: {t: "kube-state-metrics", c: "#c4b5fd", g: "ksm", d: `API server'daki nesnelerin <b>durumunu</b> ölçüme çevirir: pod fazı, yeniden başlama sayısı, istenen/hazır kopya, limitler, bekleme nedenleri.<br><br>Nöbetçinin <b>durum kontrolleri</b> (OOMKilled, CrashLoopBackOff, Pending…) ve "bellek limite gidiyor" tahminindeki limit değeri buradan gelir.`},
+  exporter: {t: "node-exporter", c: "#c4b5fd", g: "nx", d: "Node'un kendi ölçümlerini (disk, dosya sistemi, ağ kartı, yük) Prometheus'a verir. DaemonSet olarak çalışır."},
+  nobetci: {t: "Nöbetçi", c: "#fbbf24", g: "N", d: `Bu ekranı sunan pod. Her turda Prometheus'u sorgular, her serinin kendi normalinden sapmasını ölçer, bulguları olaylara toplar ve yorumlar.<br><br>Salt okunur yetkiyle çalışır: kümeye <b>hiçbir şey yazmaz</b>. Nasıl karar verdiğini "Nöbetçinin beyni" sekmesinde adım adım görebilirsin.`},
+  alertmanager: {t: "Alertmanager", c: "#c4b5fd", g: "am", d: "Prometheus'taki sabit eşikli alarm kurallarının (ör. \"CPU > %90, 5 dk\") ürettiği uyarıları gruplayıp e-posta/Slack'e gönderir. Nöbetçi benzer bir işi sabit eşik yerine her serinin kendi normaline göre yapıyor."},
+  grafana: {t: "Grafana", c: "#c4b5fd", g: "graf", d: "Prometheus'taki ölçümleri panolarda çizen arayüz. Nöbetçinin /metrics çıktısı da Grafana'da çizilebilir."},
+  llm: {t: "Yerel LLM", c: "#fbbf24", g: "llm", d: "Ollama gibi bir model sunucusu. Nöbetçi olayları ona özetlettirebilir; karar vermez, yalnızca anlatır."},
+  ingress: {t: "Ingress denetleyicisi", c: "#67e8f9", g: "ing", d: "Dışarıdan gelen HTTP isteklerini alan adı ve yola göre doğru Service'e yönlendiren ters vekil (nginx, traefik)."},
+  external: {t: "Dış dünya", c: "#67e8f9", d: `Küme dışındaki kullanıcılar. <b>NodePort</b> ya da <b>LoadBalancer</b> türündeki Service'ler veya bir Ingress üzerinden içeri girerler. ClusterIP türündeki Service'lere dışarıdan ulaşılamaz.`},
+  queue: {t: "Zamanlayıcı kuyruğu", c: "#94a3b8", d: `Henüz bir node'a yerleştirilmemiş (<b>Pending</b>) pod'lar. Scheduler her biri için uygun node arar; bulamazsa pod burada bekler ve olaylarda <span class="mono">FailedScheduling</span> nedeni yazar.`},
+};
+const ROLES = [
+  [/^kube-apiserver/, "apiserver"], [/^etcd/, "etcd"], [/^kube-scheduler/, "scheduler"], [/^kube-controller-manager/, "controller"],
+  [/^coredns/, "coredns"], [/^kube-proxy/, "proxy"], [/^(kindnet|calico|cilium|flannel|weave|kube-flannel)/, "cni"],
+  [/local-path-provisioner|csi-|provisioner/, "storage"], [/kube-state-metrics/, "ksm"], [/node-exporter/, "exporter"],
+  [/alertmanager/, "alertmanager"], [/^grafana|-grafana-/, "grafana"], [/^ollama/, "llm"], [/ingress|traefik/, "ingress"],
+];
+function role(p) {
+  if (p.ns === "nobetci" && /^nobetci/.test(p.name)) return "nobetci";
+  for (const [rx, k] of ROLES) if (rx.test(p.name)) return k;
+  if (/prometheus/.test(p.name) && !/pushgateway|operator|adapter|blackbox/.test(p.name)) return "prometheus";
+  return null;
+}
+const SYS_NS = /^(kube-|local-path-storage$)/;
+const isSys = (ns) => SYS_NS.test(ns);
+
+// durum: renk sınıfı + açıklama
+const ST = {
+  Running: ["ok", "Çalışıyor: konteynerler başladı ve hazır."],
+  NotReady: ["warn", "Çalışıyor ama hazır değil: readiness kontrolünü geçemiyor. Service bu pod'a trafik göndermez."],
+  Pending: ["info", "Bekliyor: henüz bir node'a yerleştirilmedi (kaynak yetersiz, PVC bekliyor ya da node seçici uyuşmuyor)."],
+  ContainerCreating: ["info", "Node'a yerleşti; imaj çekiliyor ve konteyner hazırlanıyor."],
+  CrashLoopBackOff: ["crit", "Konteyner açılıp çöküyor; kubelet her denemede biraz daha uzun bekleyerek (10 sn, 20 sn, 40 sn … 5 dk) yeniden başlatıyor."],
+  OOMKilled: ["crit", "Konteyner bellek limitini aştı ve Linux çekirdeği tarafından öldürüldü."],
+  Error: ["crit", "Konteyner hata koduyla çıktı."],
+  ImagePullBackOff: ["crit", "İmaj çekilemiyor (yanlış ad/etiket, erişim yetkisi yok ya da kayıt defterine ulaşılamıyor); bekleyerek yeniden deneniyor."],
+  ErrImagePull: ["crit", "İmaj çekme denemesi başarısız oldu."],
+  CreateContainerConfigError: ["crit", "Konteyner yapılandırması hatalı: genelde eksik bir Secret ya da ConfigMap."],
+  Terminating: ["info", "Kapatılıyor: konteynerlere SIGTERM gönderildi, kapanma süresi (varsayılan 30 sn) bekleniyor."],
+  Succeeded: ["info", "Görevini bitirip başarıyla çıktı (Job pod'ları)."],
+  Completed: ["info", "Görevini bitirip başarıyla çıktı (Job pod'ları)."],
+  Failed: ["crit", "Bütün konteynerler çıktı, en az biri hatayla."],
+  Evicted: ["warn", "Node kaynak sıkıntısına düştüğü için kubelet pod'u tahliye etti."],
+  Unknown: ["info", "Durum bilinmiyor; node ile iletişim kopmuş olabilir."],
+};
+const stc = (s) => (ST[s] || ["info"])[0];
+const QOS = {
+  Guaranteed: "Guaranteed: istek = limit. Node sıkışınca en son bunlar tahliye edilir.",
+  Burstable: "Burstable: isteği var ama limiti daha yüksek ya da yok. Sıkışmada ikinci sırada tahliye edilir.",
+  BestEffort: "BestEffort: hiç istek/limit yok. Node sıkışınca ilk bunlar tahliye edilir.",
+};
+// Kubernetes olay nedenleri (alttaki şerit)
+const REASON = {
+  Scheduled: "Scheduler pod için bir node seçti.", FailedScheduling: "Scheduler uygun node bulamadı (kaynak, taint, affinity).",
+  Pulling: "kubelet imajı indiriyor.", Pulled: "İmaj hazır (indirildi ya da zaten vardı).", Created: "Konteyner oluşturuldu.",
+  Started: "Konteyner başlatıldı.", Killing: "Konteyner durduruluyor (silme, güncelleme ya da sağlık kontrolü yüzünden).",
+  BackOff: "Konteyner çöktü; kubelet artan aralıklarla yeniden deniyor (CrashLoopBackOff).",
+  Unhealthy: "Liveness/readiness kontrolü başarısız oldu.", OOMKilling: "Çekirdek, bellek limitini aşan bir süreci öldürdü.",
+  SuccessfulCreate: "Denetleyici (ReplicaSet/Job…) yeni bir pod yarattı.", SuccessfulDelete: "Denetleyici fazla pod'u sildi.",
+  ScalingReplicaSet: "Deployment kopya sayısını değiştirdi (ölçekleme ya da sürüm geçişi).",
+  FailedMount: "Disk/volume bağlanamadı.", Evicted: "Kaynak sıkıntısı nedeniyle pod tahliye edildi.",
+  NodeReady: "Node hazır.", NodeNotReady: "Node sağlık bildirmiyor.", RegisteredNode: "Node kümeye kaydoldu.",
+  Starting: "Bileşen başlıyor.", SandboxChanged: "Pod'un ağ kutusu yeniden yaratıldı; konteynerler yeniden başlayacak.",
+  ErrImagePull: "İmaj çekilemedi.", Failed: "Bir işlem başarısız oldu (genelde imaj çekme).", Preempted: "Daha öncelikli bir pod için yer açmak üzere çıkarıldı.",
+  Completed: "İş tamamlandı.", SawCompletedJob: "CronJob tamamlanan işi gördü.", LeaderElection: "Bileşen lider seçildi (aynı anda tek kopya iş yapsın diye).",
+  ProvisioningSucceeded: "İstenen kalıcı disk oluşturuldu.", EnsuringLoadBalancer: "Dış yük dengeleyici hazırlanıyor.",
+};
+const SIGNALS = [
+  {k: "cpu", sig: "pod_cpu", t: "CPU", unit: "cores", min: 0.1},
+  {k: "mem", sig: "pod_mem", t: "Bellek", unit: "bytes", min: 64 * MiB},
+  {k: "rx", sig: "pod_net_rx", t: "Gelen ağ", unit: "bps", min: 100e3},
+  {k: "tx", sig: "pod_net_tx", t: "Giden ağ", unit: "bps", min: 100e3},
+];
+const NS_FIXED = {"kube-system": "#64748b", "monitoring": "#c4b5fd", "nobetci": "#fbbf24", "local-path-storage": "#64748b", "kube-public": "#64748b", "kube-node-lease": "#64748b", "default": "#94a3b8"};
+const NS_PAL = ["#2dd4bf", "#38bdf8", "#f472b6", "#a3e635", "#fb923c", "#818cf8", "#22d3ee", "#e879f9", "#facc15"];
+function nsColor(ns) {
+  if (NS_FIXED[ns]) return NS_FIXED[ns];
+  let h = 0;
+  for (const ch of ns) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return NS_PAL[h % NS_PAL.length];
+}
+const shortName = (p) => {
+  const r = role(p);
+  if (r && G[r].g) return G[r].g;
+  const w = p.workload?.name || p.name;
+  return w.length > 10 ? w.slice(0, 9) + "…" : w;
+};
+
+/* ============================================================== durum ve veri */
+const S = {
+  topo: null, simT: null, cycle: -1, cycleAt: 0, sel: null, hover: null, hist: [],
+  layers: Object.assign({traffic: true, metrics: true, owners: false, heat: true}, store("kesif.layers") || {}),
+  showSys: store("kesif.sys") ?? true, tab: "map",
+  ents: new Map(), vis: new Map(), edges: [], bounds: null, special: {},
+  cam: {x: 0, y: 0, k: 1}, camT: null, userCam: false,
+  parts: [], acc: new Map(), sim: null, tour: null, t: 0, rings: [], nextScrape: 2,
+  seriesCache: new Map(), evSeen: new Set(), catalog: null, ghosts: new Map(),
+};
+const entOf = (id) => S.ents.get(id) || S.ghosts.get(id);
+const T = () => S.simT || S.topo;
+let C = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["page", "page2", "surface", "raised", "ink", "ink2", "muted", "line", "line2", "node", "node2", "dot", "ok", "warn", "crit", "info", "flow", "metric", "brain", "up", "down"])
+    C[k] = cs.getPropertyValue("--" + k).trim();
+  C.dark = document.documentElement.dataset.theme !== "light";
+}
+const alpha = (hex, a) => {
+  if (!hex || hex[0] !== "#") return hex;
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+};
+const statusColor = (s) => ({ok: C.ok, warn: C.warn, crit: C.crit, info: C.muted})[stc(s)] || C.muted;
+
+async function getJSON(url) {
+  const r = await fetch(url, {cache: "no-store"});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function loadTopo() {
+  try {
+    const t = await getJSON("/api/topoloji");
+    S.topo = t;
+    $("#live").classList.remove("down");
+    $("#cluster").textContent = t.cluster || "küme";
+    if (t.cycle !== S.cycle) {
+      if (S.cycle >= 0) onCycle(t);
+      S.cycle = t.cycle; S.cycleAt = Date.now();
+    }
+    if (!S.sim) { layout(); refreshSide(); }
+    ticker(t.events);
+    if (S.tab === "brain") renderBrain();
+    if (S.tab === "metrics" && !$("#mNow").childElementCount) renderMetrics();
+    $("#empty").style.display = t.pods.length ? "none" : "grid";
+    $("#empty").textContent = t.ready ? "Kümede pod görünmüyor." : "nöbetçi ilk ölçüm turunu yapıyor…";
+  } catch (e) {
+    $("#live").classList.add("down");
+    $("#liveT").textContent = "bağlantı yok";
+  }
+}
+async function ping() {
+  try {
+    const p = await getJSON("/api/ping");
+    if (p.cycle !== S.cycle && S.cycle >= 0) loadTopo();
+  } catch { $("#live").classList.add("down"); }
+  const s = Math.round((Date.now() - S.cycleAt) / 1000);
+  if (S.topo) $("#liveT").textContent = `canlı · tur #${S.cycle} · ${s < 5 ? "şimdi" : s + " sn önce"}`;
+}
+
+/* ============================================================== yerleşim
+   Dünya koordinatları: node'lar yan yana; içlerinde namespace kutuları, kutularda pod'lar.
+   Service'ler node'ların üstünde bir şeritte, bağlandıkları pod'ların hizasında durur. */
+const CELL = 62, NSP = 14, NSH = 30, NP = 22, NH = 134, GAP = 100, SVC_Y = -130;
+const nsRank = (ns) => ns === "default" ? 1 : ns === "monitoring" ? 2 : ns === "nobetci" ? 3 : isSys(ns) ? 4 : 0;
+
+function layout() {
+  const t = T();
+  if (!t) return;
+  const ents = new Map(), edges = [], put = (e) => (ents.set(e.id, e), e);
+  const pods = t.pods.filter((p) => S.showSys || !isSys(p.ns));
+  const maxMem = Math.max(128 * MiB, ...pods.map((p) => p.mem || 0));
+  const radius = (p) => p.mem ? 11 + 11 * Math.sqrt(p.mem / maxMem) : 14;
+  const nodes = [...t.nodes].sort((a, b) => (b.roles.includes("control-plane") - a.roles.includes("control-plane")) || a.name.localeCompare(b.name));
+  const per = new Map(nodes.map((n) => [n.name, []]));
+  const queue = [];
+  for (const p of pods) (p.node && per.has(p.node) ? per.get(p.node) : queue).push(p);
+  const order = (a, b) => (a.workload?.name || "").localeCompare(b.workload?.name || "") || a.name.localeCompare(b.name);
+  const podEnt = (p, x, y) => put({id: `p:${p.ns}/${p.name}`, type: "pod", x, y, r: radius(p), data: p});
+
+  let x = 0;
+  if (queue.length) {
+    const cols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(queue.length)))), rows = Math.ceil(queue.length / cols);
+    const w = cols * CELL + 2 * NP, h = 70 + rows * CELL + NP;
+    put({id: "q:", type: "queue", x, y: 0, w, h, data: {count: queue.length}});
+    queue.sort(order).forEach((p, i) => podEnt(p, x + NP + (i % cols) * CELL + CELL / 2, 70 + Math.floor(i / cols) * CELL + CELL / 2));
+    x += w + GAP;
+  }
+  S.special.spawn = {x: x - GAP / 2, y: NH};
+  for (const n of nodes) {
+    const groups = new Map();
+    for (const p of per.get(n.name)) (groups.get(p.ns) || groups.set(p.ns, []).get(p.ns)).push(p);
+    const blocks = [...groups].sort((a, b) => nsRank(a[0]) - nsRank(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]))
+      .map(([ns, ps]) => {
+        const cols = Math.min(6, Math.max(1, Math.ceil(Math.sqrt(ps.length * 1.5))));
+        return {ns, ps: ps.sort(order), cols, w: Math.max(cols * CELL, 120) + 2 * NSP, h: NSH + Math.ceil(ps.length / cols) * CELL + NSP - 8};
+      });
+    const area = blocks.reduce((s, b) => s + (b.w + 14) * (b.h + 14), 0);
+    const W = Math.max(clamp(Math.sqrt(area) * 1.5, 480, 1250), ...blocks.map((b) => b.w));
+    let cx = 0, cy = 0, rowH = 0, used = 0;
+    for (const b of blocks) {
+      if (cx > 0 && cx + b.w > W) { cx = 0; cy += rowH + 14; rowH = 0; }
+      b.x = cx; b.y = cy; cx += b.w + 14; rowH = Math.max(rowH, b.h); used = Math.max(used, cx - 14);
+    }
+    const nw = Math.max(used, 580) + 2 * NP, nh = NH + cy + rowH + NP;
+    put({id: `n:${n.name}`, type: "node", x, y: 0, w: nw, h: nh, data: n});
+    put({id: `c:${n.name}/kubelet`, type: "comp", kind: "kubelet", x: x + NP, y: 92, w: 118, h: 24, data: n});
+    put({id: `c:${n.name}/runtime`, type: "comp", kind: "runtime", x: x + NP + 126, y: 92, w: 118, h: 24, data: n});
+    for (const b of blocks) {
+      const bx = x + NP + b.x, by = NH + b.y;
+      put({id: `ns:${n.name}/${b.ns}`, type: "ns", x: bx, y: by, w: b.w, h: b.h, data: {ns: b.ns, node: n.name, count: b.ps.length}});
+      b.ps.forEach((p, i) => podEnt(p, bx + NSP + (i % b.cols) * CELL + CELL / 2, by + NSH + Math.floor(i / b.cols) * CELL + CELL / 2 - 2));
+    }
+    x += nw + GAP;
+  }
+
+  // özel roller: ölçüm yolu ve kontrol düzlemi
+  const find = (r) => { const es = [...ents.values()].filter((e) => e.type === "pod" && role(e.data) === r); return es.find((e) => /server/.test(e.data.name)) || es[0]; };
+  const sp = S.special = {spawn: S.special.spawn, prom: find("prometheus"), ksm: find("ksm"), api: find("apiserver"), nob: find("nobetci")};
+
+  // service şeridi
+  const svcs = [];
+  for (const s of t.services) {
+    if (!S.showSys && isSys(s.ns)) continue;
+    let targets = s.pods.map((n) => ents.get(`p:${s.ns}/${n}`)).filter(Boolean);
+    if (s.ns === "default" && s.name === "kubernetes" && sp.api) targets = [sp.api];
+    let tx;
+    if (targets.length) tx = targets.reduce((a, e) => a + e.x, 0) / targets.length;
+    else {
+      const blk = [...ents.values()].find((e) => e.type === "ns" && e.data.ns === s.ns);
+      if (!blk) continue;
+      tx = blk.x + blk.w / 2;
+    }
+    svcs.push({s, targets, tx});
+  }
+  svcs.sort((a, b) => a.tx - b.tx);
+  const SP = 92, last = [-1e9, -1e9];
+  for (const v of svcs) {
+    let row = v.tx - last[0] >= SP ? 0 : v.tx - last[1] >= SP ? 1 : last[0] <= last[1] ? 0 : 1;
+    const sx = Math.max(v.tx, last[row] + SP);
+    last[row] = sx;
+    const e = put({id: `s:${v.s.ns}/${v.s.name}`, type: "svc", x: sx, y: SVC_Y - row * 74, r: 18, data: v.s, nopods: !v.targets.length});
+    for (const tg of v.targets) edges.push({k: "svc", a: e.id, b: tg.id, ready: v.s.name === "kubernetes" || tg.data.ready !== false});
+  }
+  // dış dünya
+  const xs = [...ents.values()].filter((e) => e.type === "svc").map((e) => e.x);
+  const ext = put({id: "x:", type: "ext", x: xs.length ? Math.min(...xs) - 150 : -150, y: SVC_Y - 150, r: 26, data: {}});
+  for (const e of ents.values()) {
+    if (e.type !== "svc") continue;
+    if (["NodePort", "LoadBalancer"].includes(e.data.type)) edges.push({k: "ext", a: ext.id, b: e.id, ready: true});
+    if (e.data.ns === "nobetci" && e.data.name === "nobetci") edges.push({k: "pf", a: ext.id, b: e.id, ready: true});
+  }
+  // ölçüm yolu: kubelet(cAdvisor) → Prometheus, API server → kube-state-metrics → Prometheus → nöbetçi
+  if (sp.prom) {
+    for (const n of nodes) edges.push({k: "m", a: `c:${n.name}/kubelet`, b: sp.prom.id});
+    if (sp.ksm) edges.push({k: "m", a: sp.ksm.id, b: sp.prom.id});
+    if (sp.api && sp.ksm) edges.push({k: "m", a: sp.api.id, b: sp.ksm.id});
+    if (sp.nob) edges.push({k: "m2", a: sp.prom.id, b: sp.nob.id});
+  }
+
+  // sınırlar
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const e of ents.values()) {
+    const w = e.w ?? e.r * 2, h = e.h ?? e.r * 2, ex = e.w ? e.x : e.x - e.r, ey = e.h ? e.y : e.y - e.r;
+    x0 = Math.min(x0, ex); y0 = Math.min(y0, ey); x1 = Math.max(x1, ex + w); y1 = Math.max(y1, ey + h + (e.type === "svc" ? 30 : 0));
+  }
+  S.bounds = {x0, y0: y0 - 20, x1, y1};
+  for (const [id, e] of S.ents) if (!ents.has(id)) S.ghosts.set(id, e);
+  for (const id of ents.keys()) S.ghosts.delete(id);
+  S.ents = ents; S.edges = edges;
+
+  // görünür hâller: var olan yumuşakça hedefe kayar, yeni gelen belirir, giden söner
+  for (const e of ents.values()) {
+    const v = S.vis.get(e.id);
+    const tgt = {tx: e.x, ty: e.y, tr: e.r ?? 0, tw: e.w ?? 0, th: e.h ?? 0, ta: 1};
+    if (v) Object.assign(v, tgt, {dead: false});
+    else {
+      const born = e.type === "pod" && S.sim?.spawnFrom?.has(e.id) ? S.special.spawn : null;
+      S.vis.set(e.id, {...tgt, x: born ? born.x : e.x, y: born ? born.y : e.y, r: e.type === "pod" && !S.firstLayoutDone ? e.r : 0,
+                       w: e.w ?? 0, h: e.h ?? 0, a: S.firstLayoutDone ? 0 : 1});
+    }
+  }
+  for (const [id, v] of S.vis) if (!ents.has(id)) { v.ta = 0; v.tr = 0; v.dead = true; }
+  if (!S.userCam && !S.tour) fit(!S.firstLayoutDone);
+  S.firstLayoutDone = true;
+  if (S.sel && !ents.has(S.sel) && !S.sel.startsWith("@")) S.sel = null;
+}
+
+/* ============================================================== kamera */
+const cv = $("#map"), cx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+}
+new ResizeObserver(() => { resize(); if (!S.userCam) fit(true); }).observe($("#stage"));
+function camFor(b, pad = 70) {
+  const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+  const top = 60, bottom = 64;
+  const k = clamp(Math.min((W - 2 * pad) / bw, (H - top - bottom - pad) / bh), 0.2, 2.2);
+  return {k, x: W / 2 - (b.x0 + bw / 2) * k, y: top + (H - top - bottom) / 2 - (b.y0 + bh / 2) * k};
+}
+function fit(instant) {
+  if (!S.bounds || !W) return;
+  const c = camFor(S.bounds);
+  if (instant) { S.cam = c; S.camT = null; } else S.camT = c;
+}
+function focusOn(ids, pad = 120, maxK = 1.8) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const id of ids) {
+    const e = S.ents.get(id);
+    if (!e) continue;
+    const ex = e.w ? e.x : e.x - e.r, ey = e.h ? e.y : e.y - e.r, w = e.w ?? e.r * 2, h = e.h ?? e.r * 2;
+    x0 = Math.min(x0, ex); y0 = Math.min(y0, ey); x1 = Math.max(x1, ex + w); y1 = Math.max(y1, ey + h);
+  }
+  if (x0 > x1) return;
+  const c = camFor({x0, y0, x1, y1}, pad);
+  c.k = Math.min(c.k, maxK);
+  const cxw = (x0 + x1) / 2, cyw = (y0 + y1) / 2;
+  const top = S.sim ? 190 : 60;
+  c.k = Math.min(c.k, (H - top - 80) / Math.max(1, y1 - y0 + 2 * 40));
+  c.x = W / 2 - cxw * c.k; c.y = top + (H - top - 64) / 2 - cyw * c.k;
+  S.camT = c; S.userCam = true;
+}
+const toWorld = (sx, sy) => ({x: (sx - S.cam.x) / S.cam.k, y: (sy - S.cam.y) / S.cam.k});
+
+/* ============================================================== çizim */
+function rr(x, y, w, h, r) {
+  cx.beginPath();
+  cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
+}
+function text(s, x, y, size, color, weight = 500, align = "left", mono = false) {
+  if (size * S.cam.k < 5.5) return;
+  cx.font = `${weight} ${size}px ${mono ? "ui-monospace,Menlo,Consolas,monospace" : "system-ui,-apple-system,Segoe UI,sans-serif"}`;
+  cx.fillStyle = color; cx.textAlign = align; cx.textBaseline = "middle";
+  cx.fillText(s, x, y);
+}
+function anchor(id, end, kind) {
+  const v = S.vis.get(id), e = S.ents.get(id);
+  if (!v || !e) return null;
+  if (e.type === "svc") return {x: v.x, y: v.y + (end === "a" ? v.r + 3 : -v.r - 3)};
+  if (e.type === "pod") return {x: v.x, y: v.y - v.r - 3};
+  if (e.type === "comp") return {x: v.x + v.w / 2, y: v.y};
+  if (e.type === "ext") return {x: v.x + (kind === "pf" ? v.r * 0.7 : 0), y: v.y + v.r * 0.7};
+  return {x: v.x, y: v.y};
+}
+function ctrl(a, b, k) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  if (k === "m" || k === "m2" || k === "scr") {
+    const top = Math.min(a.y, b.y) - (k === "scr" ? 18 + Math.abs(dx) * 0.08 : 46 + Math.abs(dx) * 0.16);
+    return [a.x + dx * 0.12, top, b.x - dx * 0.12, top];
+  }
+  return [a.x, a.y + dy * 0.55, b.x, b.y - dy * 0.55];
+}
+function bez(a, c, b, t) {
+  const u = 1 - t;
+  return {x: u * u * u * a.x + 3 * u * u * t * c[0] + 3 * u * t * t * c[2] + t * t * t * b.x,
+          y: u * u * u * a.y + 3 * u * u * t * c[1] + 3 * u * t * t * c[3] + t * t * t * b.y};
+}
+function edgePath(a, c, b) { cx.beginPath(); cx.moveTo(a.x, a.y); cx.bezierCurveTo(c[0], c[1], c[2], c[3], b.x, b.y); }
+
+function maxZ(p) {
+  let best = 0;
+  for (const s of SIGNALS) { const z = p[s.k + "_z"]; if (z != null && Math.abs(z) > Math.abs(best)) best = z; }
+  return best;
+}
+function related(id) {
+  const set = new Set([id]), e = S.ents.get(id);
+  if (!e) return set;
+  const add = (x) => x && set.add(x);
+  if (e.type === "pod") {
+    const p = e.data;
+    add(`n:${p.node}`); add(`ns:${p.node}/${p.ns}`);
+    for (const ed of S.edges) if (ed.b === id || ed.a === id) { add(ed.a); add(ed.b); }
+    for (const o of S.ents.values()) if (o.type === "pod" && o.data.ns === p.ns && o.data.workload?.name === p.workload?.name) add(o.id);
+  } else if (e.type === "svc") {
+    for (const ed of S.edges) if (ed.a === id || ed.b === id) { add(ed.a); add(ed.b); }
+  } else if (e.type === "node" || e.type === "ns" || e.type === "queue") {
+    for (const o of S.ents.values()) if (o.type === "pod" && (e.type === "queue" ? !S.ents.get(`n:${o.data.node}`) : o.data.node === (e.data.node || e.data.name) && (e.type === "node" || o.data.ns === e.data.ns))) add(o.id);
+    if (e.type === "node") for (const o of S.ents.keys()) if (o.startsWith(`ns:${e.data.name}/`) || o.startsWith(`c:${e.data.name}/`)) add(o);
+    if (e.type === "ns") add(`n:${e.data.node}`);
+  } else if (e.type === "comp") {
+    add(`n:${e.data.name}`);
+    if (e.kind === "kubelet") { for (const ed of S.edges) if (ed.k.startsWith("m")) { add(ed.a); add(ed.b); } }
+    for (const o of S.ents.values()) if (o.type === "pod" && o.data.node === e.data.name) add(o.id);
+  } else if (e.type === "ext") {
+    for (const ed of S.edges) if (ed.a === id) { add(ed.b); for (const e2 of S.edges) if (e2.a === ed.b) add(e2.b); }
+  }
+  return set;
+}
+
+function drawNode(e, v, A) {
+  const n = e.data, x = v.x, y = v.y, w = v.w, h = v.h;
+  cx.save();
+  cx.globalAlpha = A * v.a;
+  cx.shadowColor = C.dark ? "rgba(0,0,0,.5)" : "rgba(20,40,80,.12)"; cx.shadowBlur = 30; cx.shadowOffsetY = 10;
+  rr(x, y, w, h, 20);
+  const g = cx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, C.node2); g.addColorStop(1, C.node);
+  cx.fillStyle = g; cx.fill();
+  cx.shadowColor = "transparent";
+  cx.lineWidth = 1.4; cx.strokeStyle = n.ready ? C.line2 : C.crit;
+  if (!n.ready) cx.setLineDash([8, 6]);
+  cx.stroke(); cx.setLineDash([]);
+  // başlık
+  const cp = n.roles.includes("control-plane");
+  cx.fillStyle = n.ready ? C.ok : C.crit;
+  cx.beginPath(); cx.arc(x + NP + 5, y + 26, 5, 0, 7); cx.fill();
+  text(n.name, x + NP + 18, y + 26, 17, C.ink, 700);
+  cx.font = "700 17px system-ui"; const nw = cx.measureText(n.name).width;
+  text(cp ? "CONTROL-PLANE" : (n.roles[0] || "WORKER").toUpperCase(), x + NP + 30 + nw, y + 27, 10, cp ? C.brain : C.muted, 700);
+  text(`${n.ready ? "Ready" : "NotReady"}${n.pressure.length ? " · " + n.pressure.join(", ") : ""}`, x + w - NP, y + 26, 12, n.ready && !n.pressure.length ? C.ok : C.crit, 600, "right");
+  // kaynak çubukları
+  const bar = (yy, label, used, cap, f, col) => {
+    text(label, x + NP, yy, 10.5, C.muted, 700);
+    const bx = x + NP + 50, bw = 170;
+    rr(bx, yy - 4.5, bw, 9, 4.5); cx.fillStyle = C.line; cx.fill();
+    const frac = cap ? clamp(used / cap, 0, 1) : 0;
+    if (frac > 0) { rr(bx, yy - 4.5, Math.max(9, bw * frac), 9, 4.5); cx.fillStyle = frac > 0.85 ? C.crit : frac > 0.65 ? C.warn : col; cx.fill(); }
+    text(cap ? `${f(used)} / ${f(cap)}` : f(used), bx + bw + 10, yy, 11, C.ink2, 500, "left", true);
+  };
+  bar(y + 54, "CPU", n.cpu, n.cpu_alloc || n.cpu_cap, fmt.cores, C.flow);
+  bar(y + 73, "BELLEK", n.mem, n.mem_alloc || n.mem_cap, fmt.bytes, C.metric);
+  const np = [...S.ents.values()].filter((o) => o.type === "pod" && o.data.node === n.name).length;
+  text(`${np}${n.pods_cap ? " / " + n.pods_cap : ""} pod`, x + w - NP, y + 54, 11, C.ink2, 600, "right", true);
+  text([n.os, n.ip].filter(Boolean).join(" · "), x + w - NP, y + 104, 10.5, C.muted, 500, "right");
+  if (n.incident) { cx.fillStyle = n.incident.severity >= 3 ? C.crit : C.warn; cx.beginPath(); cx.arc(x + w - 8, y + 8, 9, 0, 7); cx.fill(); text("!", x + w - 8, y + 8.5, 12, "#fff", 800, "center"); }
+  cx.restore();
+}
+function drawComp(e, v, A) {
+  cx.save(); cx.globalAlpha = A * v.a;
+  rr(v.x, v.y, v.w, v.h, 7);
+  cx.fillStyle = C.raised; cx.fill();
+  cx.strokeStyle = e.kind === "kubelet" && S.layers.metrics ? alpha(C.metric, 0.7) : C.line2; cx.lineWidth = 1; cx.stroke();
+  const rt = (e.data.runtime || "containerd").replace("://", " ");
+  text(e.kind === "kubelet" ? "kubelet · cAdvisor" : rt.length > 18 ? rt.slice(0, 17) + "…" : rt, v.x + v.w / 2, v.y + v.h / 2 + 0.5, 10.5, C.ink2, 600, "center", true);
+  cx.restore();
+}
+function drawNs(e, v, A) {
+  const col = nsColor(e.data.ns);
+  cx.save(); cx.globalAlpha = A * v.a;
+  rr(v.x, v.y, v.w, v.h, 14);
+  cx.fillStyle = alpha(col, C.dark ? 0.045 : 0.06); cx.fill();
+  cx.strokeStyle = alpha(col, 0.32); cx.lineWidth = 1; cx.stroke();
+  text(e.data.ns, v.x + 12, v.y + 15, 11.5, col, 700);
+  cx.font = "700 11.5px system-ui";
+  text(String(e.data.count), v.x + 20 + cx.measureText(e.data.ns).width, v.y + 15, 10.5, C.muted, 600);
+  cx.restore();
+}
+function drawQueue(e, v, A) {
+  cx.save(); cx.globalAlpha = A * v.a;
+  rr(v.x, v.y, v.w, v.h, 18);
+  cx.fillStyle = alpha(C.warn, 0.05); cx.fill();
+  cx.setLineDash([7, 6]); cx.lineDashOffset = -S.t * 12; cx.strokeStyle = alpha(C.warn, 0.6); cx.lineWidth = 1.4; cx.stroke(); cx.setLineDash([]);
+  text("Zamanlayıcı kuyruğu", v.x + NP, v.y + 24, 14, C.ink, 700);
+  text("henüz node'a yerleşmedi (Pending)", v.x + NP, v.y + 44, 10.5, C.muted);
+  cx.restore();
+}
+function drawPod(e, v, A) {
+  const p = e.data, x = v.x, y = v.y, r = Math.max(0.1, v.r), col = nsColor(p.ns), sc = stc(p.status);
+  cx.save(); cx.globalAlpha = A * v.a;
+  // sapma parıltısı
+  const z = maxZ(p), thr = T()?.detector?.z || 5;
+  if (S.layers.heat && Math.abs(z) >= 2) {
+    const s = clamp(Math.abs(z) / thr, 0.3, 1.6), pul = 0.5 + 0.5 * Math.sin(S.t * (Math.abs(z) >= thr ? 5 : 2.2));
+    const g = cx.createRadialGradient(x, y, r * 0.6, x, y, r + 10 + 14 * s);
+    const c = z > 0 ? C.up : C.down;
+    g.addColorStop(0, alpha(c, 0.55 * s * (0.6 + 0.4 * pul))); g.addColorStop(1, alpha(c, 0));
+    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r + 10 + 14 * s, 0, 7); cx.fill();
+  }
+  // gövde
+  const g = cx.createRadialGradient(x - r * 0.35, y - r * 0.45, r * 0.1, x, y, r);
+  g.addColorStop(0, alpha(col, C.dark ? 0.34 : 0.28)); g.addColorStop(1, alpha(col, C.dark ? 0.1 : 0.12));
+  cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill();
+  // bellek / limit: sıvı seviyesi
+  const lim = p.mem_limit || p.lim_mem;
+  if (p.mem && lim) {
+    const f = clamp(p.mem / lim, 0, 1), level = y + r - 2 * r * f;
+    cx.save(); cx.beginPath(); cx.arc(x, y, Math.max(0, r - 1.5), 0, 7); cx.clip();
+    cx.beginPath(); cx.moveTo(x - r, y + r);
+    for (let i = 0; i <= 16; i++) { const xx = x - r + (2 * r * i) / 16; cx.lineTo(xx, level + Math.sin(S.t * 2.4 + i * 0.8 + x) * Math.min(2.2, r * 0.12)); }
+    cx.lineTo(x + r, y + r); cx.closePath();
+    cx.fillStyle = alpha(f > 0.85 ? C.crit : f > 0.65 ? C.warn : col, 0.5); cx.fill();
+    cx.restore();
+  }
+  // kenar: durum
+  cx.lineWidth = 1.8;
+  if (sc === "crit") { cx.strokeStyle = C.crit; cx.lineWidth = 2 + 1.2 * (0.5 + 0.5 * Math.sin(S.t * 6)); }
+  else if (sc === "warn") cx.strokeStyle = C.warn;
+  else if (sc === "info" && p.status && p.status !== "Running") { cx.strokeStyle = C.muted; cx.setLineDash([4, 4]); cx.lineDashOffset = S.t * 10; }
+  else cx.strokeStyle = alpha(col, 0.95);
+  cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.stroke(); cx.setLineDash([]);
+  // CPU halkası (limit varsa limite, yoksa 1 çekirdeğe göre)
+  if (p.cpu != null && r > 4) {
+    const ref = p.lim_cpu || 1, f = clamp(p.cpu / ref, 0.01, 1);
+    cx.strokeStyle = alpha(C.ink, 0.12); cx.lineWidth = 2.4; cx.beginPath(); cx.arc(x, y, r + 4.5, 0, 7); cx.stroke();
+    cx.strokeStyle = f > 0.85 ? C.crit : C.flow; cx.lineCap = "round";
+    cx.beginPath(); cx.arc(x, y, r + 4.5, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); cx.stroke(); cx.lineCap = "butt";
+  }
+  // simge / ad
+  const rl = role(p);
+  if (rl && G[rl].g && r > 9) text(G[rl].g, x, y + 0.5, rl === "nobetci" ? 13 : 9.5, rl === "nobetci" ? C.brain : C.ink, 800, "center", true);
+  if (CELL * S.cam.k > 44) text(shortName(p), x, y + r + 14, 10.5, C.ink2, 500, "center");
+  // rozetler
+  if (p.incident) {
+    const bx = x + r * 0.75, by = y - r * 0.75;
+    cx.fillStyle = p.incident.severity >= 3 ? C.crit : p.incident.severity === 2 ? C.warn : C.info;
+    cx.beginPath(); cx.arc(bx, by, 7.5, 0, 7); cx.fill();
+    text("!", bx, by + 0.5, 10, p.incident.severity === 2 ? "#111" : "#fff", 800, "center");
+  }
+  if (p.restarts > 0) text(`↻${p.restarts}`, x + r * 0.9, y + r * 0.85, 9.5, C.warn, 700, "left", true);
+  cx.restore();
+}
+function hex(x, y, r) { cx.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; cx[i ? "lineTo" : "moveTo"](x + r * Math.cos(a), y + r * Math.sin(a)); } cx.closePath(); }
+function drawSvc(e, v, A) {
+  const s = e.data, r = Math.max(0.1, v.r);
+  cx.save(); cx.globalAlpha = A * v.a;
+  const g = cx.createRadialGradient(v.x, v.y, 2, v.x, v.y, r * 2.2);
+  g.addColorStop(0, alpha(C.flow, e.nopods ? 0.05 : 0.22)); g.addColorStop(1, alpha(C.flow, 0));
+  cx.fillStyle = g; cx.beginPath(); cx.arc(v.x, v.y, r * 2.2, 0, 7); cx.fill();
+  hex(v.x, v.y, r); cx.fillStyle = C.surface; cx.fill();
+  cx.lineWidth = 1.8; cx.strokeStyle = e.nopods ? C.warn : C.flow;
+  if (e.nopods) cx.setLineDash([4, 3]);
+  cx.stroke(); cx.setLineDash([]);
+  const tag = s.cluster_ip === "None" ? "HL" : {NodePort: "NP", LoadBalancer: "LB", ExternalName: "EN"}[s.type] || "IP";
+  text(tag, v.x, v.y + 0.5, 10, e.nopods ? C.warn : C.flow, 800, "center", true);
+  text(s.name.length > 16 ? s.name.slice(0, 15) + "…" : s.name, v.x, v.y + r + 13, 11, C.ink, 600, "center");
+  text(e.nopods ? "uç yok" : `${s.type === "ClusterIP" && s.cluster_ip === "None" ? "Headless" : s.type} · :${s.ports[0]?.port ?? ""}`, v.x, v.y + r + 26, 9.5, e.nopods ? C.warn : C.muted, 500, "center", true);
+  cx.restore();
+}
+function drawExt(e, v, A) {
+  cx.save(); cx.globalAlpha = A * v.a;
+  const r = Math.max(0.1, v.r);
+  const g = cx.createRadialGradient(v.x, v.y, 1, v.x, v.y, r * 2.4);
+  g.addColorStop(0, alpha(C.flow, 0.25)); g.addColorStop(1, alpha(C.flow, 0));
+  cx.fillStyle = g; cx.beginPath(); cx.arc(v.x, v.y, r * 2.4, 0, 7); cx.fill();
+  cx.strokeStyle = C.flow; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.arc(v.x, v.y, r, 0, 7); cx.stroke();
+  cx.beginPath(); cx.ellipse(v.x, v.y, r * 0.45, r, 0, 0, 7); cx.stroke();
+  cx.beginPath(); cx.moveTo(v.x - r, v.y); cx.lineTo(v.x + r, v.y); cx.stroke();
+  const spin = S.t * 0.6;
+  cx.beginPath(); cx.ellipse(v.x, v.y, Math.abs(Math.cos(spin)) * r, r, 0, 0, 7); cx.strokeStyle = alpha(C.flow, 0.4); cx.stroke();
+  text("Dış dünya", v.x, v.y + r + 15, 12, C.ink, 700, "center");
+  text("kullanıcılar · sen", v.x, v.y + r + 29, 10, C.muted, 500, "center");
+  cx.restore();
+}
+
+function drawEdges(rel) {
+  for (const ed of S.edges) {
+    const a = anchor(ed.a, "a", ed.k), b = anchor(ed.b, "b", ed.k);
+    if (!a || !b) continue;
+    const isM = ed.k === "m" || ed.k === "m2";
+    if (isM && !S.layers.metrics) continue;
+    if (!isM && !S.layers.traffic && ed.k !== "pf") continue;
+    const dim = rel && !(rel.has(ed.a) && rel.has(ed.b));
+    const va = S.vis.get(ed.a), vb = S.vis.get(ed.b);
+    cx.globalAlpha = (dim ? 0.12 : 1) * Math.min(va.a, vb.a);
+    edgePath(a, ctrl(a, b, ed.k), b);
+    if (isM) { cx.strokeStyle = alpha(ed.k === "m2" ? C.brain : C.metric, 0.45); cx.lineWidth = 1.6; cx.setLineDash([2, 5]); }
+    else if (ed.k === "pf") { cx.strokeStyle = alpha(C.brain, 0.45); cx.lineWidth = 1.2; cx.setLineDash([6, 6]); }
+    else if (!ed.ready) { cx.strokeStyle = alpha(C.crit, 0.7); cx.lineWidth = 1.4; cx.setLineDash([5, 5]); }
+    else { cx.strokeStyle = alpha(C.flow, C.dark ? 0.2 : 0.35); cx.lineWidth = 1.3; }
+    cx.stroke(); cx.setLineDash([]);
+  }
+  cx.globalAlpha = 1;
+}
+function drawOwners(rel) {
+  const groups = new Map();
+  for (const e of S.ents.values()) {
+    if (e.type !== "pod") continue;
+    const k = `${e.data.node}|${e.data.ns}|${e.data.workload?.kind}|${e.data.workload?.name}`;
+    (groups.get(k) || groups.set(k, []).get(k)).push(e);
+  }
+  const L = {Deployment: "D", StatefulSet: "SS", DaemonSet: "DS", Static: "ST", Job: "J", CronJob: "CJ", Pod: "P"};
+  for (const es of groups.values()) {
+    const vs = es.map((e) => S.vis.get(e.id)).filter(Boolean);
+    if (!vs.length) continue;
+    const dim = rel && !es.some((e) => rel.has(e.id));
+    cx.globalAlpha = dim ? 0.15 : 0.9;
+    cx.strokeStyle = alpha(C.ink2, 0.55); cx.lineWidth = 1.2;
+    for (let i = 1; i < vs.length; i++) { cx.beginPath(); cx.moveTo(vs[i - 1].x, vs[i - 1].y); cx.lineTo(vs[i].x, vs[i].y); cx.stroke(); }
+    const w = es[0].data.workload, f = vs[0];
+    const label = `${L[w?.kind] || "?"} ${w?.name || ""}${es.length > 1 ? " ×" + es.length : ""}`;
+    cx.font = "700 9.5px ui-monospace,Menlo,monospace";
+    const tw = cx.measureText(label).width + 10;
+    rr(f.x - tw / 2, f.y - f.r - 22, tw, 14, 7); cx.fillStyle = C.raised; cx.fill(); cx.strokeStyle = C.line2; cx.stroke();
+    text(label, f.x, f.y - f.r - 15, 9.5, C.ink2, 700, "center", true);
+  }
+  cx.globalAlpha = 1;
+}
+
+/* ---- parçacıklar: trafik (camgöbeği), ölçüm (mor), nöbetçi turu (kehribar) */
+function spawn(k, a, b, o = {}) { S.parts.push({k, a, b, t: -(o.delay || 0), dur: o.dur || 1.4, col: o.col || C.flow, size: o.size || 2.2, rev: !!o.rev, then: o.then}); }
+function trafficRate(ed) {
+  if (ed.k === "ext") return 0.9;
+  if (ed.k === "pf") return 0.35;
+  if (ed.k !== "svc" || !ed.ready) return 0;
+  const p = S.ents.get(ed.b)?.data;
+  const rx = p?.rx ?? 2e4;
+  return clamp(0.25 + Math.log10(1 + rx / 2e4) * 0.9, 0.2, 3.2);
+}
+function stepParticles(dt) {
+  if (S.layers.traffic) {
+    for (const ed of S.edges) {
+      if (ed.k === "m" || ed.k === "m2") continue;
+      const key = ed.a + ">" + ed.b, rate = trafficRate(ed);
+      if (!rate) continue;
+      let acc = (S.acc.get(key) || Math.random()) + rate * dt;
+      while (acc >= 1) {
+        acc -= 1;
+        if (ed.k === "pf") spawn(ed.k, ed.a, ed.b, {col: C.brain, dur: 2.2, size: 2});
+        else {
+          spawn(ed.k, ed.a, ed.b, {dur: 1.3 + Math.random() * 0.5});
+          if (ed.k === "svc" && Math.random() < 0.6) spawn(ed.k, ed.a, ed.b, {rev: true, dur: 1.6, size: 1.6, col: alpha(C.flow, 0.6)});
+        }
+      }
+      S.acc.set(key, acc);
+    }
+  }
+  if (S.layers.metrics && S.special.prom) {
+    S.nextScrape -= dt;
+    if (S.nextScrape <= 0) { S.nextScrape = 7; scrapeBurst(); }
+  }
+  S.parts = S.parts.filter((p) => (p.t += dt / p.dur) < 1);
+}
+function scrapeBurst() {
+  const sp = S.special, pods = [...S.ents.values()].filter((e) => e.type === "pod");
+  const sample = pods.length > 60 ? pods.filter(() => Math.random() < 60 / pods.length) : pods;
+  for (const e of sample) spawn("scr", e.id, `c:${e.data.node}/kubelet`, {col: C.metric, dur: 0.9, size: 1.7, delay: Math.random() * 0.4});
+  for (const ed of S.edges) if (ed.k === "m") for (let i = 0; i < 3; i++) spawn("m", ed.a, ed.b, {col: C.metric, dur: 1.2, delay: 1.1 + i * 0.18, size: 2.2});
+}
+function onCycle(t) {
+  const sp = S.special;
+  if (sp.prom && sp.nob) {
+    for (let i = 0; i < 9; i++) spawn("m2", sp.prom.id, sp.nob.id, {col: C.brain, dur: 1.3, delay: i * 0.12, size: 2.8});
+    setTimeout(() => S.rings.push({id: sp.nob.id, t0: S.t, col: C.brain}), 1500);
+  }
+  if (S.tab === "brain") playWave(t, false);
+}
+function drawParticles(rel) {
+  for (const p of S.parts) {
+    if (p.t < 0) continue;
+    const kind = p.k === "scr" ? "scr" : p.k;
+    const a = anchor(p.a, "a", kind), b = kind === "scr" ? (() => { const v = S.vis.get(p.b); return v && {x: v.x + v.w / 2, y: v.y + v.h}; })() : anchor(p.b, "b", kind);
+    if (!a || !b) continue;
+    const c = ctrl(a, b, kind), pt = bez(a, c, b, p.rev ? 1 - p.t : p.t);
+    const dim = rel && !(rel.has(p.a) || rel.has(p.b));
+    cx.globalAlpha = (dim ? 0.15 : 1) * Math.sin(Math.PI * clamp(p.t, 0, 1)) ** 0.4;
+    cx.fillStyle = p.col;
+    cx.beginPath(); cx.arc(pt.x, pt.y, p.size, 0, 7); cx.fill();
+    if (p.size > 2) { cx.globalAlpha *= 0.25; cx.beginPath(); cx.arc(pt.x, pt.y, p.size * 2.6, 0, 7); cx.fill(); }
+  }
+  cx.globalAlpha = 1;
+  S.rings = S.rings.filter((r) => S.t - r.t0 < 1.6);
+  for (const r of S.rings) {
+    const v = S.vis.get(r.id);
+    if (!v) continue;
+    const f = (S.t - r.t0) / 1.6;
+    cx.strokeStyle = alpha(r.col, 1 - f); cx.lineWidth = 2;
+    cx.beginPath(); cx.arc(v.x, v.y, v.r + 6 + f * 46, 0, 7); cx.stroke();
+  }
+}
+
+function draw(dt) {
+  if (!W) resize();
+  const f = 1 - Math.exp(-dt * 7);
+  if (S.camT) {
+    const g = 1 - Math.exp(-dt * 5);
+    for (const k of ["x", "y", "k"]) S.cam[k] = lerp(S.cam[k], S.camT[k], g);
+    if (Math.abs(S.cam.k - S.camT.k) < 1e-3 && Math.abs(S.cam.x - S.camT.x) < 0.5) S.camT = null;
+  }
+  for (const [id, v] of S.vis) {
+    v.x = lerp(v.x, v.tx, f); v.y = lerp(v.y, v.ty, f); v.r = lerp(v.r, v.tr, f);
+    v.w = lerp(v.w, v.tw, f); v.h = lerp(v.h, v.th, f); v.a = lerp(v.a, v.ta, f * 0.8);
+    if (v.dead && v.a < 0.02) { S.vis.delete(id); S.ghosts.delete(id); }
+  }
+  stepParticles(dt);
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  cx.clearRect(0, 0, W, H);
+  // nokta ızgarası
+  const sp = 28 * S.cam.k;
+  if (sp > 9) {
+    cx.fillStyle = C.dot;
+    const ox = ((S.cam.x % sp) + sp) % sp, oy = ((S.cam.y % sp) + sp) % sp;
+    for (let x = ox; x < W; x += sp) for (let y = oy; y < H; y += sp) cx.fillRect(x, y, 1.2, 1.2);
+  }
+  if (!S.topo) return;
+  cx.setTransform(DPR * S.cam.k, 0, 0, DPR * S.cam.k, DPR * S.cam.x, DPR * S.cam.y);
+  const focus = S.tour?.target || (S.sel && !S.sel.startsWith("@") ? S.sel : null) || null;
+  const rel = focus ? related(focus) : null;
+  const A = (id) => (rel && !rel.has(id) ? 0.22 : 1);
+  const byType = (t) => [...S.vis].filter(([id]) => entOf(id)?.type === t);
+  for (const [id, v] of byType("queue")) drawQueue(entOf(id), v, A(id));
+  for (const [id, v] of byType("node")) drawNode(entOf(id), v, A(id));
+  for (const [id, v] of byType("comp")) drawComp(entOf(id), v, A(id));
+  for (const [id, v] of byType("ns")) drawNs(entOf(id), v, A(id));
+  drawEdges(rel);
+  if (S.layers.owners) drawOwners(rel);
+  drawParticles(rel);
+  for (const [id, v] of byType("pod")) drawPod(entOf(id), v, A(id));
+  for (const [id, v] of byType("svc")) drawSvc(entOf(id), v, A(id));
+  const xv = S.vis.get("x:");
+  if (xv) drawExt(S.ents.get("x:"), xv, A("x:"));
+  // seçim halkası
+  const hl = [S.sel, S.hover].filter((id) => id && S.vis.has(id));
+  for (const id of hl) {
+    const v = S.vis.get(id), e = S.ents.get(id);
+    if (!e) continue;
+    cx.strokeStyle = id === S.sel ? C.ink : alpha(C.ink, 0.5); cx.lineWidth = 1.5 / S.cam.k * 1.4;
+    cx.setLineDash(id === S.sel ? [] : [3, 3]);
+    if (e.w) { rr(v.x - 4, v.y - 4, v.w + 8, v.h + 8, 16); cx.stroke(); }
+    else { cx.beginPath(); cx.arc(v.x, v.y, v.r + 10 + (id === S.sel ? Math.sin(S.t * 4) * 1.5 : 0), 0, 7); cx.stroke(); }
+    cx.setLineDash([]);
+  }
+  // tur: hedef dışını karart
+  if (S.tour?.target) {
+    const v = S.vis.get(S.tour.target), e = S.ents.get(S.tour.target);
+    if (v && e) {
+      cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      cx.fillStyle = C.dark ? "rgba(3,5,9,.55)" : "rgba(230,235,245,.55)";
+      cx.beginPath(); cx.rect(0, 0, W, H);
+      const k = S.cam.k, sx = v.x * k + S.cam.x, sy = v.y * k + S.cam.y;
+      if (e.w) { const m = 14; cx.roundRect(sx - m, sy - m, v.w * k + 2 * m, v.h * k + 2 * m, 18); }
+      else { const R = (v.r + 22) * k; cx.moveTo(sx + R, sy); cx.arc(sx, sy, R, 0, Math.PI * 2, true); }
+      cx.fill("evenodd");
+    }
+  }
+}
+
+/* ============================================================== etkileşim */
+function hit(wx, wy) {
+  const order = ["pod", "svc", "ext", "comp", "ns", "queue", "node"];
+  for (const t of order) {
+    for (const e of S.ents.values()) {
+      if (e.type !== t) continue;
+      const v = S.vis.get(e.id);
+      if (!v) continue;
+      if (e.w) { if (wx >= v.x && wx <= v.x + v.w && wy >= v.y && wy <= v.y + v.h) return e.id; }
+      else if (Math.hypot(wx - v.x, wy - v.y) <= v.r + (t === "svc" ? 6 : 4)) return e.id;
+    }
+  }
+  return null;
+}
+const tip = $("#tip");
+function setHover(id, ev) {
+  S.hover = id;
+  cv.classList.toggle("hover", !!id);
+  if (!id) { tip.classList.remove("on"); return; }
+  const e = S.ents.get(id), d = e.data;
+  let h = "";
+  const row = (a, b) => `<div class="r"><span>${a}</span><span class="mono">${b}</span></div>`;
+  if (e.type === "pod") {
+    h = `<b>${esc(d.name)}</b><div class="muted">${esc(d.ns)} · ${esc(d.workload?.kind || "")}</div>` +
+      row("durum", `<span style="color:${statusColor(d.status)}">${esc(d.status || "—")}</span>`) + row("CPU", fmt.cores(d.cpu)) +
+      row("bellek", fmt.bytes(d.mem) + ((d.mem_limit || d.lim_mem) ? ` / ${fmt.bytes(d.mem_limit || d.lim_mem)}` : "")) +
+      row("gelen ağ", fmt.bps(d.rx)) + (d.restarts ? row("yeniden başlama", d.restarts) : "") +
+      (Math.abs(maxZ(d)) >= 2 ? row("en büyük sapma", `z=${maxZ(d).toFixed(1)}`) : "") +
+      (d.incident ? `<div style="color:var(--crit);margin-top:4px">● ${esc(d.incident.title)}</div>` : "");
+  } else if (e.type === "svc") {
+    h = `<b>${esc(d.name)}</b> <span class="muted">Service · ${esc(d.type)}</span>` + row("adres", `${esc(d.cluster_ip)}:${d.ports[0]?.port ?? ""}`) + row("pod", d.pods.length);
+  } else if (e.type === "node") {
+    h = `<b>${esc(d.name)}</b> <span class="muted">Node</span>` + row("CPU", `${fmt.cores(d.cpu)} / ${fmt.cores(d.cpu_alloc)}`) + row("bellek", `${fmt.bytes(d.mem)} / ${fmt.bytes(d.mem_alloc)}`);
+  } else if (e.type === "ns") h = `<b>${esc(d.ns)}</b> <span class="muted">namespace · ${d.count} pod</span>`;
+  else if (e.type === "comp") h = `<b>${esc(G[e.kind].t)}</b><div class="muted">node üzerinde çalışan süreç (pod değil)</div>`;
+  else if (e.type === "ext") h = `<b>Dış dünya</b><div class="muted">küme dışından gelen istekler</div>`;
+  else if (e.type === "queue") h = `<b>Zamanlayıcı kuyruğu</b><div class="muted">${d.count} pod node bekliyor</div>`;
+  tip.innerHTML = h + `<div class="muted" style="margin-top:4px;font-size:11px">tıkla: ayrıntı ve açıklama</div>`;
+  tip.classList.add("on");
+  if (ev) {
+    const x = ev.clientX + 16, y = ev.clientY + 14;
+    tip.style.left = Math.min(x, innerWidth - tip.offsetWidth - 10) + "px";
+    tip.style.top = Math.min(y, innerHeight - tip.offsetHeight - 10) + "px";
+  }
+}
+function zoomAt(sx, sy, f) {
+  S.camT = null;
+  const k = clamp(S.cam.k * f, 0.15, 4);
+  S.cam.x = sx - (sx - S.cam.x) * k / S.cam.k; S.cam.y = sy - (sy - S.cam.y) * k / S.cam.k; S.cam.k = k;
+  S.userCam = true;
+}
+let drag = null;
+const local = (e) => { const r = cv.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
+cv.addEventListener("pointerdown", (e) => { drag = {x: e.clientX, y: e.clientY, cx: S.cam.x, cy: S.cam.y, moved: false}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", (e) => {
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.hypot(dx, dy) > 4) drag.moved = true;
+    if (drag.moved) { S.cam.x = drag.cx + dx; S.cam.y = drag.cy + dy; S.camT = null; S.userCam = true; cv.classList.add("drag"); setHover(null); }
+    return;
+  }
+  const p = local(e), w = toWorld(p.x, p.y);
+  setHover(hit(w.x, w.y), e);
+});
+cv.addEventListener("pointerup", (e) => {
+  if (drag && !drag.moved) { const p = local(e), w = toWorld(p.x, p.y); select(hit(w.x, w.y)); }
+  drag = null; cv.classList.remove("drag");
+});
+cv.addEventListener("pointerleave", () => setHover(null));
+cv.addEventListener("wheel", (e) => { e.preventDefault(); const p = local(e); zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0016)); }, {passive: false});
+cv.addEventListener("dblclick", (e) => { const p = local(e), w = toWorld(p.x, p.y), id = hit(w.x, w.y); if (id) focusOn([...related(id)]); });
+$("#zin").onclick = () => zoomAt(W / 2, H / 2, 1.3);
+$("#zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.3);
+$("#zfit").onclick = () => { S.userCam = false; fit(false); };
+$$("#layers button").forEach((b) => {
+  b.setAttribute("aria-pressed", String(!!S.layers[b.dataset.l]));
+  b.onclick = () => { S.layers[b.dataset.l] = !S.layers[b.dataset.l]; b.setAttribute("aria-pressed", String(S.layers[b.dataset.l])); store("kesif.layers", S.layers); };
+});
+$("#sysBtn").setAttribute("aria-pressed", String(S.showSys));
+$("#sysBtn").onclick = () => { S.showSys = !S.showSys; $("#sysBtn").setAttribute("aria-pressed", String(S.showSys)); store("kesif.sys", S.showSys); S.userCam = false; layout(); };
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input,select,textarea")) return;
+  if (e.key === "Escape") { if (S.tour) endTour(); else if (S.sim) endSim(); else select(null); }
+  if (S.tour && e.key === "ArrowRight") tourGo(1);
+  if (S.tour && e.key === "ArrowLeft") tourGo(-1);
+});
+
+/* ============================================================== yan panel */
+function select(id, push = true) {
+  if (id === S.sel) return;
+  if (push && S.sel !== undefined) S.hist.push(S.sel);
+  if (S.hist.length > 30) S.hist.shift();
+  S.sel = id;
+  renderSide(true);
+}
+function goBack() { S.sel = S.hist.pop() ?? null; renderSide(true); }
+$("#side").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-go],[data-concept],[data-sim],[data-act],[data-lab],[data-simstep]");
+  if (!b) return;
+  if (b.dataset.simstep) return simJump(+b.dataset.simstep);
+  if (b.dataset.go !== undefined) {
+    const id = b.dataset.go;
+    select(id || null);
+    if (S.ents.has(id)) focusOn([...related(id)]);
+  } else if (b.dataset.concept) select("@c:" + b.dataset.concept);
+  else if (b.dataset.sim) startSim(b.dataset.sim, b.dataset.target);
+  else if (b.dataset.lab) { openLab(b.dataset.lab); }
+  else if (b.dataset.act === "back") goBack();
+  else if (b.dataset.act === "endsim") endSim();
+  else if (b.dataset.act === "tour") startTour();
+  else if (b.dataset.act === "next") tourGo(1);
+  else if (b.dataset.act === "prev") tourGo(-1);
+  else if (b.dataset.act === "endtour") endTour();
+  else if (b.dataset.act === "brain") { endTour(); setTab("brain"); }
+});
+const cbtn = (key, label) => `<button class="pill" style="cursor:pointer" data-concept="${key}">${esc(label || G[key]?.t || key)}</button>`;
+const statusPill = (s) => `<span class="status"><i style="background:${statusColor(s)}"></i>${esc(s || "bilinmiyor")}</span>`;
+const kindHead = (label, color) => `<div class="kind"><i style="background:${color}"></i>${label}</div>`;
+const backBtn = () => S.hist.length ? `<button class="back" data-act="back">← geri</button>` : "";
+const learn = (title, html) => `<div class="box learn"><h4>${title}</h4><div>${html}</div></div>`;
+const kv = (rows) => `<dl class="kv">${rows.filter(Boolean).map(([a, b]) => `<dt>${a}</dt><dd title="${esc(String(b).replace(/<[^>]+>/g, ""))}">${b}</dd>`).join("")}</dl>`;
+
+function renderSide(reset) {
+  const el = $("#side"), top = el.scrollTop;
+  if (S.tour) { el.innerHTML = tourHTML(); return; }
+  if (S.sim) { el.innerHTML = simHTML(); return; }
+  const id = S.sel;
+  let html;
+  try { html = sideHTML(id); } catch (e) { console.error(e); html = homeHTML(); }
+  el.innerHTML = html;
+  if (!reset) el.scrollTop = top; else el.scrollTop = 0;
+  drawSparks();
+}
+function refreshSide() {
+  if (document.activeElement && $("#side").contains(document.activeElement) && document.activeElement.tagName === "SELECT") return;
+  renderSide(false);
+}
+function sideHTML(id) {
+  if (!id || !S.topo) return homeHTML();
+  if (id.startsWith("@c:")) return conceptHTML(id.slice(3));
+  if (id.startsWith("@w:")) return workloadHTML(...id.slice(3).split("|"));
+  if (id.startsWith("@e:")) return eventHTML(id.slice(3));
+  const e = S.ents.get(id);
+  if (!e) return homeHTML();
+  return {pod: podHTML, svc: svcHTML, node: nodeHTML, ns: nsHTML, comp: compHTML, ext: extHTML, queue: queueHTML}[e.type](e);
+}
+
+function homeHTML() {
+  const t = T();
+  if (!t) return `<p class="muted">Küme okunuyor…</p>`;
+  const bad = t.pods.filter((p) => ["crit", "warn"].includes(stc(p.status)));
+  const sysN = t.pods.filter((p) => isSys(p.ns)).length;
+  const firstUser = [...S.ents.values()].find((e) => e.type === "pod" && !isSys(e.data.ns) && e.data.workload?.kind === "Deployment" && !role(e.data)) ||
+    [...S.ents.values()].find((e) => e.type === "pod" && e.data.workload?.kind === "Deployment");
+  const leakT = [...S.ents.values()].find((e) => e.type === "pod" && (e.data.mem_limit || e.data.lim_mem) && !isSys(e.data.ns)) || firstUser;
+  const node = [...S.ents.values()].find((e) => e.type === "node");
+  const src = t.source === "kube" ? "" : `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Kubernetes API okunamadı</h4>Harita yalnızca Prometheus'taki pod'larla kuruldu; service, sahiplik ve durum bilgisi yok. Yetki güncellemesi için sunucuda <span class="mono">./nobetci-kurulum.sh guncelle</span> yeterli.</div>`;
+  const miss = t.missing?.length ? `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Bazı listeler okunamadı</h4><span class="mono">${t.missing.join(", ")}</span>. Muhtemelen eski yetki tanımı; <span class="mono">./nobetci-kurulum.sh guncelle</span> düzeltir.</div>` : "";
+  const legend = [
+    [`<svg width="26" height="26"><circle cx="13" cy="13" r="8" fill="${alpha("#2dd4bf", .2)}" stroke="#2dd4bf" stroke-width="1.6"/><path d="M13 1.5 A11.5 11.5 0 0 1 24.3 15" fill="none" stroke="${C.flow}" stroke-width="2.2" stroke-linecap="round"/></svg>`, "Pod. Büyüklük bellek kullanımı, dış halka CPU (limit ya da 1 çekirdeğe göre)."],
+    [`<svg width="26" height="26"><circle cx="13" cy="13" r="10" fill="none" stroke="#2dd4bf" stroke-width="1.6"/><path d="M3.5 16 Q8 14 13 16 T22.5 16 L22 19 A10 10 0 0 1 4 19 Z" fill="${alpha("#2dd4bf", .55)}"/></svg>`, "Sıvı seviyesi: belleğin limite oranı. Kırmızıya dönerse limit yakın."],
+    [`<svg width="26" height="26"><circle cx="13" cy="13" r="12" fill="${alpha(C.up, .3)}"/><circle cx="13" cy="13" r="7" fill="none" stroke="#2dd4bf" stroke-width="1.6"/></svg>`, "Parıltı: kendi normalinden sapma (kırmızı artış, mavi düşüş). Eşiği geçince hızlı yanıp söner."],
+    [`<svg width="26" height="26"><polygon points="13,2 23,7.5 23,18.5 13,24 3,18.5 3,7.5" fill="none" stroke="${C.flow}" stroke-width="1.6"/></svg>`, "Service. İçindeki kısaltma türü: IP (ClusterIP), NP (NodePort), HL (headless)."],
+    [`<svg width="26" height="26"><circle cx="5" cy="13" r="2.4" fill="${C.flow}"/><circle cx="13" cy="13" r="2.4" fill="${C.metric}"/><circle cx="21" cy="13" r="2.4" fill="${C.brain}"/></svg>`, "Akış: camgöbeği istek trafiği, mor ölçüm toplama, kehribar nöbetçinin turu."],
+    [`<svg width="26" height="26"><path d="M3 20 C 8 4, 18 4, 23 20" fill="none" stroke="${C.crit}" stroke-width="1.6" stroke-dasharray="4 3"/></svg>`, "Kırmızı kesikli: pod hazır değil, Service ona trafik göndermiyor."],
+  ].map(([i, d]) => `<div style="display:flex;gap:10px;align-items:center;margin:6px 0;font-size:12.5px;color:var(--ink2)">${i}<span>${d}</span></div>`).join("");
+  const concepts = ["cluster", "node", "namespace", "pod", "Deployment", "ReplicaSet", "StatefulSet", "DaemonSet", "service", "kubelet", "apiserver", "etcd", "scheduler", "controller", "prometheus", "ksm"];
+  return `${kindHead("Canlı küme", C.flow)}<h3>${esc(t.cluster || "küme")}</h3>
+    <p class="lead">Bu harita kümenin <b>şu anki</b> hâli: yapı Kubernetes API'den birkaç saniyede bir, ölçümler her nöbetçi turunda Prometheus'tan gelir. Herhangi bir şeye tıkla, ne olduğunu ve şu an ne yaptığını anlatır. Sürükle, kaydır, yakınlaş.</p>
+    ${src}${miss}
+    <div class="stats">
+      <button class="stat" data-concept="node"><div class="v">${t.nodes.length}</div><div class="l">node</div><div class="s">${t.nodes.filter((n) => n.ready).length} hazır</div></button>
+      <button class="stat" data-concept="pod"><div class="v">${t.pods.length}</div><div class="l">pod</div><div class="s">${bad.length ? `<span style="color:var(--crit)">${bad.length} sorunlu</span>` : "hepsi sağlıklı"} · ${sysN} sistem</div></button>
+      <button class="stat" data-concept="service"><div class="v">${t.services.length}</div><div class="l">service</div><div class="s">${t.services.filter((s) => !s.pods.length).length} uçsuz</div></button>
+      <button class="stat" data-concept="Deployment"><div class="v">${t.workloads.length}</div><div class="l">iş yükü</div><div class="s">${t.workloads.filter((w) => w.ready < w.desired).length} eksik kopyalı</div></button>
+    </div>
+    ${t.incidents.length ? `<div class="box"><h4>Nöbetçinin açık olayları</h4>${t.incidents.map((i) => `<div class="inc s${i.severity}">${esc(i.title)}</div>`).join("")}</div>` : ""}
+    <div class="box"><h4>Öğrenmeye buradan başla</h4>
+      <div class="btnrow"><button class="btn pri" data-act="tour">▶ 2 dakikalık tur</button></div>
+      <div style="font-size:12.5px;color:var(--ink2);margin:6px 0 8px">Senaryolar kümeye dokunmaz; haritada "ne olurdu" diye canlandırır:</div>
+      <div class="gl">
+        ${firstUser ? `<button data-sim="delete" data-target="${firstUser.id}"><span class="ic" style="background:var(--crit)">✕</span><span><b>Bir pod silinirse?</b><span>Kendi kendini iyileştirme: ReplicaSet, scheduler, kubelet sırayla ne yapar.</span></span></button>
+        <button data-sim="scale" data-target="${firstUser.id}"><span class="ic" style="background:var(--flow)">+2</span><span><b>Ölçeklersek?</b><span>Yeni pod'lar nasıl yerleşir, Service trafiği nasıl paylaştırır.</span></span></button>` : ""}
+        ${leakT ? `<button data-sim="leak" data-target="${leakT.id}"><span class="ic" style="background:var(--warn)">≋</span><span><b>Bellek sızarsa?</b><span>Nöbetçi limit dolmadan nasıl uyarır, OOMKilled nasıl olur.</span></span></button>` : ""}
+        ${node ? `<button data-sim="nodedown" data-target="${node.id}"><span class="ic" style="background:var(--muted)">↯</span><span><b>Node çökerse?</b><span>Tek node'lu kümenin zaafı ve üretimde neden 3+ node olur.</span></span></button>` : ""}
+      </div></div>
+    <div class="box"><h4>Haritayı okumak</h4>${legend}</div>
+    <div class="box"><h4>Sözlük</h4>${concepts.map((k) => cbtn(k)).join("")}</div>`;
+}
+
+function podHTML(e) {
+  const p = e.data, t = T(), rl = role(p), col = nsColor(p.ns);
+  const wk = p.workload?.kind || "", wn = p.workload?.name || "";
+  const w = t.workloads.find((x) => x.kind === wk && x.ns === p.ns && x.name === wn);
+  const rs = p.owner?.kind === "ReplicaSet" ? t.replicasets.find((r) => r.ns === p.ns && r.name === p.owner.name) : null;
+  const svcs = t.services.filter((s) => s.ns === p.ns && s.pods.includes(p.name));
+  const life = ["PodScheduled", "Initialized", "ContainersReady", "Ready"];
+  const lifeL = {PodScheduled: "node'a yerleşti", Initialized: "hazırlık bitti", ContainersReady: "konteynerler hazır", Ready: "trafik alabilir"};
+  const lim = p.mem_limit || p.lim_mem;
+  const chain = wk && wk !== "Pod" ? `<div class="chain">
+      <button data-go="@w:${wk}|${p.ns}|${wn}"><span class="pill">${wk}</span>${esc(wn)}<small>${w ? `${w.ready}/${w.desired} hazır` : ""}</small></button>
+      ${rs ? `<div class="ar"></div><button data-concept="ReplicaSet"><span class="pill">ReplicaSet</span>${esc(rs.name)}<small>${rs.ready}/${rs.desired}</small></button>` : ""}
+      ${wk === "Static" ? `<div class="ar"></div><button data-go="n:${p.node}"><span class="pill">Node</span>${esc(p.node)}<small>kubelet dosyadan başlatır</small></button>` : ""}
+      <div class="ar"></div><button disabled style="cursor:default;border-color:${col}"><span class="pill">Pod</span>${esc(p.name)}</button></div>` : learn("Sahibi yok", G.Pod.d);
+  const inc = p.incident ? t.incidents.find((i) => i.id === p.incident.id) : null;
+  const sims = [`<button class="btn sim" data-sim="delete" data-target="${e.id}">✕ Bu pod silinirse?</button>`];
+  if (["Deployment", "StatefulSet"].includes(wk)) sims.push(`<button class="btn sim" data-sim="scale" data-target="${e.id}">+2 Ölçekle</button>`);
+  if (p.status === "Running") sims.push(`<button class="btn sim" data-sim="leak" data-target="${e.id}">≋ Bellek sızarsa?</button>`);
+  return `${backBtn()}${kindHead(`Pod${rl ? " · " + G[rl].t : ""}`, col)}
+    <h3 style="word-break:break-all">${esc(p.name)}</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${statusPill(p.status)}<button class="pill" data-go="ns:${p.node}/${p.ns}" style="cursor:pointer;border-color:${col};color:${col}">${esc(p.ns)}</button>${p.node ? `<button class="pill" data-go="n:${p.node}" style="cursor:pointer">${esc(p.node)}</button>` : ""}</div>
+    <p class="lead">${esc((ST[p.status] || [, ""])[1])}</p>
+    ${inc ? `<div class="box" style="border-color:${inc.severity >= 3 ? "var(--crit)" : "var(--warn)"}"><h4>Nöbetçi bir olay açtı</h4><b>${esc(inc.title)}</b>${inc.summary?.cause ? `<p class="ink2" style="margin:6px 0 0;font-size:13px">${esc(inc.summary.cause)}</p>` : ""}<div class="btnrow"><a class="btn" href="/">Olay ekranında aç →</a></div></div>` : ""}
+    ${rl ? learn(`Bu pod ne iş yapar? · ${G[rl].t}`, G[rl].d) : learn("Pod nedir?", G.pod.d.split("<br><br>")[0] + ` ${cbtn("pod", "devamı")}`)}
+    <div class="box"><h4>Yaşam döngüsü</h4><div class="life">${life.map((c) => `<div class="${p.conditions?.[c] ? "on" : ""}"><i></i>${lifeL[c]}</div>`).join("")}</div></div>
+    <div class="box"><h4>Ölçümler · kendi normaline göre</h4>
+      ${SIGNALS.map((s) => `<div class="spark"><span>${s.t}<br><b class="mono">${fmt[s.unit](p[s.k])}</b></span><canvas data-spark="${s.sig}|${esc(p.ns)}|${esc(p.name)}"></canvas>
+        <span class="z" title="sapma: (değer − normal) / ölçek">${p[s.k + "_z"] == null ? "—" : `<span style="color:${Math.abs(p[s.k + "_z"]) >= (t.detector?.z || 5) ? C.crit : Math.abs(p[s.k + "_z"]) >= 2 ? C.warn : C.ink2}">z ${p[s.k + "_z"] > 0 ? "+" : ""}${p[s.k + "_z"]}</span>`}<br><button class="back" style="margin:0 0 0 auto;font-size:11px;display:inline-block;color:var(--flow)" data-lab="${s.sig}|${esc(p.ns)}|${esc(p.name)}">lab →</button></span></div>`).join("")}
+      <div class="muted" style="font-size:11.5px;margin-top:6px">Gri bant: nöbetçinin bu seri için hesapladığı "normal" aralık (eşik zarfı). Çizgi bandın dışına taşarsa alarm adayı olur.</div></div>
+    <div class="box"><h4>Sahiplik zinciri</h4>${chain}</div>
+    ${svcs.length ? `<div class="box"><h4>Önündeki Service'ler</h4>${svcs.map((s) => `<button class="pill" style="cursor:pointer" data-go="s:${s.ns}/${s.name}">${esc(s.name)} :${s.ports[0]?.port ?? ""}</button>`).join("")}<div class="muted" style="font-size:12px;margin-top:6px">${p.ready ? "Pod hazır; bu Service'lerden trafik alıyor." : "Pod hazır olmadığı için Service ona trafik göndermiyor."}</div></div>` : ""}
+    <div class="box"><h4>Kaynaklar</h4>${kv([
+      ["CPU istek / limit", `${fmt.cores(p.req_cpu)} / ${p.lim_cpu ? fmt.cores(p.lim_cpu) : "yok"}`],
+      ["bellek istek / limit", `${fmt.bytes(p.req_mem)} / ${lim ? fmt.bytes(lim) : "yok"}`],
+      lim && p.mem ? ["limitin dolu kısmı", `%${Math.round(100 * p.mem / lim)}`] : null,
+      ["QoS sınıfı", p.qos || "—"], ["pod IP", (p.ip || "—") + (p.host_net ? " (node ağı)" : "")], ["yaş", age(p.created)], ["yeniden başlama", p.restarts]])}
+      <div class="muted" style="font-size:12px;margin-top:8px"><b>İstek</b> (request) scheduler'ın yer ayırdığı miktar, <b>limit</b> aşılamayan tavan. CPU limitine dayanan yavaşlatılır, bellek limitini aşan öldürülür. ${QOS[p.qos] || ""}</div></div>
+    <div class="box"><h4>Konteynerler</h4>${(p.containers || []).map((c) => `<div style="margin:6px 0"><b>${esc(c.name)}</b> ${statusPill(c.reason || c.state || "—")}<div class="mono muted" style="font-size:11.5px;word-break:break-all">${esc(c.image)}</div>${c.last ? `<div style="font-size:12px;color:var(--crit)">son çıkış: ${esc(c.last)}${c.last_code != null ? ` (kod ${c.last_code})` : ""}</div>` : ""}</div>`).join("") || "<span class='muted'>—</span>"}${cbtn("container", "Konteyner nedir?")}</div>
+    <div class="box"><h4>Ne olurdu? · simülasyon</h4><div class="btnrow">${sims.join("")}</div></div>
+    <div class="box"><h4>Kendin dene</h4>
+      ${copyBtn(`kubectl -n ${p.ns} get pod ${p.name} -o wide`)}${copyBtn(`kubectl -n ${p.ns} describe pod ${p.name}`)}
+      ${copyBtn(`kubectl -n ${p.ns} logs ${p.name}${p.restarts ? " --previous" : ""} --tail=50`)}</div>`;
+}
+function svcHTML(e) {
+  const s = e.data, t = T();
+  const pods = s.pods.map((n) => t.pods.find((p) => p.ns === s.ns && p.name === n)).filter(Boolean);
+  const kind = s.cluster_ip === "None" ? "Headless" : s.type;
+  const isApi = s.ns === "default" && s.name === "kubernetes";
+  return `${backBtn()}${kindHead("Service · " + esc(kind), C.flow)}<h3>${esc(s.name)}</h3>
+    <div style="margin-top:6px"><span class="pill">${esc(s.ns)}</span><span class="pill">${esc(s.cluster_ip)}</span></div>
+    <p class="lead">${isApi ? "API server'ın küme içindeki adresi. Pod'lar Kubernetes API'ye (nöbetçi dahil) bu adresten ulaşır." : `Küme içinden <span class="mono">${esc(s.name)}.${esc(s.ns)}.svc</span> adıyla ulaşılır. ${G[kind]?.d || ""}`}</p>
+    ${!pods.length && !isApi ? `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Uç yok</h4>Seçici hiçbir pod'la eşleşmiyor; bu adrese gelen istekler bir yere gitmez. Çok sık yapılan bir hata: Service seçicisindeki etiketle pod etiketinin bir harf farklı olması.</div>` : ""}
+    ${learn("Service nedir?", G.service.d)}
+    <div class="box"><h4>Seçici → eşleşen pod'lar</h4>
+      <div>${Object.entries(s.selector || {}).map(([k, v]) => `<span class="pill">${esc(k)}=${esc(v)}</span>`).join("") || `<span class="muted">seçici yok${isApi ? " (uçları API server kendisi yönetir)" : ""}</span>`}</div>
+      <div style="margin-top:8px">${pods.map((p) => `<button class="pill" style="cursor:pointer;border-color:${statusColor(p.status)}" data-go="p:${p.ns}/${p.name}">${p.ready ? "●" : "○"} ${esc(p.name)}</button>`).join("")}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Yalnızca hazır (●) pod'lar trafik alır. kube-proxy her node'da bu listeye göre yönlendirme kuralı yazar.</div></div>
+    <div class="box"><h4>Portlar</h4>${kv(s.ports.map((p) => [p.name || p.protocol, `${p.port} → ${p.target ?? p.port}${p.node_port ? ` · node :${p.node_port}` : ""}`]))}</div>
+    <div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl -n ${s.ns} describe svc ${s.name}`)}${copyBtn(`kubectl -n ${s.ns} get endpointslices -l kubernetes.io/service-name=${s.name}`)}</div>`;
+}
+function nodeHTML(e) {
+  const n = e.data, t = T();
+  const pods = t.pods.filter((p) => p.node === n.name);
+  const byNs = {};
+  for (const p of pods) byNs[p.ns] = (byNs[p.ns] || 0) + 1;
+  return `${backBtn()}${kindHead("Node", C.ink2)}<h3>${esc(n.name)}</h3>
+    <div style="margin-top:6px">${statusPill(n.ready ? "Ready" : "NotReady")} ${n.roles.map((r) => `<span class="pill">${esc(r)}</span>`).join("")}</div>
+    <p class="lead">${pods.length} pod çalıştırıyor. ${n.roles.includes("control-plane") ? "Kontrol düzlemi de bu node'da (API server, etcd, scheduler, controller-manager statik pod olarak)." : ""}</p>
+    ${learn("Node nedir?", G.node.d)}
+    <div class="box"><h4>Kullanım · son 30 ölçüm</h4>
+      <div class="spark"><span>CPU<br><b class="mono">${fmt.cores(n.cpu)}</b></span><canvas data-hist="cpu"></canvas><span class="z">/ ${fmt.cores(n.cpu_alloc)}</span></div>
+      <div class="spark"><span>Bellek<br><b class="mono">${fmt.bytes(n.mem)}</b></span><canvas data-hist="mem"></canvas><span class="z">/ ${fmt.bytes(n.mem_alloc)}</span></div>
+      <div class="muted" style="font-size:12px;margin-top:6px"><b>Allocatable</b>: kapasiteden sistem için ayrılan pay düşüldükten sonra pod'lara kalan.</div></div>
+    <div class="box"><h4>Durum koşulları</h4>${kv([["Ready", n.ready ? "evet" : "hayır"], ["bellek baskısı", n.pressure.includes("MemoryPressure") ? "VAR" : "yok"], ["disk baskısı", n.pressure.includes("DiskPressure") ? "VAR" : "yok"], ["PID baskısı", n.pressure.includes("PIDPressure") ? "VAR" : "yok"]])}
+      <div class="muted" style="font-size:12px;margin-top:6px">Baskı koşullarından biri açılırsa kubelet pod tahliye etmeye başlar (önce BestEffort).</div></div>
+    <div class="box"><h4>Taint'ler</h4>${n.taints.length ? n.taints.map((x) => `<span class="pill">${esc(x)}</span>`).join("") : `<span class="muted">yok</span>`}
+      <div class="muted" style="font-size:12px;margin-top:6px">Taint "buraya pod koyma" işaretidir; yalnızca onu tolere eden pod'lar yerleşir. Kontrol düzlemi node'ları genelde taint'lidir; kind'de tek node olduğu için kaldırılır.</div></div>
+    <div class="box"><h4>Yazılım</h4>${kv([["kubelet", n.kubelet], ["çalışma ortamı", n.runtime], ["işletim sistemi", n.os], ["çekirdek", n.kernel], ["mimari", n.arch], ["iç IP", n.ip], ["yaş", age(n.created)]])}
+      <div style="margin-top:8px">${cbtn("kubelet")}${cbtn("runtime")}</div></div>
+    <div class="box"><h4>Pod'lar · namespace'e göre</h4>${Object.entries(byNs).sort((a, b) => b[1] - a[1]).map(([ns, c]) => `<button class="pill" style="cursor:pointer;color:${nsColor(ns)};border-color:${nsColor(ns)}" data-go="ns:${n.name}/${ns}">${esc(ns)} · ${c}</button>`).join("")}</div>
+    <div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="nodedown" data-target="${e.id}">↯ Bu node çökerse?</button></div></div>
+    <div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl describe node ${n.name}`)}${copyBtn(`kubectl get pods -A -o wide --field-selector spec.nodeName=${n.name}`)}</div>`;
+}
+function nsHTML(e) {
+  const ns = e.data.ns, t = T();
+  const wls = t.workloads.filter((w) => w.ns === ns), svcs = t.services.filter((s) => s.ns === ns);
+  const extra = {"kube-system": "Kubernetes'in kendi bileşenleri: kontrol düzlemi, DNS, ağ ve kube-proxy.", monitoring: "İzleme yığını: Prometheus ve kube-state-metrics. Nöbetçinin veri kaynağı.", nobetci: "Nöbetçinin kendisi.", "local-path-storage": "kind'in varsayılan depolama sağlayıcısı."}[ns] || "";
+  return `${backBtn()}${kindHead("Namespace", nsColor(ns))}<h3>${esc(ns)}</h3><p class="lead">${extra} Bu node'da ${e.data.count} pod.</p>
+    ${learn("Namespace nedir?", G.namespace.d)}
+    <div class="box"><h4>İş yükleri</h4>${wls.map((w) => `<button class="pill" style="cursor:pointer" data-go="@w:${w.kind}|${w.ns}|${w.name}">${w.kind} ${esc(w.name)} · ${w.ready}/${w.desired}</button>`).join("") || "<span class='muted'>—</span>"}</div>
+    <div class="box"><h4>Service'ler</h4>${svcs.map((s) => `<button class="pill" style="cursor:pointer" data-go="s:${s.ns}/${s.name}">${esc(s.name)}</button>`).join("") || "<span class='muted'>—</span>"}</div>
+    <div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl get all -n ${ns}`)}${copyBtn(`kubectl get events -n ${ns} --sort-by=.lastTimestamp`)}</div>`;
+}
+function compHTML(e) {
+  const k = e.kind, n = e.data;
+  return `${backBtn()}${kindHead("Node bileşeni", C.ink2)}<h3>${esc(G[k].t)}</h3><p class="lead"><b>${esc(n.name)}</b> üzerinde ${k === "kubelet" ? `sürüm ${esc(n.kubelet)}` : esc(n.runtime)}.</p>
+    ${learn("Ne yapar?", G[k].d)}
+    ${k === "kubelet" ? `<div class="box"><h4>Haritada izle</h4>"Ölçüm yolu" katmanı açıkken birkaç saniyede bir pod'lardan kubelet'e mor noktalar akar (cAdvisor ölçer), oradan Prometheus'a gider (kazıma). Her nöbetçi turunda Prometheus'tan nöbetçiye kehribar bir dalga gider.<div class="btnrow"><button class="btn" data-go="${S.special.prom?.id || ""}">Prometheus'a git</button></div></div>` : ""}
+    <div class="box"><h4>Kendin dene</h4>${copyBtn(k === "kubelet" ? `kubectl get --raw /api/v1/nodes/${n.name}/proxy/metrics/cadvisor | head` : `kubectl get node ${n.name} -o jsonpath='{.status.nodeInfo.containerRuntimeVersion}'`)}</div>`;
+}
+function extHTML() {
+  const t = T(), out = t.services.filter((s) => ["NodePort", "LoadBalancer"].includes(s.type));
+  return `${backBtn()}${kindHead("Küme dışı", C.flow)}<h3>Dış dünya</h3>${learn("Dışarıdan nasıl girilir?", G.external.d)}
+    <div class="box"><h4>Dışarı açık Service'ler</h4>${out.map((s) => `<button class="pill" style="cursor:pointer" data-go="s:${s.ns}/${s.name}">${esc(s.name)} · ${s.type}${s.ports[0]?.node_port ? " :" + s.ports[0].node_port : ""}</button>`).join("") || "<span class='muted'>yok; hepsi yalnızca küme içinden erişilebilir</span>"}</div>
+    <div class="box"><h4>Sen bu ekrana nasıl ulaşıyorsun?</h4>Nöbetçinin Service'i ClusterIP, yani dışarı kapalı. Kurulum betiği <span class="mono">kubectl port-forward</span> çalıştırır: senin isteğin sunucudaki porta, oradan API server ve kubelet üzerinden doğrudan nöbetçi pod'una tünellenir. Haritadaki kehribar kesikli çizgi bu yoldur.
+      ${copyBtn("kubectl -n nobetci port-forward svc/nobetci 8081:80")}</div>`;
+}
+function queueHTML(e) {
+  const pods = T().pods.filter((p) => !p.node || !S.ents.has(`n:${p.node}`));
+  return `${backBtn()}${kindHead("Scheduler", C.warn)}<h3>Zamanlayıcı kuyruğu</h3>${learn("Ne demek?", G.queue.d)}
+    <div class="box"><h4>Bekleyenler</h4>${pods.map((p) => `<button class="pill" style="cursor:pointer" data-go="p:${p.ns}/${p.name}">${esc(p.name)}</button>`).join("")}</div>
+    ${copyBtn("kubectl get pods -A --field-selector status.phase=Pending")}`;
+}
+function conceptHTML(k) {
+  const g = G[k];
+  if (!g) return homeHTML();
+  const where = {node: "n:", pod: "p:", service: "s:", namespace: "ns:"}[k];
+  const first = where && [...S.ents.keys()].find((id) => id.startsWith(where));
+  const roleEnt = [...S.ents.values()].find((e) => e.type === "pod" && role(e.data) === k);
+  const wl = T()?.workloads.find((w) => w.kind === k);
+  const target = first || roleEnt?.id || (k === "kubelet" || k === "runtime" ? [...S.ents.keys()].find((id) => id.endsWith("/" + k)) : null) || (k === "cluster" ? null : null);
+  return `${backBtn()}${kindHead("Sözlük", g.c || C.flow)}<h3>${esc(g.t)}</h3><p class="lead">${g.d}</p>
+    ${target ? `<div class="btnrow"><button class="btn pri" data-go="${target}">Haritada göster</button></div>` : ""}
+    ${wl ? `<div class="btnrow"><button class="btn" data-go="@w:${wl.kind}|${wl.ns}|${wl.name}">Bu kümeden bir örnek: ${esc(wl.name)}</button></div>` : ""}`;
+}
+function workloadHTML(kind, ns, name) {
+  const t = T(), w = t.workloads.find((x) => x.kind === kind && x.ns === ns && x.name === name);
+  const pods = t.pods.filter((p) => p.ns === ns && p.workload?.kind === kind && p.workload?.name === name);
+  const rss = t.replicasets.filter((r) => r.ns === ns && r.owner === name);
+  const verb = {Deployment: "deploy", StatefulSet: "sts", DaemonSet: "ds"}[kind];
+  return `${backBtn()}${kindHead(kind, G[kind]?.c || C.flow)}<h3>${esc(name)}</h3>
+    <div style="margin-top:6px"><span class="pill">${esc(ns)}</span>${w ? `<span class="pill">${w.ready}/${w.desired} hazır</span>${w.strategy ? `<span class="pill">${esc(w.strategy)}</span>` : ""}` : ""}</div>
+    ${learn(`${G[kind]?.t || kind} nedir?`, G[kind]?.d || "")}
+    ${w && w.ready < w.desired ? `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Eksik kopya</h4>İstenen ${w.desired}, hazır ${w.ready}. Denetleyici farkı kapatmaya çalışıyor; kapanmıyorsa pod'ların durumuna bak.</div>` : ""}
+    ${rss.length ? `<div class="box"><h4>ReplicaSet'ler</h4>${rss.map((r) => `<span class="pill">${esc(r.name)} · ${r.ready}/${r.desired}</span>`).join("")}<div class="muted" style="font-size:12px;margin-top:6px">Sürüm geçişinde eski ve yeni ReplicaSet bir süre birlikte görünür; eskisi sıfıra iner.</div></div>` : ""}
+    <div class="box"><h4>Pod'lar</h4>${pods.map((p) => `<button class="pill" style="cursor:pointer;border-color:${statusColor(p.status)}" data-go="p:${p.ns}/${p.name}">${esc(p.name)}</button>`).join("") || "<span class='muted'>—</span>"}</div>
+    ${pods[0] && ["Deployment", "StatefulSet"].includes(kind) ? `<div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="scale" data-target="p:${pods[0].ns}/${pods[0].name}">+2 Ölçekle</button><button class="btn sim" data-sim="delete" data-target="p:${pods[0].ns}/${pods[0].name}">✕ Bir pod'u sil</button></div></div>` : ""}
+    ${verb ? `<div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl -n ${ns} get ${verb} ${name} -o wide`)}${kind !== "DaemonSet" ? copyBtn(`kubectl -n ${ns} rollout history ${verb}/${name}`) : ""}<div class="muted" style="font-size:12px;margin-top:6px">Bu ekran salt okunurdur; ölçekleme gibi değişiklikleri yalnızca simülasyonda gösterir.</div></div>` : ""}`;
+}
+function eventHTML(key) {
+  const ev = S.evMap?.get(key);
+  if (!ev) return homeHTML();
+  const id = ev.kind === "Pod" ? `p:${ev.ns}/${ev.name}` : ev.kind === "Node" ? `n:${ev.name}` : null;
+  const wl = ["Deployment", "StatefulSet", "DaemonSet"].includes(ev.kind) ? `@w:${ev.kind}|${ev.ns}|${ev.name}` : null;
+  const src = /scheduler/.test(ev.source) ? "scheduler" : /kubelet/.test(ev.source) ? "kubelet" : /controller/.test(ev.source) ? "controller" : null;
+  return `${backBtn()}${kindHead("Kubernetes olayı · " + esc(ev.type), ev.type === "Warning" ? C.warn : C.ok)}<h3>${esc(ev.reason)}</h3>
+    <p class="lead">${esc(REASON[ev.reason] || "")}</p>
+    <div class="box"><h4>Mesaj</h4><div class="mono" style="font-size:12.5px;word-break:break-word">${esc(ev.message)}</div></div>
+    <div class="box">${kv([["nesne", `${esc(ev.kind)} ${esc(ev.name)}`], ["namespace", esc(ev.ns || "—")], ["kaynak", esc(ev.source || "—")], ["tekrar", ev.count], ["zaman", ago(ev.time)]])}
+      <div class="btnrow">${id && S.ents.has(id) ? `<button class="btn" data-go="${id}">Haritada göster</button>` : ""}${wl ? `<button class="btn" data-go="${wl}">${esc(ev.kind)}</button>` : ""}${src ? cbtn(src) : ""}</div></div>
+    ${learn("Kubernetes olayları nedir?", "Bileşenlerin kümede olanları anlattığı kısa kayıtlar: scheduler yerleştirdiğinde, kubelet imaj çektiğinde, denetleyici pod yarattığında bir olay yazılır. Varsayılan olarak yalnızca 1 saat saklanır. Nöbetçi bir olay açınca ilgili pod'un olaylarını da kanıta ekler.")}
+    ${copyBtn(`kubectl get events -A --sort-by=.lastTimestamp | tail -20`)}`;
+}
+
+/* ---- küçük grafikler: gri bant = normal ± eşik × ölçek */
+async function drawSparks() {
+  const t = T();
+  for (const c of $$("#side canvas[data-hist]")) {
+    const n = S.ents.get(S.sel)?.data;
+    drawSpark(c, {vs: n?.[c.dataset.hist + "_hist"] || []});
+  }
+  for (const c of $$("#side canvas[data-spark]")) {
+    const key = c.dataset.spark, ck = key + "|" + S.cycle;
+    let d = S.seriesCache.get(ck);
+    if (!d) {
+      try { d = await getJSON("/api/series?k=" + encodeURIComponent(key)); } catch { d = null; }
+      S.seriesCache.set(ck, d);
+      if (S.seriesCache.size > 120) S.seriesCache.delete(S.seriesCache.keys().next().value);
+    }
+    if (d && c.isConnected) drawSpark(c, d, t.detector?.z || 5);
+  }
+}
+function drawSpark(c, d, z = 0) {
+  const r = c.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  c.width = r.width * dpr; c.height = r.height * dpr;
+  const g = c.getContext("2d"); g.scale(dpr, dpr);
+  const n = Math.min(60, d.vs.length), off = d.vs.length - n;
+  const vs = d.vs.slice(off), med = (d.med || []).slice(off), sc = (d.sc || []).slice(off);
+  if (n < 2) { g.fillStyle = C.muted; g.font = "11px system-ui"; g.fillText("veri yok", 4, r.height / 2 + 4); return; }
+  const lo = [], hi = [];
+  for (let i = 0; i < n; i++) if (med[i] != null && z) { lo[i] = med[i] - z * sc[i]; hi[i] = med[i] + z * sc[i]; }
+  const all = vs.concat(lo.filter((x) => x != null), hi.filter((x) => x != null)).filter((x) => x != null);
+  let a = Math.min(...all), b = Math.max(...all);
+  if (b - a < 1e-9) { b += 1; a -= 1; }
+  const X = (i) => 2 + (i / (n - 1)) * (r.width - 4), Y = (v) => r.height - 3 - ((v - a) / (b - a)) * (r.height - 6);
+  if (z) {
+    g.beginPath(); let started = false;
+    for (let i = 0; i < n; i++) if (hi[i] != null) { started ? g.lineTo(X(i), Y(hi[i])) : g.moveTo(X(i), Y(hi[i])); started = true; }
+    for (let i = n - 1; i >= 0; i--) if (lo[i] != null) g.lineTo(X(i), Y(lo[i]));
+    g.closePath(); g.fillStyle = alpha(C.ink2 || "#999999", 0.12); g.fill();
+  }
+  g.beginPath(); vs.forEach((v, i) => v != null && (i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v))));
+  g.strokeStyle = C.flow; g.lineWidth = 1.6; g.stroke();
+  const last = vs[n - 1];
+  g.fillStyle = C.flow; g.beginPath(); g.arc(X(n - 1), Y(last), 2.6, 0, 7); g.fill();
+}
+
+/* ---- olay şeridi */
+function ticker(events) {
+  S.evMap = S.evMap || new Map();
+  const rail = $("#rail");
+  const list = [...(events || [])].reverse().slice(0, 25);
+  const keys = list.map((e) => `${e.time}|${e.reason}|${e.name}|${e.count}`);
+  if (rail.dataset.k === keys.join(",")) return;
+  rail.dataset.k = keys.join(",");
+  rail.innerHTML = list.map((e, i) => {
+    S.evMap.set(keys[i], e);
+    const fresh = !S.evSeen.has(keys[i]);
+    S.evSeen.add(keys[i]);
+    return `<button class="ev ${esc(e.type)}" data-ev="${esc(keys[i])}" style="${fresh ? "" : "animation:none"}" title="${esc(e.message)}"><i></i><b>${esc(e.reason)}</b>${esc(e.kind)} ${esc(e.name.length > 28 ? e.name.slice(0, 27) + "…" : e.name)}<span class="muted">${ago(e.time)}</span></button>`;
+  }).join("") || `<span class="muted" style="font-size:12px">son 1 saatte olay yok</span>`;
+}
+$("#rail").addEventListener("click", (e) => { const b = e.target.closest("[data-ev]"); if (b) select("@e:" + b.dataset.ev); });
+
+/* ============================================================== simülasyonlar
+   Gerçek verinin bir kopyası adım adım değiştirilir; harita her adımda yeniden yerleşir
+   ve nesneler yeni yerlerine süzülür. Kümeye hiçbir istek gitmez. */
+const ALPHA = "bcdfghjklmnpqrstvwxz2456789";
+const rnd = (n) => Array.from({length: n}, () => ALPHA[Math.floor(Math.random() * ALPHA.length)]).join("");
+const findPod = (t, ns, name) => t.pods.find((p) => p.ns === ns && p.name === name);
+const unlinkSvc = (t, p) => t.services.forEach((s) => { if (s.ns === p.ns) s.pods = s.pods.filter((n) => n !== p.name); });
+function clonePod(p, name, node) {
+  return {...structuredClone(p), name, node, status: node ? "ContainerCreating" : "Pending", ready: false, restarts: 0, ip: "",
+          cpu: null, mem: null, rx: null, tx: null, cpu_z: null, mem_z: null, rx_z: null, tx_z: null, incident: null, created: new Date().toISOString(),
+          conditions: {PodScheduled: !!node, Initialized: false, ContainersReady: false, Ready: false},
+          containers: (p.containers || []).map((c) => ({...c, ready: false, restarts: 0, state: "waiting", reason: "ContainerCreating", last: ""}))};
+}
+const run = (p) => Object.assign(p, {status: "Running", ready: true, ip: `10.244.0.${20 + Math.floor(Math.random() * 200)}`,
+  conditions: {PodScheduled: true, Initialized: true, ContainersReady: true, Ready: true}, cpu: 0.01, mem: 30 * MiB});
+const newName = (p) => p.workload?.kind === "StatefulSet" ? p.name : p.owner?.kind === "ReplicaSet" ? `${p.owner.name}-${rnd(5)}` : `${p.workload?.name || p.name}-${rnd(5)}`;
+
+const SIMS = {
+  delete(id) {
+    const [ns, name] = id.slice(2).split(/\/(.+)/);
+    const p0 = findPod(S.topo, ns, name), k = p0.workload?.kind, nn = newName(p0);
+    const svcs = S.topo.services.filter((s) => s.ns === ns && s.pods.includes(name)).map((s) => s.name);
+    const steps = [{c: `<b>kubectl delete pod ${esc(name)}</b> çalıştırıldı. Pod <b>Terminating</b> olur; Service onu hemen uç listesinden çıkarır, yeni istek gitmez. Konteynerlere SIGTERM gönderilir.`,
+      f: (t) => { const p = findPod(t, ns, name); Object.assign(p, {status: "Terminating", ready: false}); unlinkSvc(t, p); }}];
+    if (k === "Static") {
+      steps.push({c: "Bu bir <b>statik pod</b>: tanımı node'daki bir dosyada duruyor. API'deki kopyası silinse de <b>kubelet</b> dosyayı görmeye devam eder ve pod'u aynı adla hemen yeniden başlatır.", f: (t) => { const p = findPod(t, ns, name); Object.assign(p, {status: "ContainerCreating"}); }});
+      steps.push({c: "Pod geri geldi. Kontrol düzlemi bileşenleri böyle korunur: onları API üzerinden kalıcı olarak silemezsin, ancak node'daki manifest dosyasını kaldırarak.", f: (t) => run(findPod(t, ns, name))});
+      return {title: "Statik pod silinirse", target: id, steps};
+    }
+    if (!k || k === "Pod") {
+      steps.push({c: "Pod silindi. <b>Sahibi olmadığı için</b> kimse yenisini yaratmaz; uygulama şimdi kapalı. Üretimde çıplak pod kullanılmamasının nedeni budur.", f: (t) => { t.pods = t.pods.filter((p) => p !== findPod(t, ns, name)); }});
+      return {title: "Sahipsiz pod silinirse", target: id, steps};
+    }
+    const ctrlName = k === "Deployment" ? "ReplicaSet denetleyicisi" : k + " denetleyicisi";
+    const w = S.topo.workloads.find((x) => x.kind === k && x.ns === ns && x.name === p0.workload.name);
+    steps.push({c: `Kapanma süresi dolunca pod silinir. <b>${ctrlName}</b> farkı görür: istenen ${w?.desired ?? "N"}, mevcut ${(w?.desired ?? 1) - 1}.`,
+      f: (t) => { t.pods = t.pods.filter((p) => p !== findPod(t, ns, name)); }});
+    steps.push({c: k === "StatefulSet" ? `Denetleyici pod'u <b>aynı adla</b> (${esc(nn)}) yeniden yaratır: StatefulSet'te kimlik ve disk korunur. Henüz bir node'u yok; zamanlayıcı kuyruğunda bekliyor (<b>Pending</b>).`
+                 : k === "DaemonSet" ? "DaemonSet denetleyicisi aynı node için yeni pod yaratır (DaemonSet pod'ları node'a doğrudan bağlanır)."
+                 : `Aynı şablondan <b>yeni bir pod</b> yaratılır: <span class="mono">${esc(nn)}</span>. Yeni ad, yeni IP. Henüz bir node'u yok; zamanlayıcı kuyruğunda bekliyor (<b>Pending</b>).`,
+      f: (t) => { const np = clonePod(p0, nn, k === "DaemonSet" ? p0.node : ""); t.pods.push(np); S.sim.spawnFrom.add(`p:${ns}/${nn}`); }});
+    if (k !== "DaemonSet") steps.push({c: `<b>Scheduler</b> pod'un isteğine (CPU ${fmt.cores(p0.req_cpu)}, bellek ${fmt.bytes(p0.req_mem)}) bakar, sığdığı ve kurallarına uyan node'u seçer: <b>${esc(p0.node)}</b>.`,
+      f: (t) => { const p = findPod(t, ns, nn); Object.assign(p, {node: p0.node, status: "ContainerCreating"}); p.conditions.PodScheduled = true; }});
+    steps.push({c: `O node'daki <b>kubelet</b> işi alır: imajı çeker (<span class="mono">${esc(p0.containers?.[0]?.image || "")}</span>), konteyneri başlatır. Readiness kontrolü geçince pod <b>Ready</b> olur.`,
+      f: (t) => run(findPod(t, ns, nn))});
+    steps.push({c: `${svcs.length ? `Service (<b>${esc(svcs.join(", "))}</b>) yeni pod'u uç listesine ekler, trafik yeniden akar. ` : ""}Kimse müdahale etmedi: <b>istenen durum</b> kendiliğinden geri geldi. Buna kendi kendini iyileştirme (self-healing) denir.`,
+      f: (t) => t.services.forEach((s) => { if (s.ns === ns && svcs.includes(s.name)) s.pods.push(nn); })});
+    return {title: "Pod silinirse", target: id, steps};
+  },
+  scale(id) {
+    const [ns, name] = id.slice(2).split(/\/(.+)/);
+    const p0 = findPod(S.topo, ns, name), k = p0.workload?.kind, wl = p0.workload?.name;
+    const sib = S.topo.pods.filter((p) => p.ns === ns && p.workload?.name === wl);
+    const svcs = S.topo.services.filter((s) => s.ns === ns && sib.some((p) => s.pods.includes(p.name))).map((s) => s.name);
+    const n = sib.length;
+    const names = k === "StatefulSet" ? [`${wl}-${n}`, `${wl}-${n + 1}`] : [newName(p0), newName(p0)];
+    const nodes = S.topo.nodes.filter((x) => x.ready).sort((a, b) => S.topo.pods.filter((p) => p.node === a.name).length - S.topo.pods.filter((p) => p.node === b.name).length);
+    const pick = (i) => (nodes[i % nodes.length] || {name: p0.node}).name;
+    return {title: "Ölçeklersek", target: id, steps: [
+      {c: `<b>kubectl scale ${k === "StatefulSet" ? "sts" : "deploy"}/${esc(wl)} --replicas=${n + 2}</b>. İstenen kopya sayısı ${n} → ${n + 2}. ${k === "Deployment" ? "Deployment bunu ReplicaSet'e iletir." : ""}`, f: () => {}},
+      {c: k === "StatefulSet" ? `StatefulSet pod'ları <b>sırayla</b> yaratır: önce <span class="mono">${names[0]}</span>, o hazır olunca <span class="mono">${names[1]}</span>. İkisi de kuyrukta.` : `ReplicaSet iki yeni pod yaratır; ikisi de zamanlayıcı kuyruğunda (<b>Pending</b>).`,
+        f: (t) => names.forEach((nm) => { t.pods.push(clonePod(p0, nm, "")); S.sim.spawnFrom.add(`p:${ns}/${nm}`); })},
+      {c: `<b>Scheduler</b> her biri için node seçer. ${nodes.length > 1 ? "Yükü dengelemek için az dolu node'ları tercih eder." : "Tek node olduğu için ikisi de aynı yere."}`,
+        f: (t) => names.forEach((nm, i) => Object.assign(findPod(t, ns, nm), {node: pick(i), status: "ContainerCreating"}))},
+      {c: "<b>kubelet</b> konteynerleri başlatır; readiness kontrolü geçince pod'lar Ready.", f: (t) => names.forEach((nm) => run(findPod(t, ns, nm)))},
+      {c: `${svcs.length ? `Service seçicisi yeni pod'ları da kapsıyor (aynı etiketler): trafik artık <b>${n + 2}</b> pod'a dağılıyor. ` : ""}Yük arttıkça bunu kendiliğinden yapan nesneye <b>HorizontalPodAutoscaler</b> (HPA) denir. Nöbetçi için ipucu: HPA tavana dayandıysa ölçekleme artık kurtarmaz.`,
+        f: (t) => t.services.forEach((s) => { if (s.ns === ns && svcs.includes(s.name)) s.pods.push(...names); })},
+    ]};
+  },
+  nodedown(id) {
+    const node = id.slice(2), others = S.topo.nodes.filter((n) => n.name !== node && n.ready).map((n) => n.name);
+    const on = S.topo.pods.filter((p) => p.node === node);
+    const movable = on.filter((p) => ["Deployment", "StatefulSet"].includes(p.workload?.kind));
+    const repl = movable.map((p) => ({ns: p.ns, from: p.name, name: newName(p), p}));
+    const steps = [
+      {c: `<b>${esc(node)}</b> elektriği kesildi ya da ağdan koptu. kubelet birkaç saniyede bir gönderdiği "hâlâ buradayım" sinyalini (node lease) artık göndermiyor.`, f: () => {}},
+      {c: "~40 sn sonra <b>node denetleyicisi</b> node'u <b>NotReady</b> işaretler ve <span class='mono'>unreachable</span> taint'i ekler. Pod'lar hâlâ listede ama durumları bilinmiyor; Service'ler onları uç listesinden çıkarır.",
+        f: (t) => { const n = t.nodes.find((x) => x.name === node); n.ready = false; t.pods.filter((p) => p.node === node).forEach((p) => { Object.assign(p, {status: "Unknown", ready: false}); unlinkSvc(t, p); }); }},
+      {c: "Pod'ların varsayılan toleransı (5 dk) dolunca tahliye edilirler. DaemonSet ve statik pod'lar node'a bağlı olduğu için taşınmaz.",
+        f: (t) => { t.pods = t.pods.filter((p) => !(p.node === node && ["Deployment", "StatefulSet"].includes(p.workload?.kind))); }},
+      {c: `Denetleyiciler eksik kopyaları yeniden yaratır (${repl.length} pod). ${others.length ? "Kuyruğa düşerler…" : "Ama <b>başka node yok</b>: hepsi kuyrukta <b>Pending</b> kalır."}`,
+        f: (t) => repl.forEach((r) => { t.pods.push(clonePod(r.p, r.name, "")); S.sim.spawnFrom.add(`p:${r.ns}/${r.name}`); })},
+    ];
+    if (others.length) {
+      steps.push({c: "Scheduler onları sağlam node'lara dağıtır, kubelet'ler başlatır.", f: (t) => repl.forEach((r, i) => run(Object.assign(findPod(t, r.ns, r.name), {node: others[i % others.length]})))});
+      steps.push({c: "Uygulamalar birkaç dakikalık kesintiyle geri döndü. Üretimde kesintiyi sıfıra yaklaştırmak için kopyalar farklı node'lara yayılır (anti-affinity) ve PodDisruptionBudget kullanılır.", f: () => {}});
+    } else {
+      steps.push({c: "Tek node'lu bir kümede (kind) node gidince her şey gider; kontrol düzlemi de o node'da. Üretimde bu yüzden en az 3 kontrol düzlemi ve birden çok çalışan node olur. Nöbetçi bu durumda <b>node Ready değil</b> ve <b>kopyalar hazır değil</b> bulgularını tek olayda toplar.", f: () => {}});
+    }
+    return {title: "Node çökerse", target: id, steps};
+  },
+  leak(id) {
+    const [ns, name] = id.slice(2).split(/\/(.+)/);
+    const p0 = findPod(S.topo, ns, name), lim = p0.mem_limit || p0.lim_mem || 256 * MiB;
+    const m = (f, extra = {}) => (t) => Object.assign(findPod(t, ns, name), {mem: f * lim, mem_limit: lim}, extra);
+    return {title: "Bellek sızarsa", target: id, steps: [
+      {c: `<b>${esc(name)}</b> içinde bir bellek sızıntısı başladığını düşünelim: her dakika biraz daha bellek tutuluyor. Pod'daki sıvı, ${fmt.bytes(lim)} limitin ne kadarının dolduğunu gösterir.`, f: m(0.42, {mem_z: 0.8})},
+      {c: "Bellek dakika dakika yükseliyor. Ani bir sıçrama yok, bu yüzden z-skoru alarmı çalmaz. Ama nöbetçinin <b>limit tahmini</b> son 20-60 noktaya bir doğru uydurur: eğim pozitif ve istikrarlı (R² ≥ 0,9).", f: m(0.6, {mem_z: 2.6})},
+      {c: "Nöbetçi: <b>\"bellek limite gidiyor, bu hızla ~25 dk sonra dolar\"</b>. Olay açılır (sarı rozet). Kaza olmadan önce uyarı vermek bu projenin en değerli yanı.", f: m(0.8, {mem_z: 3.4, incident: {id: 0, severity: 2, title: "bellek limite gidiyor"}})},
+      {c: "Limit aşıldı. Linux çekirdeği konteyneri öldürür: <b>OOMKilled</b> (çıkış kodu 137). Pod hazır olmaktan çıkar, Service trafiği keser; olay <b>kritik</b> seviyeye çıkar.",
+        f: (t) => { const p = m(1, {status: "OOMKilled", ready: false, incident: {id: 0, severity: 3, title: "OOMKilled"}})(t); unlinkSvc(t, p); }},
+      {c: "<b>kubelet</b> konteyneri yeniden başlatır. Pod aynı kalır ama ↻ sayacı artar, bellek sıfırdan başlar.", f: m(0.15, {status: "Running", ready: true, restarts: (p0.restarts || 0) + 1, mem_z: 0})},
+      {c: "Sızıntı sürdükçe döngü tekrarlanır ve kubelet her seferinde daha uzun bekler: <b>CrashLoopBackOff</b>. Nöbetçi dolum tahmini, OOMKilled ve yeniden başlamaları <b>tek olayda</b> toplar, kural tabanlı komutları ekler.",
+        f: m(0.05, {status: "CrashLoopBackOff", ready: false, restarts: (p0.restarts || 0) + 3, incident: {id: 0, severity: 3, title: "OOMKilled + CrashLoopBackOff"}})},
+    ]};
+  },
+};
+function startSim(kind, target) {
+  if (!S.topo || !SIMS[kind] || !target) return;
+  endSim(true); endTour(true);
+  S.sim = {spawnFrom: new Set(), i: -1};
+  S.simT = structuredClone(S.topo);
+  const def = SIMS[kind](target);
+  Object.assign(S.sim, def, {kind});
+  $("#simT").textContent = "Simülasyon · " + def.title;
+  $("#simS").innerHTML = def.steps.map(() => "<i></i>").join("");
+  $("#simbar").classList.add("on");
+  S.sel = def.target; renderSide(true);
+  focusOn([...related(def.target)], 160);
+  simNext();
+}
+function simNext() {
+  const s = S.sim;
+  if (!s) return;
+  s.i++;
+  if (s.i >= s.steps.length) {
+    $("#simC").innerHTML += `<div class="btnrow"><button class="btn sim" id="simAgain">↻ Baştan oynat</button><button class="btn" id="simEnd">Canlı veriye dön</button></div>`;
+    $("#simAgain").onclick = () => startSim(s.kind, s.target);
+    $("#simEnd").onclick = () => endSim();
+    return;
+  }
+  const st = s.steps[s.i];
+  st.f(S.simT);
+  layout();
+  $("#simC").innerHTML = st.c;
+  $$("#simS i").forEach((el, i) => el.classList.toggle("on", i <= s.i));
+  if (S.ents.has(s.target)) S.sel = s.target;
+  const ids = [...S.sim.spawnFrom].filter((x) => S.ents.has(x));
+  focusOn([...(S.ents.has(s.target) ? related(s.target) : []), ...ids, ...(ids.length ? ["q:"] : [])], 160);
+  renderSide(false);
+  s.timer = setTimeout(simNext, Math.max(3600, st.c.replace(/<[^>]+>/g, "").length * 42));
+}
+function simHTML() {
+  const s = S.sim;
+  return `${kindHead("Simülasyon · kümeye dokunmaz", C.brain)}<h3>${esc(s.title)}</h3>
+    <p class="lead">Gerçek verinin bir kopyası adım adım değiştiriliyor; haritadaki nesneler yeni hâllerine süzülüyor. Bir adıma tıklayarak oraya atlayabilirsin.</p>
+    <div class="gl">${s.steps.map((st, i) => `<button class="ss" data-simstep="${i}" style="${i === s.i ? "border-color:var(--brain);background:color-mix(in srgb,var(--brain) 8%,var(--surface))" : i > s.i ? "opacity:.5" : ""}">
+      <span class="ic" style="background:${i <= s.i ? C.brain : C.line2}">${i + 1}</span><span style="font-size:13px;color:var(--ink)">${st.c}</span></button>`).join("")}</div>
+    <div class="btnrow"><button class="btn" data-act="endsim">Canlı veriye dön</button></div>`;
+}
+function simJump(k) {
+  const s = S.sim;
+  if (!s || k === s.i) return;
+  clearTimeout(s.timer);
+  if (k < s.i) { S.simT = structuredClone(S.topo); s.spawnFrom.clear(); for (let j = 0; j < k; j++) s.steps[j].f(S.simT); s.i = k - 1; }
+  else for (let j = s.i + 1; j < k; j++) { s.steps[j].f(S.simT); s.i = j; }
+  simNext();
+}
+function endSim(silent) {
+  if (!S.sim) return;
+  clearTimeout(S.sim.timer);
+  S.sim = null; S.simT = null;
+  $("#simbar").classList.remove("on");
+  if (!silent) { layout(); S.userCam = false; fit(false); renderSide(false); }
+}
+$("#simX").onclick = () => endSim();
+for (const b of ["simbar"]) $("#" + b).addEventListener("click", (e) => { if (e.target.closest(".c") && S.sim && S.sim.i < S.sim.steps.length - 1) { clearTimeout(S.sim.timer); simNext(); } });
+S.sim = null;
+
+/* ============================================================== rehberli tur */
+function tourSteps() {
+  const ents = [...S.ents.values()];
+  const pods = ents.filter((e) => e.type === "pod");
+  const userPod = pods.find((e) => !isSys(e.data.ns) && !role(e.data) && e.data.workload?.kind === "Deployment") || pods[0];
+  const userNs = userPod && ents.find((e) => e.type === "ns" && e.data.ns === userPod.data.ns);
+  const svc = ents.filter((e) => e.type === "svc" && e.data.pods.length && !isSys(e.data.ns)).sort((a, b) => b.data.pods.length - a.data.pods.length)[0] || ents.find((e) => e.type === "svc");
+  const node = ents.find((e) => e.type === "node"), sp = S.special;
+  return [
+    {t: "Kümeye hoş geldin", target: null, c: "Bu ekran kümenin canlı bir haritası. Kubernetes'i büyük bir <b>işletim sistemi</b> gibi düşünebilirsin: makineleri (node) tek bir bilgisayar gibi yönetir, uygulamaları (pod) nereye koyacağına kendisi karar verir. Turda yukarıdan aşağı, dıştan içe gideceğiz."},
+    node && {t: "Node: makine", target: node.id, c: `Bu büyük kutu bir <b>node</b>, yani bir makine: <b>${esc(node.data.name)}</b>. Üstte CPU ve bellek kullanımı var. Bu kümede tek node var; kontrol düzlemi de uygulamalar da burada.`},
+    node && {t: "kubelet ve containerd", target: `c:${node.data.name}/kubelet`, c: "Her node'da iki süreç çalışır: <b>kubelet</b> (Kubernetes'in node'daki ajanı: pod'ları başlatır, izler, ölçer) ve <b>containerd</b> (konteynerleri gerçekten çalıştıran motor). Bunlar pod değildir, makinede doğrudan çalışırlar."},
+    userNs && {t: "Namespace: bölme", target: userNs.id, c: `Renkli çerçeveler <b>namespace</b>. Kümeyi mantıksal bölmelere ayırırlar: <b>${esc(userNs.data.ns)}</b> bir uygulama ekibinin alanı olabilir, <b>kube-system</b> Kubernetes'in kendisinin.`},
+    userPod && {t: "Pod: çalışan uygulama", target: userPod.id, c: `Her daire bir <b>pod</b>: bir ya da birkaç konteyner, kendi IP'si. Bu <b>${esc(userPod.data.name)}</b>. Daire bellek kadar büyür, dış halka CPU'yu gösterir. Pod'lar geçicidir; ölürler ve yenileri gelir. Sağ panelde "Bu pod silinirse?" simülasyonu bunu gösterir.`},
+    svc && {t: "Service: sabit adres", target: svc.id, c: `Altıgenler <b>Service</b>. Pod'lar gelip gittiği için onlara doğrudan bağlanılmaz; Service sabit bir ad ve IP verir (<span class="mono">${esc(svc.data.name)}.${esc(svc.data.ns)}.svc</span>) ve trafiği hazır pod'lara dağıtır. Akan camgöbeği noktalar bu istekler.`},
+    sp.api && {t: "Kontrol düzlemi", target: sp.api.id, c: "Bu <b>API server</b>: kümenin beyni ve tek kapısı. Yanındaki <b>etcd</b> hafızası, <b>scheduler</b> pod'lara node seçer, <b>controller-manager</b> \"istenen durum = gerçek durum mu?\" diye sürekli kontrol eder. Hepsi kube-system içinde statik pod olarak çalışıyor."},
+    sp.prom && {t: "Ölçüm yolu", target: sp.prom.id, c: "Şimdi nöbetçinin veri yolu (mor). kubelet içindeki <b>cAdvisor</b> her konteynerin CPU, bellek ve ağını ölçer; <b>Prometheus</b> bunları düzenli aralıklarla kazır. <b>kube-state-metrics</b> da API'deki durumu (yeniden başlama, bekleme nedeni, limit) ölçüme çevirir.", go: () => scrapeBurst()},
+    sp.nob && {t: "Nöbetçi", target: sp.nob.id, c: "Ve <b>nöbetçi</b>: her turda Prometheus'u sorgular (kehribar dalga), her serinin kendi normalinden sapmasını hesaplar, bulguları olaylara toplar. Nasıl karar verdiğini görmek için <b>Nöbetçinin beyni</b> sekmesine geç.", go: () => onCycle(S.topo), brain: true},
+    {t: "Sıra sende", target: null, c: "Herhangi bir şeye tıkla: pod, service, node, hatta alttaki Kubernetes olaylarına. Her biri ne olduğunu ve şu an ne yaptığını anlatır. Sağ panelde senaryolar var: pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse ne olur?"},
+  ].filter(Boolean);
+}
+function startTour() {
+  endSim(true);
+  S.tour = {i: 0, steps: tourSteps()};
+  $("#tourBtn").setAttribute("aria-pressed", "true");
+  tourShow();
+}
+function tourGo(d) {
+  if (!S.tour) return;
+  S.tour.i = clamp(S.tour.i + d, 0, S.tour.steps.length - 1);
+  tourShow();
+}
+function tourShow() {
+  const st = S.tour.steps[S.tour.i];
+  S.tour.target = st.target;
+  if (st.target) focusOn([st.target], st.target.startsWith("n:") ? 60 : 220, 1.25);
+  else { S.userCam = false; fit(false); }
+  st.go?.();
+  renderSide(true);
+}
+function endTour(silent) {
+  if (!S.tour) return;
+  S.tour = null;
+  $("#tourBtn").setAttribute("aria-pressed", "false");
+  if (!silent) { S.userCam = false; fit(false); renderSide(true); }
+}
+function tourHTML() {
+  const {i, steps} = S.tour, st = steps[i];
+  return `${kindHead(`Tur · ${i + 1} / ${steps.length}`, C.brain)}<h3>${st.t}</h3><p class="lead" style="font-size:15px">${st.c}</p>
+    <div class="steps" style="display:flex;gap:4px;margin:14px 0">${steps.map((_, j) => `<i style="flex:1;height:3px;border-radius:2px;background:${j <= i ? C.brain : C.line2}"></i>`).join("")}</div>
+    <div class="btnrow">${i ? `<button class="btn" data-act="prev">← Geri</button>` : ""}${i < steps.length - 1 ? `<button class="btn pri" data-act="next">Devam →</button>` : `<button class="btn pri" data-act="endtour">Haritayı keşfet</button>`}
+      ${st.brain ? `<button class="btn sim" data-act="brain">Nöbetçinin beynine geç</button>` : ""}<button class="btn" data-act="endtour">Turu bitir</button></div>
+    <div class="muted" style="font-size:12px">Klavye: ← → ile ilerle, Esc ile çık.</div>`;
+}
+$("#tourBtn").onclick = () => (S.tour ? endTour() : startTour());
+
+/* ============================================================== nöbetçinin beyni: tespit hattı */
+const COLX = (i) => 12 + i * 168, ROWY = [34, 158, 282], BW = 152, BH = 64;
+const STAGES = {
+  prom: [0, 1, "Prometheus", "zaman serisi veritabanı"], collect: [1, 1, "Toplama", "6 sinyal + 7 kural"],
+  buffer: [2, 1, "Tampon", "seri başına 3 saat"], base: [3, 0, "Normal", "medyan + MAD"],
+  z: [4, 0, "Sapma (z)", "normalden uzaklık"], persist: [5, 0, "Kalıcılık", "art arda N nokta"],
+  profile: [6, 0, "Saatlik profil", "bu saatte olağan mı?"], supp: [7, 0, "Bastırıldı", "her gün olağan", true],
+  fill: [3, 1, "Limit tahmini", "doğrusal eğilim"], checks: [3, 2, "Kurallar", "OOMKilled, CrashLoop…"],
+  find: [7, 1, "Bulgu", "ham tespitler"], inc: [8, 1, "Olay", "iş yükü başına"],
+  llm: [8, 2, "Yorum", "kural + LLM"], out: [7, 2, "Çıkış", "ekran · webhook"],
+};
+const FLOW_EDGES = [["prom", "collect"], ["collect", "buffer"], ["buffer", "base"], ["buffer", "fill"], ["collect", "checks"], ["base", "z"], ["z", "persist"],
+  ["persist", "profile"], ["profile", "supp"], ["profile", "find"], ["fill", "find"], ["checks", "find"], ["find", "inc"], ["inc", "llm"], ["llm", "out"]];
+const box = (id) => { const [c, r] = STAGES[id]; return {x: COLX(c), y: ROWY[r], w: BW, h: BH}; };
+function flowPath(a, b) {
+  const A = box(a), B = box(b);
+  if (A.y === B.y) return B.x > A.x ? `M${A.x + A.w},${A.y + BH / 2} L${B.x},${B.y + BH / 2}` : `M${A.x},${A.y + BH / 2} L${B.x + B.w},${B.y + BH / 2}`;
+  if (A.x === B.x) return `M${A.x + A.w / 2},${A.y + BH} L${B.x + B.w / 2},${B.y}`;
+  const x1 = A.x + A.w, y1 = A.y + BH / 2, x2 = B.x, y2 = B.y + BH / 2, m = Math.max(40, (x2 - x1) * 0.5);
+  return `M${x1},${y1} C${x1 + m},${y1} ${x2 - m},${y2} ${x2},${y2}`;
+}
+function buildFlow() {
+  const svg = $("#flow");
+  const lanes = [["İSTATİSTİK · ani sıçrama ve düşüş", 0], ["TAHMİN · limit ne zaman dolar", 1], ["KURAL · bilinen kötü durumlar", 2]];
+  let h = lanes.map(([l, r]) => `<text class="lane" x="${COLX(3)}" y="${ROWY[r] - 10}">${l}</text>`).join("");
+  h += FLOW_EDGES.map(([a, b]) => `<path class="e" id="fe-${a}-${b}" d="${flowPath(a, b)}"${STAGES[b][4] ? ' stroke-dasharray="5 5"' : ""}/>`).join("");
+  h += `<text class="s" x="${COLX(4) + BW / 2}" y="${ROWY[0] + BH + 18}" text-anchor="middle">eşik altı → normal, atılır</text>`;
+  h += Object.entries(STAGES).map(([id, [c, r, t, s, sink]]) => `<g class="st" data-st="${id}" tabindex="0" role="button" aria-label="${t}">
+      <rect x="${COLX(c)}" y="${ROWY[r]}" width="${BW}" height="${BH}" rx="14"${sink ? ' stroke-dasharray="5 4"' : ""}/>
+      <text x="${COLX(c) + 14}" y="${ROWY[r] + 24}">${t}</text><text class="s" x="${COLX(c) + 14}" y="${ROWY[r] + 44}">${s}</text>
+      <text class="n" id="fn-${id}" x="${COLX(c) + BW - 12}" y="${ROWY[r] + 24}" text-anchor="end"></text></g>`).join("");
+  h += `<g id="dots"></g>`;
+  svg.innerHTML = h;
+  svg.querySelectorAll(".st").forEach((g) => {
+    const go = () => { selStage(g.dataset.st); };
+    g.addEventListener("click", go);
+    g.addEventListener("keydown", (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), go()));
+  });
+}
+const FP = {};  // kenar yolları (uzunluk ölçümü için)
+function edgeEl(a, b) { return FP[a + b] || (FP[a + b] = $(`#fe-${a}-${b}`)); }
+const DOTS = [];
+function dot(route, col, delay = 0, speed = 230) { DOTS.push({route, i: 0, d: -delay * speed, speed, col, el: null}); }
+function playWave(t, slow) {
+  t = t || S.topo;
+  if (!t) return;
+  const p = t.pipeline || {}, det = p.detect || {}, series = p.source?.series || 0;
+  const N = clamp(Math.round(series / 4), 8, 46), cand = det.candidates || 0, supp = det.suppressed || 0;
+  const checks = Object.values(det.checks || {}).reduce((a, b) => a + b, 0), fills = det.fills || 0;
+  const head = [["prom", "collect"], ["collect", "buffer"], ["buffer", "base"], ["base", "z"]];
+  const tail = [["find", "inc"], ["inc", "llm"], ["llm", "out"]];
+  const sp = slow ? 110 : 260, gap = slow ? 0.07 : 0.03;
+  const go = Math.max(cand > 0 ? 1 : 0, Math.round(N * cand / Math.max(series, 1)));
+  for (let i = 0; i < N; i++) {
+    const r = [...head];
+    if (i < go) {
+      r.push(["z", "persist"], ["persist", "profile"]);
+      if (i < Math.round(go * supp / Math.max(cand, 1))) r.push(["profile", "supp"]);
+      else r.push(["profile", "find"], ...tail);
+    }
+    dot(r, i < go ? C.crit : C.metric, i * gap, sp);
+  }
+  for (let i = 0; i < Math.min(fills, 6); i++) dot([["prom", "collect"], ["collect", "buffer"], ["buffer", "fill"], ["fill", "find"], ...tail], C.warn, 0.4 + i * 0.15, sp);
+  for (let i = 0; i < Math.min(checks, 8); i++) dot([["prom", "collect"], ["collect", "checks"], ["checks", "find"], ...tail], C.crit, 0.2 + i * 0.15, sp);
+  if (!checks && !fills && !cand) dot([["prom", "collect"], ["collect", "checks"]], C.metric, 0.3, sp);
+}
+function lit(id) {
+  const g = $(`#flow .st[data-st="${id}"]`);
+  if (!g) return;
+  g.classList.add("lit");
+  clearTimeout(g._t); g._t = setTimeout(() => g.classList.remove("lit"), 380);
+}
+function drawFlow(dt) {
+  const layer = $("#dots");
+  if (!layer) return;
+  for (const d of DOTS) {
+    d.d += d.speed * dt;
+    if (d.d < 0) continue;
+    let [a, b] = d.route[d.i], el = edgeEl(a, b);
+    if (!el) { d.done = true; continue; }
+    let L = el.getTotalLength();
+    while (d.d > L) {
+      d.d -= L; d.i++;
+      lit(b);
+      if (d.i >= d.route.length) { d.done = true; break; }
+      [a, b] = d.route[d.i]; el = edgeEl(a, b); L = el.getTotalLength();
+    }
+    if (!d.el) { d.el = document.createElementNS("http://www.w3.org/2000/svg", "circle"); d.el.setAttribute("r", "4"); d.el.setAttribute("fill", d.col); layer.appendChild(d.el); }
+    if (d.done) {
+      const last = d.route[d.route.length - 1][1];
+      d.el.style.transition = "opacity .5s, r .5s"; d.el.style.opacity = "0";
+      if (last === "z" || last === "supp" || last === "checks") d.el.setAttribute("r", "1.5");
+      setTimeout(() => d.el.remove(), 520);
+      continue;
+    }
+    const pt = el.getPointAtLength(d.d);
+    d.el.setAttribute("cx", pt.x); d.el.setAttribute("cy", pt.y);
+  }
+  for (let i = DOTS.length - 1; i >= 0; i--) if (DOTS[i].done) DOTS.splice(i, 1);
+}
+
+/* ---- aşama açıklamaları: gerçek ayarlar ve bu turun sayılarıyla */
+function stageInfo(id) {
+  const t = S.topo || {}, p = t.pipeline || {}, src = p.source || {}, det = p.detect || {}, D = t.detector || {};
+  const chk = Object.entries(det.checks || {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "hiçbiri";
+  const zc = (t.pods || []).reduce((a, x) => a + SIGNALS.filter((s) => Math.abs(x[s.k + "_z"] ?? 0) >= (D.z || 5)).length, 0);
+  const I = {
+    prom: ["Prometheus", `Kümedeki ölçüm veritabanı (<span class="mono">${esc(src.url || "")}</span>). Nöbetçi ölçüm saklamaz; her turda burada sorar, açılışta da son 3 saati ve 7 günlük profili buradan okur.`,
+      "Veriyi tekrar toplamak yerine var olanı okumak: tek pod, sıfır bağımlılık, kurulum basit.", [["sorgu (bu tur)", src.queries], ["sorgu süresi", `${src.query_ms ?? "—"} ms`]], "nobetci/prom.py"],
+    collect: ["Toplama", "Her turda 6 sinyal (pod CPU, bellek, gelen/giden ağ; node CPU, bellek) ve 7 durum kontrolü PromQL ile sorulur. Pod adlarındaki rastgele ekler atılıp iş yükü adı bulunur; pod yeniden doğsa da geçmişi kaybolmaz.",
+      "PromQL, Prometheus'un sorgu dili: ör. <span class='mono'>sum by (namespace,pod) (irate(container_cpu_usage_seconds_total[5m]))</span> her pod'un saniyelik CPU kullanımını verir.", [["izlenen seri", src.series], ["pod / node", `${src.pods} / ${src.nodes}`], ["tur süresi", `${p.cycle_seconds ?? "—"} sn`]], "nobetci/signals.py, engine.py:collect"],
+    buffer: ["Tampon", `Her seri için son 180 nokta bellekte tutulur (turda bir nokta, ${t.interval || 60} sn aralıkla → 3 saat). Her noktanın o anki "normal"i ve ölçeği de saklanır; ekrandaki grafikler tespitle birebir aynı hesabı gösterir.`,
+      "Hafızada kayan pencere: veritabanı yok, yeniden başlarsa Prometheus'tan tekrar doldurur.", [["seri", src.series], ["saatlik profili olan", src.profiles]], "engine.py:Series"],
+    base: ["Normal", `Bir değerin "olağan" olup olmadığını anlamak için serinin <b>kendi</b> yakın geçmişine bakılır: son ${D.window || 60} noktanın <b>medyanı</b> normal, sapmaların medyanı (<b>MAD</b>) yayılımdır.`,
+      "Medyan ve MAD aykırı değerlerden etkilenmez (sağlam istatistik). Ortalama/standart sapma ise tek bir dev sıçramayla şişer ve sonraki sıçramaları gizler. Laboratuvarda ikisini karşılaştırabilirsin.",
+      [["pencere", `${D.window || 60} nokta`], ["ısınma", `${D.warmup} nokta`]], "detect.py:baseline", "ölçek = max(1.4826 × MAD, %5 × |medyan|, en_küçük_değişim / z)"],
+    z: ["Sapma (z-skoru)", "Değerin normalden kaç \"ölçek\" uzak olduğu. 1.4826 katsayısı MAD'i normal dağılımdaki standart sapmaya denk getirir. Ölçeğin tabanı vardır: düz bir seride binde birlik oynama bile dev z vermesin diye.",
+      "Her serinin ölçeği farklı (bir pod 5 MiB, öteki 2 GiB kullanır); z-skoru hepsini aynı dile çevirir. Isı haritasındaki renkler de budur.", [["eşik", `±${D.z}`], ["şu an eşiği aşan seri", zc]], "detect.py:detect_jump", "z = (değer − medyan) / ölçek"],
+    persist: ["Kalıcılık", `Eşik art arda <b>${D.persist}</b> noktada aşılmalı. Tek noktalık zıplamalar (GC, log patlaması) elenir. Düşüş için ayrıca değerin normalin en az yarısına inmesi gerekir.`,
+      "Hassasiyet ↔ yanlış alarm dengesi: kalıcılık arttıkça alarm geç gelir ama daha az yanılır.", [["aday (bu tur)", det.candidates]], "detect.py:detect_jump"],
+    profile: ["Saatlik profil", "Son 7 günün her saati için (en düşük, en yüksek) aralığın günler arası medyanı tutulur. Sıçrama bu saatin olağan aralığındaysa (%25 pay ile) alarm verilmez: her gece 03:00'te çalışan yedekleme \"anomali\" değildir.",
+      "Mevsimsellik: Prophet gibi ağır modeller yerine bağımlılıksız basit bir profil. En az 3 günlük geçmiş ister.", [["bu tur bastırılan", det.suppressed], ["toplam bastırılan", det.suppressed_total]], "detect.py:HourProfile"],
+    supp: ["Olağan sayıldı", "Saatlik profilin \"her gün bu saatte zaten böyle\" dediği sıçramalar. Sayılır ama olay açmaz; /metrics'te <span class='mono'>nobetci_suppressed_total</span> olarak görünür.", "Yanlış alarm azaltmak, nöbetçinin güvenilirliğini belirleyen şeydir.", [["toplam", det.suppressed_total]], "engine.py:detect"],
+    fill: ["Limit tahmini", `Bellek limiti olan pod'larda son 20, 40 ve 60 noktaya en küçük kareler doğrusu uydurulur. Eğim pozitif, uyum iyi (R² ≥ 0,9) ve artış limitin en az %5'i ise "bu hızla X dk sonra dolar" hesaplanır; ${Math.round((D.fill_horizon || 21600) / 3600)} saatten yakınsa bulgu olur.`,
+      "Ani sıçrama değil, yavaş ve istikrarlı tırmanış: z-skoru bunu göremez, eğilim görür. Kaza olmadan önce uyarabilen tek dedektör bu.", [["bu tur", det.fills]], "detect.py:detect_fill", "eta = (limit − şimdiki) / eğim"],
+    checks: ["Durum kontrolleri", "Bilinen kötü durumlar istatistiğe gerek kalmadan kural olarak sorulur: OOMKilled, CrashLoopBackOff/ImagePullBackOff, 10 dk'da yeniden başlama, 10 dk'dır Pending, hazır olmayan Deployment kopyası, NotReady node, %50 üstü CPU kısılması.",
+      "Kaynak: kube-state-metrics. Her şeyi makine öğrenmesiyle yapmaya çalışmak hata olur; bilinen sorunlar için kural hem hızlı hem kesindir.", [["bu tur", chk]], "signals.py:CHECKS"],
+    find: ["Bulgu", "Üç dedektörün ham çıktısı: tür, ciddiyet (bilgi/uyarı/kritik), hangi pod ve hangi sinyal. Aynı anda birçok bulgu çıkabilir; tek tek bildirmek alarm yorgunluğu yaratır.", "Bulgu ≠ olay. Bir sonraki aşama onları gruplar.", [["bu tur", det.findings], ["toplam (türlere göre)", Object.entries(t.finding_counts || {}).map(([k, v]) => `${k} ${v}`).join(", ") || "—"]], "engine.py:Finding"],
+    inc: ["Olay", `Aynı iş yüküne (ya da node'a) ait bulgular <b>tek olayda</b> toplanır: "bellek limite gidiyor" + "OOMKilled" + "yeniden başlama" aynı hikâyedir. ${Math.round((D.quiet || 600) / 60)} dk yeni bulgu gelmezse olay kapanır; ciddiyet artarsa yeniden bildirilir.`,
+      "Gürültüyü azaltmanın ikinci katmanı: insanlar bulguları değil olayları okur.", [["açık olay", (t.incidents || []).length], ["son 24 saatte", t.count_24h]], "incident.py"],
+    llm: ["Yorum", `Her olay için kural tabanlı bir özet ve <span class="mono">kubectl</span> komutları hep vardır. LLM açıksa (${t.llm?.enabled ? esc(t.llm.model) : "şu an kapalı"}) kanıt (sapmalar, pod durumu, Kubernetes olayları) ona üç satırlık bir yorum için gönderilir. LLM karar vermez, komut uydurmaz.`,
+      "Kubernetes API'den gelen bağlam (pod durumu, son olaylar, isteğe bağlı loglar) burada eklenir.", [["LLM çağrısı", t.llm?.calls ?? 0], ["başarısız", t.llm?.failures ?? 0]], "llm.py, rules.py"],
+    out: ["Çıkış", "Olay ekranı, terminal logu, isteğe bağlı webhook (Slack/Mattermost uyumlu) ve Prometheus'un geri kazıyabileceği <span class='mono'>/metrics</span>. Böylece nöbetçinin kendi bulguları da Grafana'da çizilebilir, alarm kurallarına girebilir.",
+      "Döngü kapanıyor: nöbetçi Prometheus'tan okur, sonucunu yine Prometheus'a verir.", [["webhook", t.notify?.webhook ? "açık" : "yok"]], "web.py, notify.py"],
+  };
+  return I[id];
+}
+function selStage(id) {
+  $$("#flow .st").forEach((g) => g.classList.toggle("sel", g.dataset.st === id));
+  S.stage = id;
+  const [t, d, why, rows, code, formula] = stageInfo(id);
+  $("#explain").innerHTML = `<div class="kind"><i style="background:var(--brain)"></i>Aşama</div><h3>${t}</h3><p>${d}</p>${formula ? `<div class="formula">${formula}</div>` : ""}<div class="why">${why}</div>
+    ${kv(rows.map(([a, b]) => [a, esc(b ?? "—")]))}<p class="muted mono" style="font-size:12px">kod: ${code}</p>
+    ${["base", "z", "persist", "fill"].includes(id) ? `<button class="btn pri" onclick="document.querySelector('.lab').scrollIntoView({behavior:'smooth'})">Laboratuvarda dene ↓</button>` : ""}`;
+}
+const REPLAY = [["prom", "Her tur Prometheus'a soru sorarak başlar."], ["collect", "Seriler toplanır: her pod ve node için 6 sinyal, ayrıca 7 durum kontrolü."],
+  ["buffer", "Yeni nokta her serinin 3 saatlik tamponuna eklenir."], ["base", "Her seri için son 60 noktanın medyanı ve MAD'i: \"bu seri için normal ne?\""],
+  ["z", "Yeni değer normalden kaç ölçek uzak? Çoğu seri eşiğin altında kalır ve burada elenir (mor noktalar sönüyor)."],
+  ["persist", "Eşiği aşanlar art arda iki noktada aşmış mı? Tek seferlik zıplamalar elenir."], ["profile", "Bu saat için olağan mı? Her gün tekrarlayan işler bastırılır."],
+  ["fill", "Paralelde: bellek limite doğru istikrarlı tırmanıyor mu?"], ["checks", "Paralelde: OOMKilled, CrashLoop, Pending gibi bilinen kötü durumlar."],
+  ["find", "Üç dedektörün bulguları burada buluşur."], ["inc", "Aynı iş yükünün bulguları tek olay olur."], ["llm", "Olaya özet, neden ve komut eklenir."], ["out", "Ekrana, loga ve webhook'a gider. Tur bitti."]];
+$("#replay").onclick = () => {
+  clearInterval(S.replayT);
+  let i = 0;
+  playWave(S.topo, true);
+  const step = () => {
+    if (i >= REPLAY.length) { clearInterval(S.replayT); $("#flowcap").innerHTML = "Tur bitti. Bir aşamaya tıklayarak ayrıntısını gör."; return; }
+    const [id, c] = REPLAY[i++];
+    selStage(id);
+    $("#flowcap").innerHTML = `<b>${i}/${REPLAY.length}</b> · ${c}`;
+  };
+  step(); S.replayT = setInterval(step, 2300);
+};
+function renderBrain() {
+  const t = S.topo;
+  if (!t) return;
+  if (!$("#flow").childElementCount) { buildFlow(); selStage("base"); }
+  const p = t.pipeline || {}, det = p.detect || {};
+  const setN = (id, v) => { const el = $("#fn-" + id); if (el) el.textContent = v ?? ""; };
+  setN("collect", p.source?.series); setN("buffer", p.source?.series); setN("persist", det.candidates); setN("profile", det.suppressed || "");
+  setN("supp", det.suppressed_total || ""); setN("fill", det.fills); setN("checks", Object.values(det.checks || {}).reduce((a, b) => a + b, 0));
+  setN("find", det.findings); setN("inc", t.incidents.length); setN("llm", t.llm?.enabled ? t.llm.calls : "kapalı");
+  setN("z", t.pods.reduce((a, x) => a + SIGNALS.filter((s) => Math.abs(x[s.k + "_z"] ?? 0) >= (t.detector?.z || 5)).length, 0));
+  $("#cyc").innerHTML = [["tur", `#${t.cycle}`, `${p.cycle_seconds ?? "—"} sn sürdü`], ["seri", p.source?.series ?? "—", `${p.source?.queries ?? "—"} sorgu`],
+    ["aday", det.candidates ?? 0, "eşik + kalıcılık"], ["bastırılan", det.suppressed ?? 0, "saatlik profil"], ["bulgu", det.findings ?? 0, "bu tur"], ["açık olay", t.incidents.length, `son 24 sa: ${t.count_24h}`]]
+    .map(([l, v, s]) => `<div class="stat"><div class="v num">${v}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join("");
+  $("#openInc").innerHTML = t.incidents.length ? `<div class="box"><h4>Açık olaylar</h4>${t.incidents.map((i) => `<div class="inc s${i.severity}"><b>${esc(i.title)}</b><div class="muted" style="font-size:12px">${i.kinds.join(" · ")}</div></div>`).join("")}<div class="btnrow"><a class="btn" href="/">Olay ekranı →</a></div></div>`
+    : `<p class="muted" style="font-size:13px">Şu an açık olay yok: bütün seriler kendi normallerinin içinde.</p>`;
+  if (S.stage) selStage(S.stage);
+  if (!$("#labPod").options.length) labInit();
+}
+
+/* ============================================================== algoritma laboratuvarı
+   detect.py'deki detect_jump / baseline / detect_fill'in birebir JS karşılığı. */
+const L = {d: null, vs: null, sig: "pod_cpu", key: "", hover: null, scan: null, mean: false};
+const median = (xs) => { const s = [...xs].sort((a, b) => a - b), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : 0; };
+function labParams() {
+  return {z: +$("#zR").value, persist: +$("#pR").value, win: +$("#wR").value, warm: +$("#uR").value, minAbs: SIGNALS.find((s) => s.sig === L.sig)?.min || 0.1};
+}
+function analyze(vs, P, useMean = false) {
+  const n = vs.length, base = new Array(n).fill(null), flag = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    const hist = vs.slice(Math.max(0, i + 1 - P.win - P.persist), Math.max(0, i + 1 - P.persist));
+    if (hist.length < P.warm) continue;
+    let med, sc, mad = 0;
+    if (useMean) {
+      med = hist.reduce((a, b) => a + b, 0) / hist.length;
+      sc = Math.max(Math.sqrt(hist.reduce((a, b) => a + (b - med) ** 2, 0) / hist.length), 0.05 * Math.abs(med), P.minAbs / P.z);
+    } else {
+      med = median(hist); mad = median(hist.map((x) => Math.abs(x - med)));
+      sc = Math.max(1.4826 * mad, 0.05 * Math.abs(med), P.minAbs / P.z);
+    }
+    base[i] = {med, mad, sc, n: hist.length, from: Math.max(0, i + 1 - P.win - P.persist), to: Math.max(0, i + 1 - P.persist)};
+    if (i + 1 < P.warm + P.persist) continue;
+    const recent = vs.slice(i + 1 - P.persist, i + 1), zs = recent.map((v) => (v - med) / sc);
+    if (Math.min(...zs) > P.z) flag[i] = 1;
+    else if (Math.max(...zs) < -P.z && Math.max(...recent) <= 0.5 * med) flag[i] = -1;
+  }
+  let episodes = 0;
+  for (let i = 0; i < n; i++) if (flag[i] && !flag[i - 1]) episodes++;
+  return {base, flag, episodes, points: flag.filter(Boolean).length};
+}
+function fitFill(ts, vs, limit) {
+  if (!limit) return null;
+  for (const n of [20, 40, 60]) {
+    if (vs.length < n) break;
+    const T = ts.slice(-n), V = vs.slice(-n), mt = T.reduce((a, b) => a + b) / n, mv = V.reduce((a, b) => a + b) / n;
+    let stt = 0, svv = 0, stv = 0;
+    for (let i = 0; i < n; i++) { stt += (T[i] - mt) ** 2; svv += (V[i] - mv) ** 2; stv += (T[i] - mt) * (V[i] - mv); }
+    if (!stt || !svv) continue;
+    const slope = stv / stt, r2 = stv * stv / (stt * svv);
+    if (slope > 0 && r2 >= 0.9 && V[n - 1] - V[0] >= 0.05 * limit) return {n, slope, r2, eta: Math.max(0, (limit - V[n - 1]) / slope), t0: T[0], v0: mv + slope * (T[0] - mt)};
+  }
+  return null;
+}
+function labInit() {
+  const t = S.topo;
+  const D = t.detector || {};
+  $("#zR").value = D.z || 5; $("#pR").value = D.persist || 2; $("#wR").value = D.window || 60; $("#uR").value = D.warmup || 20;
+  const pods = [...t.pods].filter((p) => p.cpu != null).sort((a, b) => Math.abs(maxZ(b)) - Math.abs(maxZ(a)) || a.name.localeCompare(b.name));
+  $("#labPod").innerHTML = pods.map((p) => `<option value="${esc(p.ns)}|${esc(p.name)}">${esc(p.ns)}/${esc(p.name)}${Math.abs(maxZ(p)) >= 2 ? `  (z ${maxZ(p).toFixed(1)})` : ""}</option>`).join("");
+  $("#labSig").innerHTML = SIGNALS.map((s) => `<button data-sig="${s.sig}" aria-pressed="${s.sig === L.sig}">${s.t}</button>`).join("");
+  $$("#labSig button").forEach((b) => b.onclick = () => { L.sig = b.dataset.sig; $$("#labSig button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); labLoad(); });
+  if (pods[0]) {
+    const p = pods[0], best = SIGNALS.reduce((a, s) => Math.abs(p[s.k + "_z"] ?? 0) > Math.abs(p[a.k + "_z"] ?? 0) ? s : a, SIGNALS[0]);
+    L.sig = best.sig; $$("#labSig button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.sig === L.sig)));
+  }
+  labLoad();
+}
+function openLab(key) {
+  const [sig, ns, pod] = key.split("|");
+  setTab("brain");
+  L.sig = sig;
+  const go = () => {
+    $("#labPod").value = `${ns}|${pod}`;
+    $$("#labSig button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.sig === sig)));
+    labLoad();
+    $(".lab").scrollIntoView({behavior: "smooth"});
+  };
+  if (!$("#labPod").options.length) { labInit(); setTimeout(go, 50); } else go();
+}
+async function labLoad() {
+  const [ns, pod] = ($("#labPod").value || "|").split("|");
+  if (!pod) return;
+  L.key = `${L.sig}|${ns}|${pod}`;
+  try { L.d = await getJSON("/api/series?k=" + encodeURIComponent(L.key)); } catch { L.d = null; }
+  L.vs = L.d ? [...L.d.vs] : null; L.hover = null; L.injected = false;
+  labDraw();
+}
+$("#labPod").onchange = labLoad;
+for (const [r, v] of [["zR", "zV"], ["pR", "pV"], ["wR", "wV"], ["uR", "uV"]]) $("#" + r).oninput = () => labDraw();
+$("#cmpMean").onclick = () => { L.mean = !L.mean; $("#cmpMean").setAttribute("aria-pressed", String(L.mean)); labDraw(); };
+$("#injReset").onclick = () => { if (L.d) { L.vs = [...L.d.vs]; L.injected = false; labDraw(); } };
+$("#injSpike").onclick = () => {
+  if (!L.vs) return;
+  const P = labParams(), a = analyze(L.vs, P), b = a.base[L.vs.length - 1] || {sc: P.minAbs, med: median(L.vs)};
+  const jump = Math.max(b.sc * (P.z + 3), P.minAbs * 2);
+  for (let i = L.vs.length - 6; i < L.vs.length; i++) L.vs[i] += jump * (0.9 + Math.random() * 0.2);
+  L.injected = true; labDraw();
+};
+$("#injOne").onclick = () => {
+  if (!L.vs) return;
+  const P = labParams(), i = L.vs.length - 8, b = analyze(L.vs, P).base[i] || {sc: P.minAbs};
+  L.vs[i] += Math.max(b.sc * (P.z + 6), P.minAbs * 3);
+  L.injected = true; labDraw();
+};
+const lc = $("#labc"), lx = lc.getContext("2d");
+let LG = null;  // son çizimin geometri bilgisi (fare için)
+function labDraw() {
+  const P = labParams();
+  $("#zV").textContent = P.z; $("#pV").textContent = P.persist + " nokta"; $("#wV").textContent = P.win + " nokta"; $("#uV").textContent = P.warm + " nokta";
+  const r = lc.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  lc.width = r.width * dpr; lc.height = r.height * dpr;
+  lx.setTransform(dpr, 0, 0, dpr, 0, 0); lx.clearRect(0, 0, r.width, r.height);
+  const sigDef = SIGNALS.find((s) => s.sig === L.sig), f = fmt[sigDef.unit];
+  if (!L.vs || L.vs.length < 3) { lx.fillStyle = C.muted; lx.font = "13px system-ui"; lx.fillText("Bu seri için veri yok.", 20, 40); $("#verdict").innerHTML = ""; return; }
+  const vs = L.vs, ts = L.d.ts, n = vs.length;
+  const A = analyze(vs, P), M = L.mean ? analyze(vs, P, true) : null;
+  const real = analyze(vs, {z: S.topo.detector?.z || 5, persist: S.topo.detector?.persist || 2, win: S.topo.detector?.window || 60, warm: S.topo.detector?.warmup || 20, minAbs: P.minAbs});
+  const lim = L.sig === "pod_mem" ? L.d.limit : null, fill = lim ? fitFill(ts, vs, lim) : null;
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  for (const b of A.base) if (b) { lo = Math.min(lo, b.med - P.z * b.sc); hi = Math.max(hi, b.med + P.z * b.sc); }
+  if (lim) hi = Math.max(hi, lim * 1.02);
+  lo = Math.max(lo, sigDef.unit === "cores" || sigDef.unit === "bytes" || sigDef.unit === "bps" ? Math.min(0, lo) : lo);
+  if (hi - lo < 1e-9) hi = lo + 1;
+  const pad = {l: 64, r: 16, t: 14, b: 26}, w = r.width - pad.l - pad.r, h = r.height - pad.t - pad.b;
+  const X = (i) => pad.l + (i / (n - 1)) * w, Y = (v) => pad.t + h - ((v - lo) / (hi - lo)) * h;
+  LG = {X, n, pad, w};
+  // ızgara
+  lx.strokeStyle = C.line; lx.lineWidth = 1; lx.fillStyle = C.muted; lx.font = "11px ui-monospace,Menlo,monospace"; lx.textAlign = "right"; lx.textBaseline = "middle";
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4, y = Y(v); lx.beginPath(); lx.moveTo(pad.l, y); lx.lineTo(pad.l + w, y); lx.stroke(); lx.fillText(f(v), pad.l - 8, y); }
+  lx.textAlign = "center";
+  const tz = (S.topo.tz ?? 3) * 3600;
+  for (let k = 0; k <= 6; k++) { const i = Math.round((n - 1) * k / 6), d = new Date((ts[i] + tz) * 1000); lx.fillText(`${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`, X(i), pad.t + h + 14); }
+  // pencere vurgusu (fare/tarama)
+  const cur = L.scan?.i ?? L.hover;
+  if (cur != null && A.base[cur]) {
+    const b = A.base[cur];
+    lx.fillStyle = alpha(C.brain, 0.09); lx.fillRect(X(b.from), pad.t, X(Math.max(b.from, b.to - 1)) - X(b.from), h);
+    lx.fillStyle = alpha(C.crit, 0.1); lx.fillRect(X(cur + 1 - P.persist) - 3, pad.t, X(cur) - X(cur + 1 - P.persist) + 6, h);
+  }
+  // zarf
+  const band = (an, fillC, strokeC, dash) => {
+    lx.beginPath(); let s = false;
+    for (let i = 0; i < n; i++) { const b = an.base[i]; if (b) { const y = Y(b.med + P.z * b.sc); s ? lx.lineTo(X(i), y) : lx.moveTo(X(i), y); s = true; } }
+    for (let i = n - 1; i >= 0; i--) { const b = an.base[i]; if (b) lx.lineTo(X(i), Y(b.med - P.z * b.sc)); }
+    if (!s) return;
+    lx.closePath();
+    if (fillC) { lx.fillStyle = fillC; lx.fill(); }
+    if (strokeC) { lx.strokeStyle = strokeC; lx.setLineDash(dash || []); lx.lineWidth = 1.3; lx.stroke(); lx.setLineDash([]); }
+  };
+  band(A, alpha(C.ink2 || "#999999", 0.12));
+  if (M) band(M, null, C.warn, [5, 4]);
+  // medyan çizgisi
+  lx.beginPath(); let s = false;
+  for (let i = 0; i < n; i++) { const b = A.base[i]; if (b) { s ? lx.lineTo(X(i), Y(b.med)) : lx.moveTo(X(i), Y(b.med)); s = true; } }
+  lx.strokeStyle = alpha(C.ink2 || "#999999", 0.7); lx.setLineDash([3, 4]); lx.lineWidth = 1.2; lx.stroke(); lx.setLineDash([]);
+  // limit ve tahmin
+  if (lim) {
+    lx.strokeStyle = C.crit; lx.setLineDash([6, 4]); lx.beginPath(); lx.moveTo(pad.l, Y(lim)); lx.lineTo(pad.l + w, Y(lim)); lx.stroke(); lx.setLineDash([]);
+    lx.fillStyle = C.crit; lx.textAlign = "left"; lx.fillText(`limit ${f(lim)}`, pad.l + 6, Y(lim) - 9);
+    if (fill) {
+      const i0 = n - fill.n, tEnd = ts[n - 1] + fill.eta, x1 = X(n - 1) + Math.min(w * 0.2, (fill.eta / (ts[n - 1] - ts[0])) * w);
+      lx.strokeStyle = C.warn; lx.lineWidth = 2; lx.beginPath(); lx.moveTo(X(i0), Y(fill.v0));
+      lx.lineTo(x1, Y(fill.v0 + fill.slope * (Math.min(tEnd, ts[n - 1] + (x1 - X(n - 1)) / w * (ts[n - 1] - ts[0])) - fill.t0))); lx.stroke();
+    }
+  }
+  // değerler
+  lx.beginPath(); vs.forEach((v, i) => (i ? lx.lineTo(X(i), Y(v)) : lx.moveTo(X(i), Y(v))));
+  lx.strokeStyle = C.flow; lx.lineWidth = 1.8; lx.lineJoin = "round"; lx.stroke();
+  // alarm noktaları
+  for (let i = 0; i < n; i++) if (A.flag[i]) { lx.fillStyle = A.flag[i] > 0 ? C.up : C.down; lx.beginPath(); lx.arc(X(i), Y(vs[i]), 4, 0, 7); lx.fill(); }
+  if (M) for (let i = 0; i < n; i++) if (M.flag[i]) { lx.strokeStyle = C.warn; lx.lineWidth = 1.5; lx.beginPath(); lx.arc(X(i), Y(vs[i]), 7, 0, 7); lx.stroke(); }
+  // imleç
+  if (cur != null) {
+    lx.strokeStyle = C.ink; lx.lineWidth = 1; lx.beginPath(); lx.moveTo(X(cur), pad.t); lx.lineTo(X(cur), pad.t + h); lx.stroke();
+    lx.fillStyle = C.ink; lx.beginPath(); lx.arc(X(cur), Y(vs[cur]), 4.5, 0, 7); lx.fill();
+  }
+  // karar kutuları
+  const lastB = A.base[n - 1], lastZ = lastB ? (vs[n - 1] - lastB.med) / lastB.sc : null;
+  $("#verdict").innerHTML = `
+    <div class="stat"><div class="v num" style="color:${A.episodes ? C.crit : C.ok}">${A.episodes}</div><div class="l">bu ayarlarla alarm</div><div class="s">${A.points} nokta eşiği ${P.persist} kez üst üste aştı</div></div>
+    <div class="stat"><div class="v num">${real.episodes}</div><div class="l">nöbetçinin gerçek ayarıyla</div><div class="s">z=${S.topo.detector?.z}, kalıcılık ${S.topo.detector?.persist}${M ? ` · ortalama ile: <b style="color:${C.warn}">${M.episodes}</b>` : ""}</div></div>
+    <div class="stat"><div class="v num">${lastZ == null ? "—" : (lastZ > 0 ? "+" : "") + lastZ.toFixed(1)}</div><div class="l">son noktanın z-skoru</div><div class="s">${fill ? `<b style="color:${C.warn}">limit ~${Math.round(fill.eta / 60)} dk sonra dolar</b> (R² ${fill.r2.toFixed(2)})` : lim ? "limite istikrarlı tırmanış yok" : L.injected ? "yapay değişiklik var" : "gerçek veri"}</div></div>`;
+  labMath(cur, A, P, f);
+}
+function labMath(i, A, P, f) {
+  const el = $("#math");
+  if (i == null) { el.innerHTML = `Grafiğin üzerinde gezin ya da <b>Taramayı oynat</b>. Mavi çizgi değer, kesikli çizgi normal (medyan), gri bant <span class="hl">normal ± ${P.z} × ölçek</span>. Kırmızı noktalar alarm.`; return; }
+  const b = A.base[i], v = L.vs[i];
+  if (!b) { el.innerHTML = `nokta ${i + 1}: <span class="no">henüz ${P.warm} nokta birikmedi (ısınma). Karar verilmez.</span>`; return; }
+  const z = (v - b.med) / b.sc, sz = (x) => (x > 0 ? "+" : "") + x.toFixed(2);
+  const rec = L.vs.slice(Math.max(0, i + 1 - P.persist), i + 1).map((x) => (x - b.med) / b.sc);
+  const which = b.sc === 1.4826 * b.mad ? "1.4826×MAD" : b.sc === 0.05 * Math.abs(b.med) ? "%5×medyan" : "taban";
+  const verdict = A.flag[i] > 0 ? `<span class="bad">ANİ ARTIŞ: son ${P.persist} noktanın hepsi z > ${P.z}</span>` : A.flag[i] < 0 ? `<span class="bad">ANİ DÜŞÜŞ</span>`
+    : Math.abs(z) > P.z ? `<span class="hl">eşik aşıldı ama ${P.persist} nokta üst üste değil → bekle</span>` : `<span class="ok">normal aralıkta</span>`;
+  el.innerHTML = `pencere: ${b.n} nokta  ·  medyan = <span class="hl">${f(b.med)}</span>  ·  MAD = ${f(b.mad)}<br>
+    ölçek = max(1.4826×MAD, %5×|medyan|, min_değişim/z) = <span class="hl">${f(b.sc)}</span> <span class="no">(${which} belirledi)</span><br>
+    değer = ${f(v)}  →  z = (${f(v)} − ${f(b.med)}) / ${f(b.sc)} = <span class="hl">${sz(z)}</span><br>
+    son ${P.persist} nokta z: [${rec.map(sz).join(", ")}]  →  ${verdict}`;
+}
+lc.addEventListener("pointermove", (e) => {
+  if (!LG || L.scan) return;
+  const r = lc.getBoundingClientRect(), x = e.clientX - r.left;
+  const i = Math.round(((x - LG.pad.l) / LG.w) * (LG.n - 1));
+  L.hover = i >= 0 && i < LG.n ? i : null;
+  labDraw();
+});
+lc.addEventListener("pointerleave", () => { if (!L.scan) { L.hover = null; labDraw(); } });
+$("#scan").onclick = () => {
+  if (L.scan) { clearTimeout(L.scan.t); L.scan = null; $("#scan").textContent = "▶ Taramayı oynat"; labDraw(); return; }
+  if (!L.vs) return;
+  const P = labParams();
+  L.scan = {i: Math.max(0, P.warm + P.persist - 2)};
+  $("#scan").textContent = "■ Durdur";
+  const tick = () => {
+    if (!L.scan) return;
+    L.scan.i++;
+    if (L.scan.i >= L.vs.length) { L.scan = null; $("#scan").textContent = "▶ Taramayı oynat"; labDraw(); return; }
+    labDraw();
+    const A = analyze(L.vs, labParams());
+    L.scan.t = setTimeout(tick, A.flag[L.scan.i] ? 900 : Math.abs((L.vs[L.scan.i] - (A.base[L.scan.i]?.med ?? 0)) / (A.base[L.scan.i]?.sc || 1)) > P.z ? 500 : 45);
+  };
+  tick();
+};
+
+/* ============================================================== ne izleyelim */
+const NOW = [
+  ["CPU kullanımı", "pod_cpu", "Sıçrama / düşüş", "Bir istek döngüye girdi ya da trafik patladı; pod normalinin 6 katı CPU yiyor."],
+  ["Bellek kullanımı", "pod_mem", "Sıçrama + limit tahmini", "Sızıntı: bellek her dakika biraz artıyor. Ani değil ama bir saat sonra OOMKilled olacak."],
+  ["Gelen ağ trafiği", "pod_net_rx", "Sıçrama / düşüş", "Önündeki Service yanlış yapılandırıldı, pod'a trafik gelmiyor: düşüş, sessiz bir kesintinin işaretidir."],
+  ["Giden ağ trafiği", "pod_net_tx", "Sıçrama / düşüş", "Bir pod beklenmedik biçimde dışarıya çok veri gönderiyor (hatalı döngü ya da güvenlik sorunu)."],
+  ["Node CPU", "node_cpu", "Sıçrama", "Bütün node yavaşladı; tek bir pod değil, komşuların hepsi etkileniyor."],
+  ["Node belleği", "node_mem", "Sıçrama", "Node belleği doluyor; kubelet yakında pod tahliye etmeye başlayacak."],
+];
+const CHECKS = [
+  ["oom", "OOMKilled", "Konteyner bellek limitini aştı ve öldürüldü."], ["waiting", "Başlatılamıyor", "CrashLoopBackOff, ImagePullBackOff, eksik Secret…"],
+  ["restart", "Yeniden başlama", "Son 10 dk'da konteyner yeniden başladı."], ["pending", "Pending", "Pod 10 dk'dır bir node'a yerleşemiyor."],
+  ["unavailable", "Eksik kopya", "Deployment'ın kopyaları 10 dk'dır hazır değil."], ["node_notready", "Node NotReady", "Node sağlık bildirmiyor."],
+  ["throttle", "CPU kısılması", "Konteyner zamanın yarısından fazlasında CPU limitine takılıyor."],
+];
+const ADD = [
+  {cat: "Depolama", t: "Disk (PVC) doluluğu", m: "kubelet_volume_stats_used_bytes", det: "Limit tahmini", why: "Bellek için yapılan \"ne zaman dolar\" tahmininin aynısı kalıcı disklere uygulanır; kod neredeyse hazır.",
+    sc: "Veritabanının diski %3/gün doluyor. Dolduğu an yazma durur, uygulama çöker. Nöbetçi 2 gün önceden \"bu hızla perşembe dolar\" der.", q: "kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes", need: "kubelet volume ölçümleri (kind'in local-path sağlayıcısı bunları vermeyebilir)"},
+  {cat: "Node", t: "Node baskı koşulları", m: "kube_node_status_condition", det: "Durum kontrolü", why: "MemoryPressure / DiskPressure açılınca kubelet pod tahliye etmeye başlar. Olaydan önce görmek mümkün.",
+    sc: "Node'un diski imaj katmanlarıyla doldu, DiskPressure açıldı; yeni pod'lar yerleşemiyor ve kimse nedenini anlamıyor.", q: 'kube_node_status_condition{condition=~"MemoryPressure|DiskPressure|PIDPressure",status="true"} == 1'},
+  {cat: "Node", t: "Node dosya sistemi", m: "node_filesystem_avail_bytes", det: "Limit tahmini", why: "Node'un kök diski dolarsa her şey durur. node-exporter gerekir.",
+    sc: "Konteyner logları /var/log'u dolduruyor; 6 saat sonra node kilitlenecek.", q: '1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}', need: "node-exporter"},
+  {cat: "Node", t: "Tahliye edilen pod'lar", m: "kube_pod_status_reason", det: "Durum kontrolü", why: "Tahliye, node'un kaynak sıkıntısının sonucudur; nedeni node tarafında aranmalı.",
+    sc: "Gece boyunca 14 pod Evicted oldu; sabah hepsi yeniden yaratılmış, kimse fark etmedi.", q: 'kube_pod_status_reason{reason="Evicted"} == 1'},
+  {cat: "Ölçekleme", t: "HPA tavanda", m: "kube_horizontalpodautoscaler_spec_max_replicas", det: "Durum kontrolü", why: "Otomatik ölçekleme tavanına dayandıysa yük artışı artık gecikme olarak kullanıcıya yansır.",
+    sc: "Kampanya trafiği geldi, HPA 10 kopyaya çıktı ve durdu; CPU yükseliyor ama ölçekleme bitti.", q: "kube_horizontalpodautoscaler_status_current_replicas >= kube_horizontalpodautoscaler_spec_max_replicas", need: "HPA tanımı"},
+  {cat: "Ağ", t: "Düşen paketler", m: "container_network_receive_packets_dropped_total", det: "Sıçrama", why: "CPU ve bellek normalken ağ katmanındaki sorunlar ancak böyle görünür.",
+    sc: "CNI ya da ağ kartı sorunlu, paketler düşüyor; istekler zaman aşımına uğruyor ama kaynak grafikleri tertemiz.", q: "sum by (namespace,pod) (rate(container_network_receive_packets_dropped_total[5m]))"},
+  {cat: "Ağ", t: "DNS hata oranı", m: "coredns_dns_responses_total", det: "Sıçrama (oran)", why: "Kubernetes'te arızaların şaşırtıcı bir kısmı DNS'tir. Oranı izlemek ani bozulmayı hemen yakalar.",
+    sc: "Bir dağıtımdan sonra servis adı yanlış yazıldı; uygulama \"host bulunamadı\" hatası veriyor, CoreDNS'te NXDOMAIN patlıyor.", q: 'sum(rate(coredns_dns_responses_total{rcode=~"SERVFAIL|NXDOMAIN"}[5m])) / sum(rate(coredns_dns_responses_total[5m]))'},
+  {cat: "Kontrol düzlemi", t: "API server hataları", m: "apiserver_request_total", det: "Sıçrama", why: "Kontrol düzlemi zorlanırsa her şey yavaşlar: kubectl, denetleyiciler, ölçekleme.",
+    sc: "Hatalı bir operatör saniyede yüzlerce istek atıyor; API server 429/5xx dönmeye başladı.", q: 'sum(rate(apiserver_request_total{code=~"5..|429"}[5m]))', need: "Prometheus'un API server'ı kazıması"},
+  {cat: "Kontrol düzlemi", t: "etcd disk gecikmesi", m: "etcd_disk_wal_fsync_duration_seconds_bucket", det: "Sıçrama (p99)", why: "etcd diske her yazışta bekler; disk yavaşlarsa bütün küme yavaşlar. 10 ms üstü tehlike işareti.",
+    sc: "Aynı diski paylaşan bir yedekleme işi başladı; etcd fsync süresi 3 ms'den 80 ms'ye çıktı, lider seçimleri kopuyor.", q: "histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])))"},
+  {cat: "Kontrol düzlemi", t: "Pod başlatma süresi", m: "kubelet_pod_start_duration_seconds_bucket", det: "Sıçrama (p95)", why: "Pod'lar geç ayağa kalkıyorsa ölçekleme ve kendini iyileştirme işe yaramaz.",
+    sc: "İmaj kayıt defteri yavaşladı; yeni pod'lar 2 dakikada hazır oluyor, ani yükte ölçekleme yetişemiyor.", q: "histogram_quantile(0.95, sum by (le) (rate(kubelet_pod_start_duration_seconds_bucket[10m])))"},
+  {cat: "Uygulama", t: "Başarısız Job'lar", m: "kube_job_status_failed", det: "Durum kontrolü", why: "Zamanlanmış işler sessizce başarısız olur; kimse bakmaz.",
+    sc: "Gece yedeği üç haftadır başarısız ve kimse fark etmedi; ilk gerçek ihtiyaçta yedek yok.", q: "kube_job_status_failed > 0"},
+  {cat: "Uygulama", t: "İstek hızı, hata, gecikme (RED)", m: "http_requests_total", det: "Sıçrama (oran)", why: "Kullanıcının hissettiği şey budur. Kaynak ölçümleri normalken bile hatalar artabilir.",
+    sc: "CPU ve bellek normal ama kullanıcıların %8'i 500 hatası alıyor. Ancak uygulamanın kendi ölçümleri bunu görür.", q: 'sum by (service) (rate(http_requests_total{code=~"5.."}[5m])) / sum by (service) (rate(http_requests_total[5m]))', need: "uygulamanın /metrics vermesi ya da bir ingress/mesh"},
+  {cat: "Bağlam", t: "Dağıtım işaretleri", m: "kube_deployment_status_observed_generation", det: "Olay bağlamı", why: "Anomali yeni bir sürümden hemen sonra başladıysa sebep büyük ihtimalle o sürümdür. Olaya \"3 dk önce yeni sürüm çıktı\" eklemek araştırmanın yarısıdır.",
+    sc: "Yeni sürüm çıktıktan 3 dk sonra bellek ikiye katlandı. Nöbetçi olaya \"web: 14:02'de sürüm değişti (rev 41 → 42)\" ekler.", q: "changes(kube_deployment_status_observed_generation[10m]) > 0"},
+  {cat: "Yapılandırma", t: "Limitsiz pod'lar", m: "kube_pod_container_resource_limits", det: "Denetim", why: "Bellek limiti olmayan bir pod sızıntı yaparsa bütün node'un belleğini yer ve komşularını da düşürür. Ayrıca nöbetçinin limit tahmini bu pod'larda çalışamaz.",
+    sc: "Limitsiz bir rapor işi 6 GiB yedi; node'daki diğer 20 pod tahliye edildi.", q: 'count by (namespace,pod) (kube_pod_container_info) unless count by (namespace,pod) (kube_pod_container_resource_limits{resource="memory"})'},
+];
+const IDEAS = [
+  ["Dağıtım farkındalığı", "Kolay", "Olay açılırken son 15 dk'daki sürüm değişikliklerini (ReplicaSet değişimi) kontrol et; \"bu sıçrama v42'den sonra başladı\" de. Mühendislerin ilk sorusu hep \"ne değişti?\"tir."],
+  ["Ortak neden", "Orta", "Aynı dakikada sapan pod'lar aynı node'daysa tek tek olay açmak yerine \"node kaynaklı\" tek olay aç. Korelasyonla gürültü azalır, kök neden öne çıkar."],
+  ["Haftalık profil", "Kolay", "Saatlik profile haftanın günü boyutu ekle: pazartesi sabahı trafiği pazar gecesine benzemez. Yanlış alarmı belirgin biçimde azaltır."],
+  ["Kapasite tahmini", "Orta", "Node CPU/bellek eğiliminden \"bu hızla 12 gün sonra node dolar\" tahmini. Limit tahmininin uzun vadeli hâli; Holt-Winters ya da doğrusal model yeter."],
+  ["Geri bildirimle öğrenme", "Orta", "Olayları ekranda \"doğru / yanlış alarm\" diye işaretle; iş yükü başına eşiği buna göre ayarla. Böylece model gerçekten senin kümeni öğrenir (yarı denetimli)."],
+  ["Hizmet bağımlılık haritası", "Zor", "Hangi pod hangi Service'le konuşuyor? (Cilium Hubble, servis ağı ya da DNS logları.) Bir veritabanı yavaşlayınca etkilenen bütün servisleri tek olayda gösterir."],
+  ["SLO ve hata bütçesi", "Orta", "RED ölçümleriyle \"aylık %99,9 başarı\" hedefi koy; bütçenin ne hızla tükendiğine (burn rate) göre uyar. Sektör standardı alarm yöntemi."],
+  ["Log anomalisi", "Zor", "Pod loglarındaki hata satırlarının sıklığı ya da yeni görülen hata kalıpları (Loki ile). Ölçümlerin görmediği uygulama hatalarını yakalar."],
+];
+function renderMetrics() {
+  const t = S.topo, fc = t?.finding_counts || {}, cat = S.catalog?.series || {};
+  const kindOf = {pod_cpu: ["spike", "drop"], pod_mem: ["spike", "drop", "fill"], pod_net_rx: ["spike", "drop"], pod_net_tx: ["spike", "drop"], node_cpu: ["spike"], node_mem: ["spike"]};
+  $("#mNow").innerHTML = NOW.map(([title, sig, det, sc]) => `<div class="mc"><div class="t"><h4>${title}</h4><span class="tag now">izleniyor</span></div>
+      <span class="tag det" style="align-self:flex-start">${det}</span><div class="sc">${sc}</div></div>`).join("") +
+    `<div class="mc" style="grid-column:1/-1"><div class="t"><h4>Durum kontrolleri</h4><span class="tag now">izleniyor</span></div><p>İstatistik gerekmeyen, bilinen kötü durumlar (kaynak: kube-state-metrics). Sayılar nöbetçi açıldığından beri görülen bulgular.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:6px">${CHECKS.map(([k, n, d]) => `<div class="box" style="margin:0"><b>${n}</b> <span class="mono muted">${fc[k] || 0}</span><div class="muted" style="font-size:12px">${d}</div></div>`).join("")}</div></div>`;
+  const cats = ["Hepsi", ...new Set(ADD.map((a) => a.cat))];
+  S.mcat = S.mcat || "Hepsi";
+  $("#mFilt").innerHTML = cats.map((c) => `<button aria-pressed="${c === S.mcat}" data-c="${c}">${c}</button>`).join("");
+  $$("#mFilt button").forEach((b) => b.onclick = () => { S.mcat = b.dataset.c; renderMetrics(); });
+  const have = (m) => S.catalog?.ok ? (cat[m] > 0 ? `<span class="tag have" title="${cat[m]} seri">bu kümede var</span>` : `<span class="tag no">bu kümede yok</span>`) : "";
+  const list = ADD.filter((a) => S.mcat === "Hepsi" || a.cat === S.mcat).sort((a, b) => (cat[b.m] > 0) - (cat[a.m] > 0));
+  $("#mAdd").innerHTML = list.map((a) => `<div class="mc"><div class="t"><h4>${a.t}</h4>${have(a.m)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag det">${a.det}</span><span class="tag no">${a.cat}</span></div>
+      <p>${a.why}</p><div class="sc"><b>Senaryo:</b> ${a.sc}</div>
+      <details><summary>PromQL${a.need ? " · gereksinim" : ""}</summary>${copyBtn(a.q)}${a.need ? `<p class="muted" style="font-size:12px;margin-top:6px">Gerekli: ${a.need}</p>` : ""}</details></div>`).join("");
+  $("#mIdeas").innerHTML = IDEAS.map(([title, lvl, d]) => `<div class="mc"><div class="t"><h4>${title}</h4><span class="tag ${lvl === "Kolay" ? "have" : lvl === "Orta" ? "det" : "no"}">${lvl}</span></div><p>${d}</p></div>`).join("");
+  $("#catState").textContent = S.catalog ? (S.catalog.ok ? `${Object.values(cat).filter((v) => v > 0).length} / ${ADD.length} ölçüm bu kümenin Prometheus'unda zaten var.` : `Prometheus'a sorulamadı: ${S.catalog.error}`) : "Prometheus'a soruluyor…";
+}
+async function loadCatalog() {
+  try { S.catalog = await getJSON("/api/olcumler"); } catch (e) { S.catalog = {ok: false, error: String(e), series: {}}; }
+  renderMetrics();
+}
+
+/* ============================================================== sekmeler, tema, döngü */
+function setTab(tab) {
+  S.tab = tab;
+  $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  $$(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + tab));
+  if (tab === "brain") { renderBrain(); requestAnimationFrame(() => labDraw()); }
+  if (tab === "metrics") { renderMetrics(); if (!S.catalog) loadCatalog(); }
+  if (tab === "map") requestAnimationFrame(resize);
+  history.replaceState(null, "", tab === "map" ? location.pathname : "#" + tab);
+}
+$$(".tabs button").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+document.documentElement.dataset.theme = store("theme") || "dark";
+readColors();
+$("#themeBtn").onclick = () => {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = t; store("theme", t); readColors();
+  renderSide(false); if (S.tab === "brain") labDraw();
+};
+window.addEventListener("resize", () => { if (S.tab === "brain") labDraw(); });
+window.addEventListener("hashchange", () => { const h = location.hash.slice(1); setTab(["brain", "metrics"].includes(h) ? h : "map"); });
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - (S.last || ts)) / 1000);
+  S.last = ts; S.t += dt;
+  if (S.tab === "map") draw(dt);
+  else if (S.tab === "brain") drawFlow(dt);
+  requestAnimationFrame(frame);
+}
+renderSide(true);
+loadTopo().then(() => {
+  const h = location.hash.slice(1);
+  if (["brain", "metrics"].includes(h)) setTab(h);
+});
+setInterval(loadTopo, 5000);
+setInterval(ping, 2000);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -16,6 +16,15 @@ from .notify import Notifier
 from .prom import Prom
 from .signals import GAUGE, GAUGES, fmt, workload_of
 from .store import Store
+from . import topology
+
+# Keşif ekranının "ne izleyebiliriz" bölümü: bu ölçümlerin kümedeki Prometheus'ta olup olmadığı denetlenir.
+CATALOG = ("kubelet_volume_stats_used_bytes", "kube_node_status_condition", "node_filesystem_avail_bytes",
+           "kube_pod_status_reason", "kube_horizontalpodautoscaler_spec_max_replicas",
+           "container_network_receive_packets_dropped_total", "coredns_dns_responses_total", "apiserver_request_total",
+           "etcd_disk_wal_fsync_duration_seconds_bucket", "kubelet_pod_start_duration_seconds_bucket",
+           "kube_job_status_failed", "kube_deployment_status_observed_generation", "http_requests_total",
+           "kube_pod_container_resource_limits", "container_cpu_cfs_throttled_periods_total")
 
 
 class App:
@@ -23,7 +32,7 @@ class App:
         self.cfg = cfg
         self.clock = Clock(cfg.time_speed)
         self.engine = Engine(cfg, Prom(cfg.prom_url, timeout=60))
-        self.kube = Kube.in_cluster()
+        self.kube = Kube.in_cluster() or (Kube(cfg.kube_url, "", None) if cfg.kube_url else None)
         self.store = Store(cfg.db)
         opened, closed, next_id = self.store.load()
         self.manager = IncidentManager(cfg.quiet, next_id)
@@ -39,6 +48,10 @@ class App:
         self._view: dict = {"now": self.clock.now(), "ready": False}
         self._charts: dict[str, dict] = {}
         self._cycle = 0
+        self._topo_lock = threading.Lock()
+        self._topo: tuple[float, dict | None] = (0.0, None)
+        self._catalog: tuple[float, dict] = (0.0, {})
+        self._catalog_lock = threading.Lock()
 
     def cycle(self, now: float) -> None:
         started = time.time()
@@ -132,6 +145,29 @@ class App:
         view["llm"] = {"enabled": self.llm.enabled, "model": self.llm.model, "calls": self.llm.calls,
                        "failures": self.llm.failures, "error": self.llm.last_error, "busy": len(self._pending)}
         return view
+
+    def topology(self) -> dict:
+        """Küme haritası. Kubernetes API en fazla 8 sn'de bir sorulur; aynı anda tek istek gider."""
+        with self._topo_lock:
+            at, snap = self._topo
+            if self.kube and time.time() - at > 8:
+                snap = self.kube.snapshot()
+                self._topo = (time.time(), snap)
+        return topology.build(snap, self.state())
+
+    def catalog(self) -> dict:
+        """Önerilen ölçümlerden hangileri kümedeki Prometheus'ta var (seri sayısı); 10 dk önbellekli."""
+        with self._catalog_lock:
+            at, data = self._catalog
+            if time.time() - at > 600 or not data:
+                query = 'count by (__name__) ({__name__=~"%s"})' % "|".join(CATALOG)
+                try:
+                    found = {m.get("__name__", ""): v for m, v in self.engine.prom.instant(query, self.clock.now())}
+                    data = {"ok": True, "series": {n: int(found.get(n, 0)) for n in CATALOG}}
+                except Exception as e:  # noqa: BLE001 - ekran için yalnızca hata metni yeterli
+                    data = {"ok": False, "error": str(e)[:200], "series": {}}
+                self._catalog = (time.time(), data)
+        return data
 
     def _llm_loop(self) -> None:
         while True:

@@ -10,14 +10,18 @@ metadata:
   name: nobetci
   namespace: nobetci
 ---
-# Salt okunur: olay bağlamı için pod durumu, loglar ve Kubernetes olayları.
+# Salt okunur: olay bağlamı için pod durumu, loglar ve Kubernetes olayları;
+# keşif ekranının küme haritası için service, namespace ve iş yükü listeleri.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: nobetci
 rules:
   - apiGroups: [""]
-    resources: ["pods", "pods/log", "events", "nodes"]
+    resources: ["pods", "pods/log", "events", "nodes", "services", "namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
     verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

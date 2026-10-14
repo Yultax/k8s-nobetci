@@ -45,6 +45,7 @@ class Config:
     bind: str = "0.0.0.0"
     tz_offset: float = 3.0        # ekranda gösterilen saat dilimi (UTC+3)
     time_speed: float = 1.0       # yalnızca demo/test: sanal saat hızı
+    kube_url: str = ""            # yalnızca demo/test: küme dışında sahte Kubernetes API adresi
 
     @classmethod
     def from_env(cls) -> "Config":

@@ -60,6 +60,25 @@ Ekran, oturum kapansa da çalışan bir `port-forward` ile `http://<sunucu>:8080
 - **Node grafikleri, olay zaman çizelgesi (1/6/24 sa), sıralanabilir pod tablosu.** Satıra tıklayınca pod görünümü açılır.
 - Namespace filtresi, pod arama, açık/koyu tema, yeni olayda isteğe bağlı ses; kısayollar `j`/`k`, `/`, `Esc`, `?`.
 
+## Keşif ekranı (`/kesif`)
+
+Kümeyi ve nöbetçinin nasıl karar verdiğini öğrenmek için ayrı bir sayfa; ana ekrandaki **Keşif** düğmesiyle açılır.
+
+- **Küme haritası:** node'lar, namespace'ler, pod'lar ve service'ler canlı (Kubernetes API, birkaç saniyede bir).
+  Pod büyüklüğü bellek, dış halka CPU, içindeki sıvı bellek/limit oranı; parıltı kendi normalinden sapma.
+  Akışlar: istek trafiği (Service → pod), ölçüm yolu (kubelet/cAdvisor → Prometheus → nöbetçi), her turda nöbetçi dalgası.
+  Her nesneye tıklayınca ne olduğunu, şu anki durumunu, sahiplik zincirini ve denenecek `kubectl` komutlarını anlatır.
+  Alt şeritte Kubernetes olayları ve anlamları. Rehberli tur.
+- **Simülasyonlar** (kümeye dokunmaz): pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse adım adım ne olur.
+- **Nöbetçinin beyni:** tespit hattı bu turun gerçek sayılarıyla akar; aşamalara tıklayınca parametreleriyle anlatır.
+  **Algoritma laboratuvarı:** gerçek bir seride eşik, kalıcılık ve pencereyi değiştirip kararın nasıl değiştiğini,
+  medyan/MAD ile ortalama/standart sapma farkını ve limit tahminini görürsünüz (hesap `detect.py` ile birebir aynı).
+- **Ne izleyelim?:** izlenen sinyaller ve eklenebilecek ölçümler (senaryo + PromQL); kümedeki Prometheus'ta zaten
+  bulunanlar işaretlenir (`/api/olcumler`).
+
+Harita için yetki listesine salt okunur `services`, `namespaces`, `deployments`, `replicasets`, `statefulsets`,
+`daemonsets` eklendi; `guncelle` yeni yetkiyi kendiliğinden uygular. API okunamazsa harita Prometheus'taki pod'larla kurulur.
+
 ## Dışa aktarım ve alarmlar
 
 - `/metrics` — Prometheus biçimi (node exporter gibi kazınır; pod'daki `prometheus.io/scrape` işaretiyle kümedeki
@@ -77,8 +96,8 @@ yalnızca ölçüm özeti gider; pod logları ancak açıkça istenirse (`NOBETC
 ## Küme olmadan deneme
 
 ```bash
-python3 tools/sahte_prometheus.py 9090 &
-NOBETCI_PROM_URL=http://127.0.0.1:9090 NOBETCI_BIND=127.0.0.1 NOBETCI_DB=/tmp/nobetci.db \
+python3 tools/sahte_prometheus.py 9090 &      # aynı portta sahte Kubernetes API de var (tools/sahte_kube.py)
+NOBETCI_PROM_URL=http://127.0.0.1:9090 NOBETCI_KUBE_URL=http://127.0.0.1:9090 NOBETCI_BIND=127.0.0.1 NOBETCI_DB=/tmp/nobetci.db \
 NOBETCI_TIME_SPEED=120 python3 -m nobetci      # http://127.0.0.1:8080
 python3 -m unittest discover -s tests
 ```

@@ -6,7 +6,8 @@ import os
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-_INDEX = os.path.join(os.path.dirname(__file__), "static", "index.html")
+_STATIC = os.path.join(os.path.dirname(__file__), "static")
+_PAGES = {"/": "index.html", "/kesif": "kesif.html", "/harita": "kesif.html"}
 _SEV = {1: "info", 2: "warning", 3: "critical"}
 
 
@@ -74,9 +75,13 @@ def serve(app) -> None:
             q = {k: v[0] for k, v in urllib.parse.parse_qs(url.query).items()}
             if url.path == "/healthz":
                 return self._send("ok", "text/plain")
-            if url.path == "/":
-                with open(_INDEX, encoding="utf-8") as f:
+            if url.path in _PAGES:
+                with open(os.path.join(_STATIC, _PAGES[url.path]), encoding="utf-8") as f:
                     return self._send(f.read(), "text/html")
+            if url.path == "/api/topoloji":
+                return self._json(app.topology())
+            if url.path == "/api/olcumler":
+                return self._json(app.catalog())
             if url.path == "/api/ping":
                 return self._json(app.ping())
             if url.path == "/api/state":

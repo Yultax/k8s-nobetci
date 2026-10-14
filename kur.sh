@@ -249,6 +249,7 @@ cmd_ekran() {
   for _ in 1 2 3 4 5 6 7 8; do curl -s -m 2 "http://127.0.0.1:$PORT/healthz" >/dev/null && break; sleep 1; done
   if curl -s -m 2 "http://127.0.0.1:$PORT/healthz" >/dev/null; then
     ok "ekran açık: ${B}http://$(my_ip):$PORT${N}"
+    info "Küme haritası ve öğrenme ekranı: http://$(my_ip):$PORT/kesif"
     info "Ağdaki herkes görebilir (salt okunur). Kapatmak için: $ME ekran-kapat"
     command -v ufw >/dev/null && sudo -n ufw status 2>/dev/null | grep -q "Status: active" && warn "ufw açık; gerekirse: sudo ufw allow $PORT/tcp"
   else

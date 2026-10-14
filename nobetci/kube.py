@@ -27,7 +27,7 @@ class Kube:
 
     def _get(self, path: str, params: dict | None = None, text: bool = False):
         url = self.url + path + ("?" + urllib.parse.urlencode(params) if params else "")
-        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.token}"})
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.token}"} if self.token else {})
         try:
             with urllib.request.urlopen(req, timeout=10, context=self.ctx) as r:
                 body = r.read().decode("utf-8", "replace")
@@ -45,6 +45,22 @@ class Kube:
         items = [e for e in (data or {}).get("items", []) if e.get("involvedObject", {}).get("name", "").startswith(prefix)]
         when = lambda e: e.get("lastTimestamp") or e.get("eventTime") or e.get("metadata", {}).get("creationTimestamp") or ""
         return sorted(items, key=when)[-limit:]
+
+    # Keşif ekranının küme haritası için listelenen nesneler (hepsi salt okunur `list`).
+    LISTS = {
+        "nodes": "/api/v1/nodes", "pods": "/api/v1/pods", "services": "/api/v1/services",
+        "namespaces": "/api/v1/namespaces", "events": "/api/v1/events",
+        "deployments": "/apis/apps/v1/deployments", "replicasets": "/apis/apps/v1/replicasets",
+        "statefulsets": "/apis/apps/v1/statefulsets", "daemonsets": "/apis/apps/v1/daemonsets",
+    }
+
+    def snapshot(self) -> dict[str, list | None]:
+        """Kümenin anlık hâli. Yetki ya da erişim yoksa ilgili liste None olur."""
+        out: dict[str, list | None] = {}
+        for key, path in self.LISTS.items():
+            data = self._get(path, {"limit": 500} if key == "events" else None)
+            out[key] = data.get("items", []) if isinstance(data, dict) else None
+        return out
 
     def logs(self, ns: str, pod: str, container: str = "", previous: bool = False, tail: int = 15) -> list[str]:
         params = {"tailLines": tail, "previous": str(previous).lower()}
