@@ -66,6 +66,7 @@ spec:
         prometheus.io/path: /metrics
     spec:
       serviceAccountName: nobetci
+      enableServiceLinks: false   # yoksa Kubernetes "nobetci" Service'i için NOBETCI_PORT=tcp://... ekler, ayarla çakışır
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534

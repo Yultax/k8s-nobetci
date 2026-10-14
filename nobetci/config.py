@@ -10,7 +10,11 @@ def _env(name: str, default, cast=str):
     raw = os.environ.get("NOBETCI_" + name)
     if raw is None or raw == "":
         return default
-    return cast(raw)
+    try:
+        return cast(raw)
+    except ValueError:  # ör. Kubernetes'in eklediği NOBETCI_PORT=tcp://... gibi başka amaçlı bir değişken
+        print(f"uyarı: NOBETCI_{name}={raw!r} geçersiz, varsayılan kullanılıyor: {default!r}", flush=True)
+        return default
 
 
 @dataclass

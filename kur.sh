@@ -11,7 +11,7 @@
 # tools/paketle.sh bu betiğin sonuna kodu gömer; tek dosya olarak taşınır (dist/nobetci-kurulum.sh).
 set -uo pipefail
 
-VERSION=0.2.0
+VERSION=0.2.1
 HOME_DIR="${NOBETCI_HOME:-$HOME/.nobetci}"
 CONF="$HOME_DIR/ayarlar"
 mkdir -p "$HOME_DIR"
@@ -160,7 +160,7 @@ build_image() {
         $DOCKER save "$IMAGE" | $DOCKER exec -i "$node" ctr -n k8s.io images import --all-platforms - >/dev/null 2>&1 ||
         { command -v kind >/dev/null && kind load docker-image "$IMAGE" --name "$(kubectl get nodes -o jsonpath='{.items[0].spec.providerID}' | cut -d/ -f4)" >/dev/null 2>&1; } ||
         die "imaj $node node'una yüklenemedi"
-      $DOCKER exec "$node" crictl images 2>/dev/null | grep -q k8s-nobetci || warn "imaj node'da görünmüyor; pod ErrImageNeverPull/ImagePullBackOff verebilir"
+      $DOCKER exec "$node" ctr -n k8s.io images ls -q 2>/dev/null | grep -q "k8s-nobetci:$VERSION" || warn "imaj node'da görünmüyor; pod ImagePullBackOff verebilir"
       ok "imaj node'a yüklendi: $node"
     done
   else
