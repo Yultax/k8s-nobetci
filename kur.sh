@@ -278,9 +278,10 @@ cmd_durum() {
   else ok "sürüm $VERSION (güncel)"; fi
 }
 
-latest_version() { # GitHub'daki son sürüm (ör. 0.3.0); ulaşılamazsa boş
-  curl -fsSL -m 8 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null |
-    grep -m1 '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/'
+latest_version() { # GitHub'daki son sürüm (ör. 0.4.0); ulaşılamazsa boş
+  # api.github.com bazı ağlarda kapalı; github.com'un "latest" yönlendirmesindeki etiket kullanılır
+  curl -fsSI -m 8 "https://github.com/$REPO/releases/latest" 2>/dev/null |
+    sed -nE 's#^[Ll]ocation: .*/tag/v?([^[:space:]]+).*#\1#p' | tr -d '\r'
 }
 
 cmd_guncelle() {
