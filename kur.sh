@@ -61,7 +61,15 @@ need_cluster() {
 }
 installed() { kubectl get deploy -n nobetci nobetci >/dev/null 2>&1; }
 api() { kubectl get --raw "/api/v1/namespaces/nobetci/services/http:nobetci:80/proxy$1" 2>/dev/null; }
+DOCKER=""
+docker_cmd() { # docker yetkisi yoksa sudo ile dene (paylaşılan sunucuda kullanıcı docker grubunda olmayabilir)
+  [ -n "$DOCKER" ] && return 0
+  if docker version >/dev/null 2>&1; then DOCKER="docker"
+  elif command -v sudo >/dev/null && sudo docker version >/dev/null; then DOCKER="sudo docker"; info "docker sudo ile kullanılacak"
+  else return 1; fi
+}
 ekran_pid() { [ -f "$HOME_DIR/ekran.pid" ] && kill -0 "$(cat "$HOME_DIR/ekran.pid")" 2>/dev/null && cat "$HOME_DIR/ekran.pid"; }
+port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 my_ip() { hostname -I 2>/dev/null | awk '{print $1}'; }
 
 # --- keşif ---------------------------------------------------------------------
@@ -112,9 +120,9 @@ cmd_kesif() {
   kubectl top nodes 2>/dev/null | sed 's/^/  /' || warn "metrics-server yok"
   step 2/4 "Prometheus"; find_prometheus; [ -n "${PROM_URL:-}" ] && check_prometheus
   step 3/4 "Docker"
-  if docker version >/dev/null 2>&1; then
-    ok "docker $(docker version --format '{{.Server.Version}}')"
-    docker image inspect python:3.12-alpine >/dev/null 2>&1 && ok "python:3.12-alpine yerelde var" || info "python:3.12-alpine yerelde yok (kurulumda çekilmeye çalışılır)"
+  if docker_cmd; then
+    ok "docker $($DOCKER version --format '{{.Server.Version}}') ($DOCKER)"
+    $DOCKER image inspect python:3.12-alpine >/dev/null 2>&1 && ok "python:3.12-alpine yerelde var" || info "python:3.12-alpine yerelde yok (kurulumda çekilmeye çalışılır)"
   else warn "docker yok ya da bu kullanıcının yetkisi yok"; fi
   step 4/4 "Dış erişim"
   for url in https://registry-1.docker.io/v2/ https://github.com; do
@@ -127,11 +135,11 @@ cmd_kesif() {
 # --- imaj ----------------------------------------------------------------------
 pick_base() {
   local base="python:3.12-alpine" local_imgs
-  if docker image inspect "$base" >/dev/null 2>&1; then echo "$base"; return; fi
+  if $DOCKER image inspect "$base" >/dev/null 2>&1; then echo "$base"; return; fi
   info "$base çekiliyor…" >&2
-  if docker pull -q "$base" >/dev/null 2>&1; then echo "$base"; return; fi
+  if $DOCKER pull -q "$base" >/dev/null 2>&1; then echo "$base"; return; fi
   warn "$base çekilemedi (dış ağ kapalı olabilir). Yereldeki Python imajlarına bakılıyor…" >&2
-  local_imgs=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '(^|/)python:3\.(9|1[0-9])' | head -5)
+  local_imgs=$($DOCKER images --format '{{.Repository}}:{{.Tag}}' | grep -E '(^|/)python:3\.(9|1[0-9])' | head -5)
   [ -n "$local_imgs" ] || return 1
   echo "$local_imgs" | sed 's/^/    /' >&2
   ask "Hangisi temel alınsın (3.9 ve üstü yeter, ek paket gerekmez)" "$(echo "$local_imgs" | head -1)"
@@ -140,20 +148,25 @@ pick_base() {
 build_image() {
   IMAGE="${NOBETCI_IMAGE:-}"
   if [ -n "$IMAGE" ]; then ok "hazır imaj kullanılacak: $IMAGE"; return; fi
-  docker version >/dev/null 2>&1 || die "docker yok. İmajı başka yerde derleyip NOBETCI_IMAGE=... ile verin."
+  docker_cmd || die "docker yok ya da kullanılamıyor. İmajı başka yerde derleyip NOBETCI_IMAGE=... ile verin."
   IMAGE="k8s-nobetci:$VERSION"
   local base; base=$(pick_base) || die "Kullanılabilir bir Python imajı yok. Bir makinede 'docker save python:3.12-alpine' alıp buraya 'docker load' ile yükleyin."
-  docker build -q --build-arg "BASE=$base" -t "$IMAGE" . >/dev/null || die "imaj derlenemedi"
-  ok "imaj derlendi: $IMAGE (temel: $base, $(docker image inspect -f '{{.Size}}' "$IMAGE" | awk '{printf "%.0f MB", $1/1e6}'))"
+  $DOCKER build -q --build-arg "BASE=$base" -t "$IMAGE" . >/dev/null || die "imaj derlenemedi"
+  ok "imaj derlendi: $IMAGE (temel: $base, $($DOCKER image inspect -f '{{.Size}}' "$IMAGE" | awk '{printf "%.0f MB", $1/1e6}'))"
   if [ -n "$KIND_NODES" ]; then
     for node in $KIND_NODES; do  # 'kind load docker-image' ile aynı iş; kind komutu gerekmez
-      docker save "$IMAGE" | docker exec -i "$node" ctr -n k8s.io images import - >/dev/null || die "imaj $node node'una yüklenemedi"
+      # containerd sürümüne göre biri tutar; kind komutu varsa son çare o
+      $DOCKER save "$IMAGE" | $DOCKER exec -i "$node" ctr -n k8s.io images import - >/dev/null 2>&1 ||
+        $DOCKER save "$IMAGE" | $DOCKER exec -i "$node" ctr -n k8s.io images import --all-platforms - >/dev/null 2>&1 ||
+        { command -v kind >/dev/null && kind load docker-image "$IMAGE" --name "$(kubectl get nodes -o jsonpath='{.items[0].spec.providerID}' | cut -d/ -f4)" >/dev/null 2>&1; } ||
+        die "imaj $node node'una yüklenemedi"
+      $DOCKER exec "$node" crictl images 2>/dev/null | grep -q k8s-nobetci || warn "imaj node'da görünmüyor; pod ErrImageNeverPull/ImagePullBackOff verebilir"
       ok "imaj node'a yüklendi: $node"
     done
   else
     local reg; reg=$(ask "Node'ların çekebileceği registry (ör. registry.sirket.local/ekip)" "")
     [ -n "$reg" ] || die "kind dışı kümede bir registry gerekli"
-    docker tag "$IMAGE" "$reg/$IMAGE" && docker push -q "$reg/$IMAGE" >/dev/null || die "registry'ye gönderilemedi"
+    $DOCKER tag "$IMAGE" "$reg/$IMAGE" && $DOCKER push -q "$reg/$IMAGE" >/dev/null || die "registry'ye gönderilemedi"
     IMAGE="$reg/$IMAGE"; ok "gönderildi: $IMAGE"
   fi
 }
@@ -216,6 +229,11 @@ cmd_ekran() {
   need_cluster
   installed || die "Önce kurulum yapın: $ME kur"
   if [ -n "$(ekran_pid)" ]; then ok "ekran zaten açık: http://$(my_ip):$PORT"; return; fi
+  if port_busy "$PORT"; then
+    local p=$PORT; while port_busy "$p" && [ "$p" -lt $((PORT + 20)) ]; do p=$((p + 1)); done
+    warn "$PORT portu başka bir şey tarafından kullanılıyor; $p kullanılacak"
+    PORT=$p; save_conf
+  fi
   # port-forward oturum kapanınca ölmesin, koparsa yeniden bağlansın
   nohup bash -c "while true; do kubectl -n nobetci port-forward --address 0.0.0.0 svc/nobetci $PORT:80; sleep 2; done" \
     >"$HOME_DIR/ekran.log" 2>&1 &
