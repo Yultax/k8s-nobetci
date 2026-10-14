@@ -59,20 +59,29 @@ button{font:inherit;color:inherit}
 h2{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:0}
 .sec{margin-top:28px}
 .sec-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
-.sec-head p{margin:0;color:var(--muted);font-size:12.5px}
+.info{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--border);background:none;
+  color:var(--muted);font:600 10px/1 var(--font);cursor:help;padding:0;align-self:center}
+.info:hover,.info:focus-visible{color:var(--ink);border-color:var(--ink2)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .l{font-size:12px;color:var(--ink2);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .v{font-size:26px;font-weight:650;line-height:1.2}
+.kpi .v small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:4px}
+.kpi .s{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.kpi .s .chip{font-weight:500;color:var(--ink2)}
 .sec-head .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
 
 /* hat şeridi */
 .pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr) 64px) minmax(0,1fr);align-items:stretch}
-.stage{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;text-align:left;cursor:pointer;
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer;
   display:flex;flex-direction:column;gap:2px;min-width:0;transition:border-color .2s}
 .stage:hover{border-color:color-mix(in srgb,var(--series) 50%,var(--border))}
 .stage[aria-expanded=true]{border-color:var(--series)}
 .stage .k{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;display:flex;gap:6px;align-items:center}
 .stage .k b{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--raised);color:var(--ink2);font-size:10px}
 .stage .t{font-weight:650}
-.stage .big{font-size:26px;font-weight:650;line-height:1.15;margin-top:4px}
+.stage .big{font-size:22px;font-weight:650;line-height:1.15;margin-top:2px}
 .stage .big small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:4px}
 .stage .rows{margin-top:6px;display:grid;grid-template-columns:1fr auto;gap:1px 10px;font-size:12px;color:var(--ink2)}
 .stage .rows .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
@@ -229,6 +238,7 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
 .dim{opacity:.55;transition:opacity .3s}
 
 @media (max-width:1100px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .pipe{grid-template-columns:1fr;gap:0}
   .arrow{height:34px;flex-direction:row;gap:10px}
   .arrow .line{width:2px;height:100%}
@@ -238,6 +248,7 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
   .main,.row2,.cols{grid-template-columns:1fr}
 }
 @media (max-width:640px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .wrap{padding:0 12px 40px}.top{margin:0 -12px 14px;padding:10px 12px}
   .cells{grid-template-columns:repeat(30,minmax(0,1fr));gap:1px}.cells i:nth-child(-n+30){display:none}
   .hrow.head{display:none}
@@ -272,8 +283,10 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
 
   <div id="banner" class="banner" role="status"></div>
 
+  <div class="kpis" id="kpis"></div>
+
   <section>
-    <div class="sec-head"><h2>Çalışma hattı</h2><p>Her ölçüm turunda veri soldan sağa akar. Bir aşamaya tıklayınca nasıl çalıştığını anlatır.</p></div>
+    <div class="sec-head"><h2>Çalışma hattı</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Her ölçüm turunda veri soldan sağa akar. Bir aşamaya tıklayınca nasıl çalıştığını anlatır.">i</button></div>
     <div class="pipe" id="pipe"></div>
     <div class="card explain" id="explain"></div>
   </section>
@@ -282,7 +295,6 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
     <select id="nsSel" aria-label="Namespace"></select>
     <input type="search" id="q" placeholder="Pod ara…" aria-label="Pod ara">
     <label><input type="checkbox" id="hideSys"> Sistem namespace'lerini gizle</label>
-    <span class="kbd">Kısayollar: <kbd>j</kbd>/<kbd>k</kbd> olaylar · <kbd>/</kbd> ara · <kbd>?</kbd></span>
   </div>
 
   <section class="main">
@@ -294,7 +306,7 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
   </section>
 
   <section class="sec">
-    <div class="sec-head"><h2>Sapma haritası</h2><p>Satırlar pod, sütunlar son 60 ölçüm (sağda şimdi). Renk, o anki değerin kendi normalinden ne kadar saptığını gösterir; en çok sapanlar üstte.</p></div>
+    <div class="sec-head"><h2>Sapma haritası</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Satırlar pod, sütunlar son 60 ölçüm (sağda şimdi). Renk, o anki değerin kendi normalinden ne kadar saptığını gösterir; en çok sapanlar üstte.">i</button></div>
     <div class="card heat">
       <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between">
         <div class="sig-tabs" id="sigTabs" role="tablist"></div>
@@ -306,18 +318,18 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
 
   <section class="sec row2">
     <div>
-      <div class="sec-head"><h2>Node</h2><p>Gri şerit eşik zarfı: çizgi dışına çıkarsa tespit edilir.</p></div>
+      <div class="sec-head"><h2>Node</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Gri şerit eşik zarfı: çizgi dışına çıkarsa tespit edilir.">i</button></div>
       <div class="card pad"><div class="charts" id="nodes"></div></div>
     </div>
     <div>
-      <div class="sec-head"><h2>Olay zaman çizelgesi</h2><p>Her çubuk bir olay; uzunluğu ne kadar sürdüğü.</p>
+      <div class="sec-head"><h2>Olay zaman çizelgesi</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Her çubuk bir olay; uzunluğu ne kadar sürdüğü.">i</button>
         <div class="right sig-tabs" id="tlRange" role="tablist"></div></div>
       <div class="card pad tl" id="timeline"></div>
     </div>
   </section>
 
   <section class="sec">
-    <div class="sec-head"><h2>Pod'lar</h2><p>Sapma, değerin kendi normalinden kaç ölçek uzakta olduğudur; ±<span id="zTxt">5</span> eşiktir.</p></div>
+    <div class="sec-head"><h2>Pod'lar</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Sapma, değerin kendi normalinden kaç ölçek uzakta olduğudur; eşiği aşan değer tespit edilir.">i</button></div>
     <div class="card" style="overflow-x:auto"><table class="pods" id="pods"></table></div>
   </section>
 </div>
@@ -641,7 +653,6 @@ function renderTop() {
   const b = $("#banner");
   put(b, ...st.errors.slice(0, 2).map((e) => h("div", null, chip(3, "Prometheus hatası"), " ", h("span", {class: "mono ink2"}, e))));
   if (S.online === false) put(b, chip(3, "Bağlantı koptu"), " Nöbetçiye ulaşılamıyor, yeniden deneniyor. Son bilinen durum gösteriliyor.");
-  $("#zTxt").textContent = S.det.z;
 }
 function tick() {
   if (!S.st) return;
@@ -653,6 +664,28 @@ function tick() {
   $("#ringArc").setAttribute("stroke-dashoffset", (47.12 * (1 - frac)).toFixed(2));
   const now = serverNow();
   document.querySelectorAll("[data-since]").forEach((e) => { e.textContent = dur(now - +e.dataset.since); });
+}
+
+// ---------------------------------------------------------------- gösterge sırası
+function renderKpis() {
+  const st = S.st, Z = S.det.z, open = st.open.filter(incVisible);
+  const out = st.pods.filter((r) => visible(r.ns, r.pod));
+  const hot = out.filter((r) => ["pod_cpu", "pod_mem", "pod_net_rx", "pod_net_tx"].some((k) => Math.abs(r[k + "_z"] ?? 0) >= Z)).length;
+  const by = (n) => open.filter((i) => i.severity === n).length;
+  const node = st.nodes.find((c) => c.signal === "node_cpu"), mem = st.nodes.find((c) => c.signal === "node_mem");
+  const last = (c) => c ? c.vs[c.vs.length - 1] : null;
+  const tile = (l, v, unit, sub, tipText) => h("div", {class: "kpi"},
+    h("span", {class: "l"}, l, tipText ? h("button", {class: "info", type: "button", "aria-label": "Açıklama", "data-tip": tipText}, "i") : null),
+    h("span", {class: "v"}, v, unit ? h("small", null, unit) : null), h("span", {class: "s"}, sub));
+  const fill = open.flatMap((i) => Object.values(i.findings)).filter((f) => f.kind === "fill" && f.active).sort((a, b) => a.detail.eta - b.detail.eta)[0];
+  put($("#kpis"),
+    tile("Açık olay", open.length, "", [chip(3, `${by(3)} kritik`), chip(2, `${by(2)} uyarı`)]),
+    tile("Eşik dışı pod", hot, `/ ${out.length}`, "şu an normalinden sapan", `En az bir ölçümü normalinden ${Z} ölçekten fazla sapan pod sayısı.`),
+    tile("Son 24 saat", st.count_24h, "olay", `${st.pipeline.detect.suppressed_total} sıçrama olağan sayıldı`),
+    tile("Node CPU", node ? fmt(last(node), "cores") : "–", "", node?.entity || ""),
+    tile("Node bellek", mem ? fmt(last(mem), "bytes") : "–", "", mem?.entity || ""),
+    tile("En yakın dolma", fill ? dur(fill.detail.eta) : "–", "", fill ? fill.pod : "bellek limitine giden pod yok",
+      "Bellek kullanımı düz bir çizgi gibi artan pod'ların limitine kalan tahmini süre; en kısası."));
 }
 
 // ---------------------------------------------------------------- hat şeridi
@@ -773,14 +806,16 @@ async function renderDetail() {
       inc.closed ? h("span", {class: "badge"}, `kapandı · ${dur(inc.closed - inc.opened)} sürdü`)
         : h("span", {class: "badge live"}, h("span", {"data-since": inc.opened}, dur(serverNow() - inc.opened)), " sürüyor")),
     h("div", {class: "why"}, findings.map((f) => h("div", {class: "w" + (f.active || inc.closed ? "" : " gone")}, chip(f.severity, ""),
-      h("div", null, h("b", null, `${f.pod || f.workload}: `), f.title,
-        h("span", {class: "src"}, explainFinding(f, SIG[f.signal]?.unit) + (f.active || inc.closed ? "" : ` · ${clock(f.last_seen)}'den beri görülmüyor`)))))),
+      h("div", null, h("b", null, `${f.pod || f.workload}: `), f.title, " ",
+        h("button", {class: "info", type: "button", "aria-label": "Neden alarm verdi?",
+          "data-tip": explainFinding(f, SIG[f.signal]?.unit) + (f.active || inc.closed ? "" : ` ${clock(f.last_seen)}'den beri görülmüyor.`)}, "i"))))),
     charts.length ? [chartLegend(h("span", null, h("i", {class: "key-mark"}), "tespit anı")),
       h("div", {class: "charts"}, charts.map((c) => figure(c, {group: "inc", since: sinceOf(c),
         eta: fill && c.signal === "pod_mem" && c.entity === fill.pod ? fill.detail.eta : null})))] : null,
     h("div", {class: "cols"},
       h("div", {class: "box"}, h("h4", null, inc.summary.source === "llm" ? `Yorum · ${inc.summary.model}` : "Olası neden ve öneri"),
-        h("p", null, inc.summary.neden), h("p", null, h("b", null, "Öneri: "), inc.summary.oneri),
+        inc.summary.source === "llm" ? h("p", null, inc.summary.ozet) : null,
+        h("p", null, inc.summary.source === "llm" ? h("b", null, "Olası neden: ") : null, inc.summary.neden), h("p", null, h("b", null, "Öneri: "), inc.summary.oneri),
         h("h4", {style: "margin-top:16px"}, "Bulgu zaman çizelgesi"),
         h("table", {class: "tline"}, findings.slice().sort((a, b) => a.first_seen - b.first_seen).map((f) => h("tr", null,
           h("td", {class: "t"}, `${clock(f.first_seen)}–${clock(f.last_seen)}`), h("td", null, chip(f.severity, "")), h("td", null, `${f.pod || f.workload}: ${f.title}`))))),
@@ -809,7 +844,7 @@ function renderCalm(box) {
       h("div", null, h("b", null, st.pipeline.source.series), h("span", null, "izlenen seri")),
       h("div", null, h("b", null, st.count_24h), h("span", null, "son 24 saatte olay")),
       h("div", null, h("b", null, st.pipeline.detect.suppressed_total), h("span", null, "olağan sayılıp bastırıldı"))),
-    h("p", {class: "muted", style: "margin-top:18px;max-width:560px"}, "Bir pod'un ayrıntısını görmek için sapma haritasında ya da tablodaki satırına tıklayın.")));
+));
 }
 async function renderPod(box, sel) {
   const row = S.st.pods.find((r) => r.ns === sel.ns && r.pod === sel.pod);
@@ -968,7 +1003,7 @@ function beep() {
   } catch {}
 }
 function renderAll() {
-  renderTop(); renderPipe(); renderFilters(); renderList(); renderDetail(); renderHeat(); renderNodes(); renderTimeline(); renderTable(); tick();
+  renderTop(); renderKpis(); renderPipe(); renderFilters(); renderList(); renderDetail(); renderHeat(); renderNodes(); renderTimeline(); renderTable(); tick();
 }
 async function load() {
   const st = await fetch("/api/state", {cache: "no-store"}).then((r) => r.json());
@@ -998,6 +1033,18 @@ async function ping() {
   }
   tick();
 }
+
+// ---------------------------------------------------------------- ⓘ ipuçları
+const infoTip = (e) => {
+  const b = e.target.closest?.(".info[data-tip]");
+  if (!b) return;
+  const r = b.getBoundingClientRect();
+  showTip(h("div", {style: "max-width:300px;color:var(--ink);line-height:1.45"}, b.dataset.tip), r.right, r.bottom + 40);
+};
+document.addEventListener("pointerover", infoTip);
+document.addEventListener("focusin", infoTip);
+document.addEventListener("pointerout", (e) => { if (e.target.closest?.(".info[data-tip]")) hideTip(); });
+document.addEventListener("focusout", (e) => { if (e.target.closest?.(".info[data-tip]")) hideTip(); });
 
 // ---------------------------------------------------------------- olaylar ve başlangıç
 const theme = store("theme") || "dark";

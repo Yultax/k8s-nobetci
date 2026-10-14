@@ -7,6 +7,7 @@
 #   ./kur.sh izle         canlı bildirimler       ./kur.sh demo | demo-kaldir
 #   ./kur.sh kesif        yalnızca incele         ./kur.sh kaldir
 #   ./kur.sh guncelle     GitHub'daki son sürümle kendini yenileyip yeniden kurar
+#   ./kur.sh llm          olay yorumcusunu (Gemini API / yerel model / kapalı) ayarlar
 #
 # EVET=1 ile bütün sorularda varsayılan kabul edilir.
 # tools/paketle.sh bu betiğin sonuna kodu gömer; tek dosya olarak taşınır (dist/nobetci-kurulum.sh).
@@ -25,7 +26,7 @@ if [ -n "$ARC_LINE" ]; then
   SRC="$HOME_DIR/surum-$VERSION"
   if [ ! -f "$SRC/.tamam" ]; then
     rm -rf "$SRC" && mkdir -p "$SRC"
-    tail -n +"$ARC_LINE" "$SELF" | base64 -d | tar xz -C "$SRC" || { echo "Gömülü kod açılamadı." >&2; exit 1; }
+    tail -n +"$ARC_LINE" "$SELF" | base64 -d | tar xzm -C "$SRC" || { echo "Gömülü kod açılamadı." >&2; exit 1; }
     touch "$SRC/.tamam"
   fi
 else
@@ -47,12 +48,17 @@ ask() { # ask "soru" "varsayılan" -> cevap
   if [ "${EVET:-}" != 1 ]; then read -rp "  $1 ${D}[$2]${N}: " answer </dev/tty; fi
   echo "${answer:-$2}"
 }
+confirm_no() { # confirm_no "soru" -> 0 yalnızca açıkça "evet" denirse (varsayılan hayır)
+  [ "${EVET:-}" = 1 ] && return 1
+  local a; read -rp "  $1 ${D}[e/H]${N}: " a </dev/tty
+  [[ "$a" =~ ^[EeYy] ]]
+}
 confirm() { # confirm "soru" -> 0 evet
   [ "${EVET:-}" = 1 ] && return 0
   local a; read -rp "  $1 ${D}[E/h]${N}: " a </dev/tty
   [[ -z "$a" || "$a" =~ ^[EeYy] ]]
 }
-save_conf() { : > "$CONF"; for k in CLUSTER PROM_URL WEBHOOK_URL NS_EXCLUDE PORT; do printf '%s=%q\n' "$k" "${!k:-}" >> "$CONF"; done; }
+save_conf() { : > "$CONF"; for k in CLUSTER PROM_URL WEBHOOK_URL NS_EXCLUDE PORT LLM_URL LLM_MODEL LLM_LOGS; do printf '%s=%q\n' "$k" "${!k:-}" >> "$CONF"; done; }
 # shellcheck disable=SC1090
 [ -f "$CONF" ] && . "$CONF"
 PORT="${PORT:-8080}"
@@ -127,7 +133,7 @@ cmd_kesif() {
     $DOCKER image inspect python:3.12-alpine >/dev/null 2>&1 && ok "python:3.12-alpine yerelde var" || info "python:3.12-alpine yerelde yok (kurulumda çekilmeye çalışılır)"
   else warn "docker yok ya da bu kullanıcının yetkisi yok"; fi
   step 4/4 "Dış erişim"
-  for url in https://registry-1.docker.io/v2/ https://github.com; do
+  for url in https://registry-1.docker.io/v2/ https://github.com https://generativelanguage.googleapis.com/ https://registry.ollama.ai/v2/; do
     code=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$url" 2>/dev/null)
     [[ "$code" =~ ^[1-5] ]] && ok "$url ($code)" || warn "$url ulaşılamadı"
   done
@@ -175,8 +181,8 @@ build_image() {
 
 render() {
   sed -e "s|__IMAGE__|$IMAGE|" -e "s|__CLUSTER__|$CLUSTER|" -e "s|__PROM_URL__|$PROM_URL|" \
-      -e "s|__LLM_URL__|${NOBETCI_LLM_URL:-}|" -e "s|__LLM_MODEL__|${NOBETCI_LLM_MODEL:-gemma3:4b}|" \
-      -e "s|__WEBHOOK_URL__|${WEBHOOK_URL:-}|" "$1"
+      -e "s|__LLM_URL__|${LLM_URL:-}|" -e "s|__LLM_MODEL__|${LLM_MODEL:-}|" -e "s|__LLM_LOGS__|${LLM_LOGS:-false}|" \
+      -e "s|__WEBHOOK_URL__|${WEBHOOK_URL:-}|" -e "s|__NS_EXCLUDE__|${NS_EXCLUDE:-}|" "$1"
 }
 
 # --- komutlar ------------------------------------------------------------------
@@ -211,7 +217,6 @@ cmd_kur() {
 
   step 5/5 "Kubernetes'e kurulum"
   render deploy/nobetci.yaml | kubectl apply -f - | sed 's/^/  /'
-  [ -n "$NS_EXCLUDE" ] && kubectl -n nobetci set env deploy/nobetci "NOBETCI_NS_EXCLUDE=$NS_EXCLUDE" >/dev/null
   kubectl -n nobetci rollout restart deploy/nobetci >/dev/null
   if ! kubectl -n nobetci rollout status deploy/nobetci --timeout=180s >/dev/null; then
     kubectl -n nobetci get pods | sed 's/^/  /'
@@ -302,6 +307,77 @@ cmd_guncelle() {
   exec env EVET=1 "$SELF" kur
 }
 
+GEMINI_URL="https://generativelanguage.googleapis.com/v1beta/openai"
+llm_test() { # llm_test url model anahtar_dosyası -> 0 başarılı; hata metnini yazar
+  local url="$1" model="$2" keyfile="$3" endpoint body code
+  [[ "$url" =~ ^https?://[^/]+/?$ ]] && endpoint="${url%/}/v1/chat/completions" || endpoint="${url%/}/chat/completions"
+  body=$(printf '{"model":"%s","max_tokens":20,"messages":[{"role":"user","content":"Sadece TAMAM yaz."}]}' "$model")
+  local args=(-s -m 120 -o "$HOME_DIR/.llm-test" -w '%{http_code}' -H 'Content-Type: application/json' -d "$body")
+  # anahtar komut satırına yazılmaz (ps'te görünmesin): başlık dosyadan okunur
+  [ -s "$keyfile" ] && { printf 'Authorization: Bearer %s\n' "$(cat "$keyfile")" > "$keyfile.h"; args+=(-H "@$keyfile.h"); }
+  code=$(curl "${args[@]}" "$endpoint")
+  rm -f "$keyfile.h"
+  if [ "$code" = 200 ] && grep -q '"choices"' "$HOME_DIR/.llm-test"; then rm -f "$HOME_DIR/.llm-test"; return 0; fi
+  fail "LLM ucu yanıt vermedi (HTTP ${code:-yok}): $(head -c 300 "$HOME_DIR/.llm-test" 2>/dev/null | tr '\n' ' ')"
+  rm -f "$HOME_DIR/.llm-test"; return 1
+}
+
+cmd_llm() {
+  need_cluster
+  installed || die "Önce kurulum yapın: $ME kur"
+  step 1/3 "LLM yorumcusu"
+  info "Şu an: ${LLM_URL:-kapalı}${LLM_URL:+ · ${LLM_MODEL} · loglar $([ "${LLM_LOGS:-false}" = true ] && echo gönderiliyor || echo gönderilmiyor)}"
+  printf '\n  1) Kapalı (kural tabanlı özet)\n  2) Google AI Studio / Gemini API (Gemma, ücretsiz katman; anahtar gerekir)\n'
+  printf '  3) Küme içinde yerel model (Ollama; veri dışarı çıkmaz, ~3 GB indirme)\n  4) Başka bir OpenAI uyumlu uç\n\n'
+  local choice keyfile="$HOME_DIR/.llm-key"
+  choice=$(ask "Seçim" "1")
+  rm -f "$keyfile"; umask 077
+  case "$choice" in
+    1) LLM_URL=""; LLM_MODEL=""; LLM_LOGS=false ;;
+    2) LLM_URL="$GEMINI_URL"
+       info "Anahtar: https://aistudio.google.com/apikey → Create API key. Ücretsiz katmanda Google gönderilen veriyi"
+       info "ürünlerini geliştirmek için kullanabilir; bu yüzden pod logları varsayılan olarak gönderilmez."
+       LLM_MODEL=$(ask "Model" "gemma-3-27b-it")
+       local key; read -rsp "  API anahtarı (ekranda görünmez): " key </dev/tty; echo
+       [ -n "$key" ] || die "anahtar girilmedi"
+       printf '%s' "$key" > "$keyfile"; key=""
+       LLM_LOGS=false; confirm_no "Çöken konteynerin son log satırları da gönderilsin mi? (önerilmez)" && LLM_LOGS=true ;;
+    3) LLM_URL="http://ollama.nobetci.svc:11434"; LLM_MODEL=$(ask "Model" "gemma3:1b"); LLM_LOGS=true ;;
+    4) LLM_URL=$(ask "Uç adresi (ör. http://10.0.0.5:11434 ya da .../v1)" "${LLM_URL:-}")
+       LLM_MODEL=$(ask "Model" "${LLM_MODEL:-}")
+       local key2; read -rsp "  API anahtarı (yoksa boş bırakın): " key2 </dev/tty; echo
+       [ -n "$key2" ] && printf '%s' "$key2" > "$keyfile"; key2=""
+       LLM_LOGS=false; confirm_no "Çöken konteynerin log satırları da gönderilsin mi?" && LLM_LOGS=true ;;
+    *) die "geçersiz seçim" ;;
+  esac
+
+  step 2/3 "Deneme"
+  if [ "$choice" = 3 ]; then
+    render deploy/ollama.yaml | kubectl apply -f - | sed 's/^/  /'
+    info "Ollama ayağa kalkıyor ve modeli indiriyor (birkaç dakika sürebilir)…"
+    kubectl -n nobetci rollout status deploy/ollama --timeout=600s >/dev/null || warn "ollama henüz hazır değil; hazır olunca nöbetçi kendiliğinden kullanır"
+  elif [ "$choice" != 1 ]; then
+    if llm_test "$LLM_URL" "$LLM_MODEL" "$keyfile"; then ok "LLM yanıt verdi ($LLM_MODEL)"; else
+      rm -f "$keyfile"; die "ayar kaydedilmedi; anahtarı, model adını ve ağ erişimini kontrol edin"; fi
+  else ok "LLM kapatılıyor"; fi
+
+  step 3/3 "Uygulanıyor"
+  if [ -s "$keyfile" ]; then
+    kubectl -n nobetci create secret generic nobetci-llm --from-file=key="$keyfile" --dry-run=client -o yaml | kubectl apply -f - >/dev/null &&
+      ok "anahtar Kubernetes Secret'ına yazıldı (nobetci/nobetci-llm)"
+  elif [ "$choice" = 1 ]; then
+    kubectl -n nobetci delete secret nobetci-llm --ignore-not-found >/dev/null
+  fi
+  rm -f "$keyfile"
+  [ "$choice" != 3 ] && kubectl -n nobetci delete deploy/ollama svc/ollama --ignore-not-found >/dev/null 2>&1
+  save_conf
+  IMAGE=$(kubectl -n nobetci get deploy nobetci -o jsonpath='{.spec.template.spec.containers[0].image}')
+  render deploy/nobetci.yaml | kubectl apply -f - >/dev/null
+  kubectl -n nobetci rollout status deploy/nobetci --timeout=180s >/dev/null && ok "nöbetçi yeni ayarla çalışıyor" || warn "nöbetçi yeniden başlatılamadı: $ME durum"
+  [ -n "$(ekran_pid)" ] && { cmd_ekran_kapat >/dev/null; cmd_ekran >/dev/null; }
+  info "Yorumlar yeni olaylar açıldıkça ekranda 'Yorum · model' başlığıyla görünür."
+}
+
 cmd_izle() { need_cluster; kubectl -n nobetci logs -f deploy/nobetci --tail=40; }
 cmd_demo() { need_cluster; kubectl apply -f deploy/demo-yuk.yaml | sed 's/^/  /'
   info "çökme birkaç dakikada, bellek tahmini ~20 dk'da, CPU sıçraması ~25 dk'da görünür."; }
@@ -323,18 +399,18 @@ menu() {
     printf '\n  %sNöbetçi%s %sv%s%s · %s · %s\n\n' "$B" "$N" "$D" "$VERSION" "$N" "$(kubectl config current-context 2>/dev/null)" "$st"
     printf '  1) Kur / güncelle\n  2) Ekranı ağda aç\n  3) Canlı bildirimleri izle\n  4) Durum\n'
     printf '  5) Demo sorunları kur\n  6) Demo sorunları kaldır\n  7) Kümeyi incele (bir şey değiştirmez)\n  8) Ekranı kapat\n  9) Kaldır\n'
-    printf "  g) GitHub'dan güncelle\n  q) Çık\n\n"
+    printf "  g) GitHub'dan güncelle\n  l) LLM yorumcusu\n  q) Çık\n\n"
     local c; read -rp "  Seçim: " c </dev/tty
     case "$c" in
       1) (cmd_kur); [ -f "$CONF" ] && . "$CONF" ;; 2) cmd_ekran ;; 3) cmd_izle ;; 4) cmd_durum ;; 5) cmd_demo ;; 6) cmd_demo_kaldir ;;
-      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; g|G) cmd_guncelle ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
+      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; g|G) cmd_guncelle ;; l|L) (cmd_llm); [ -f "$CONF" ] && . "$CONF" ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
     esac
   done
 }
 
 case "${1:-menu}" in
   menu) menu ;; kur) cmd_kur ;; ekran) cmd_ekran ;; ekran-kapat) cmd_ekran_kapat ;; durum) cmd_durum ;;
-  izle) cmd_izle ;; guncelle) cmd_guncelle ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
+  izle) cmd_izle ;; guncelle) cmd_guncelle ;; llm) cmd_llm ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
   *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
 exit $?

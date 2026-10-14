@@ -60,6 +60,20 @@ Ekran, oturum kapansa da çalışan bir `port-forward` ile `http://<sunucu>:8080
 - **Node grafikleri, olay zaman çizelgesi (1/6/24 sa), sıralanabilir pod tablosu.** Satıra tıklayınca pod görünümü açılır.
 - Namespace filtresi, pod arama, açık/koyu tema, yeni olayda isteğe bağlı ses; kısayollar `j`/`k`, `/`, `Esc`, `?`.
 
+## Dışa aktarım ve alarmlar
+
+- `/metrics` — Prometheus biçimi (node exporter gibi kazınır; pod'daki `prometheus.io/scrape` işaretiyle kümedeki
+  Prometheus kendiliğinden toplar): `nobetci_up`, `nobetci_deviation` ve `nobetci_baseline` (her seri için sapma ve
+  normal), `nobetci_incident_open`, `nobetci_open_incidents`, `nobetci_fill_eta_seconds`, `nobetci_findings_total`…
+- `/api/alarmlar` — açık olayların sade JSON listesi (başka sistemlerin okuması için).
+- Webhook — `NOBETCI_WEBHOOK_URL` tanımlıysa olay açılış/ciddileşme/kapanışında JSON gönderilir (`text` alanı Slack/Mattermost uyumlu).
+
+## LLM yorumcusu (isteğe bağlı)
+
+`./nobetci-kurulum.sh llm` ile seçilir: kapalı, Google AI Studio / Gemini API (Gemma), küme içinde Ollama ya da
+herhangi bir OpenAI uyumlu uç. Anahtar `nobetci/nobetci-llm` Secret'ında tutulur. Dış servislere varsayılan olarak
+yalnızca ölçüm özeti gider; pod logları ancak açıkça istenirse (`NOBETCI_LLM_LOGS=true`) gönderilir.
+
 ## Küme olmadan deneme
 
 ```bash
@@ -85,4 +99,3 @@ En sık gerekenler: `PROM_URL`, `LLM_URL`, `LLM_MODEL`, `WEBHOOK_URL`, `NS_EXCLU
 - Profil en az 3 günlük Prometheus geçmişi ister; daha azında yalnızca yakın geçmişe bakılır.
 - Yeni doğan pod'da ilk ~20 dakika istatistiksel tespit yapılmaz (durum kontrolleri çalışır).
 - Prophet yok: aynı işi (mevsimsellik) bağımlılıksız saatlik profil görüyor.
-- LLM yorumcusu kodda duruyor ama sihirbaz kurmuyor; `NOBETCI_LLM_URL` ile açılır.

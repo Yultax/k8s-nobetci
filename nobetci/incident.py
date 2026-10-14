@@ -52,6 +52,7 @@ class IncidentManager:
         self.next_id = next_id
         self.open: dict[tuple[str, str], Incident] = {}
         self.closed: list[Incident] = []  # en yenisi başta
+        self.counts: dict[str, int] = {}  # türüne göre yeni bulgu sayısı (açılıştan beri)
 
     def get(self, incident_id: int) -> Incident | None:
         return next((i for i in [*self.open.values(), *self.closed] if i.id == incident_id), None)
@@ -72,6 +73,8 @@ class IncidentManager:
             before = inc.severity
             for f in fs:
                 prev = inc.findings.get(f.key)
+                if prev is None:
+                    self.counts[f.kind] = self.counts.get(f.kind, 0) + 1
                 inc.findings[f.key] = asdict(f) | {"first_seen": prev["first_seen"] if prev else now, "last_seen": now}
                 inc.severity = max(inc.severity, f.severity)
             inc.last_seen = now

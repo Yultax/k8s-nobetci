@@ -1,5 +1,5 @@
-# İsteğe bağlı: küme içinde yerel LLM. İmaj (~2 GB) ve model (gemma3:4b ~3.3 GB) internetten çekilir;
-# küme dışarı çıkamıyorsa bunu kullanmayın, kur.sh'ta hazır bir LLM ucu verin ya da LLM'siz kurun.
+# İsteğe bağlı: küme içinde yerel LLM (./nobetci-kurulum.sh llm → 3). İmaj (~2 GB) ve model internetten çekilir;
+# gemma3:1b ~0.8 GB indirme, ~1.5 GB RAM. Veri kümeden çıkmaz.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -41,8 +41,8 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", "until ollama pull __LLM_MODEL__; do sleep 10; done"]
           resources:
-            requests: {cpu: 500m, memory: 3Gi}
-            limits: {memory: 6Gi}
+            requests: {cpu: 250m, memory: 1Gi}
+            limits: {cpu: "2", memory: 4Gi}
           volumeMounts:
             - {name: data, mountPath: /root/.ollama}
       volumes:

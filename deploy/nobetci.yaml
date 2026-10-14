@@ -84,8 +84,15 @@ spec:
               value: "__LLM_URL__"
             - name: NOBETCI_LLM_MODEL
               value: "__LLM_MODEL__"
+            - name: NOBETCI_LLM_LOGS
+              value: "__LLM_LOGS__"
+            - name: NOBETCI_LLM_KEY        # ./nobetci-kurulum.sh llm ile oluşturulur; yoksa boş kalır
+              valueFrom:
+                secretKeyRef: {name: nobetci-llm, key: key, optional: true}
             - name: NOBETCI_WEBHOOK_URL
               value: "__WEBHOOK_URL__"
+            - name: NOBETCI_NS_EXCLUDE
+              value: "__NS_EXCLUDE__"
           ports:
             - containerPort: 8080
           readinessProbe:

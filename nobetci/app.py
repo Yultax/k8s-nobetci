@@ -79,8 +79,14 @@ class App:
                 row[sig + "_z"] = None if z is None else round(z, 1)
             row["limit"] = e.limits.get((ns, pod))
             table.append(row)
+        exports = []
+        for (name, ns, ent), s in e.series.items():
+            if s.vs:
+                z = s.z(len(s.vs) - 1)
+                exports.append((name, ns, ent, s.vs[-1], s.med[-1], None if z is None else round(z, 2)))
         st = e.stats
         return {
+            "exports": exports, "limits": [(ns, pod, v) for (ns, pod), v in e.limits.items()],
             "ready": True, "cycle": self._cycle, "now": now, "interval": self.cfg.interval,
             "detector": {"z": self.cfg.z, "persist": self.cfg.persist, "window": WINDOW, "warmup": self.cfg.warmup,
                          "quiet": self.cfg.quiet, "fill_horizon": self.cfg.fill_horizon},
@@ -117,6 +123,7 @@ class App:
             view["open"] = [i.to_dict() for i in sorted(self.manager.open.values(), key=lambda i: (-i.severity, i.opened))]
             view["closed"] = [i.to_dict() | {"charts": {}} for i in self.manager.closed if i.closed >= view["now"] - 86400]
             view["count_24h"] = self.store.count_since(view["now"] - 86400)
+            view["finding_counts"] = dict(self.manager.counts)
         view["cluster"] = self.cfg.cluster
         view["version"] = __version__
         view["tz"] = self.cfg.tz_offset

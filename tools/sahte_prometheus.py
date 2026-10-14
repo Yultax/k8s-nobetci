@@ -103,7 +103,7 @@ class Handler(BaseHTTPRequestHandler):
         global T0
         body = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
         if self.path.endswith("/chat/completions"):  # LLM yolunu denemek için hazır cevap veren sahte uç
-            print("--- LLM'e giden kanıt ---\n" + json.loads(body)["messages"][1]["content"], flush=True)
+            print("--- LLM'e giden kanıt ---\n" + json.loads(body)["messages"][-1]["content"], flush=True)
             text = "ÖZET: (sahte LLM) Kanıt metni alındı.\nNEDEN: Gerçek model bağlı değil.\nÖNERİ: NOBETCI_LLM_URL ile gerçek bir uç verin."
             return self._json({"choices": [{"message": {"content": text}}]})
         p = {k: v[0] for k, v in urllib.parse.parse_qs(body).items()}

@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 import re
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
 
 from .config import Config
@@ -38,7 +40,10 @@ class LLM:
     def __init__(self, cfg: Config):
         base = cfg.llm_url.rstrip("/")
         self.enabled = bool(base)
-        self.url = (base if base.endswith("/v1") else base + "/v1") + "/chat/completions"
+        # Yalnızca host:port verildiyse (Ollama, vLLM) /v1 eklenir; yol içeren adres olduğu gibi kullanılır
+        path = urllib.parse.urlsplit(base).path
+        self.url = (base if path else base + "/v1") + "/chat/completions"
+        self.provider = urllib.parse.urlsplit(base).hostname or ""
         self.model = cfg.llm_model
         self.key = cfg.llm_key
         self.timeout = cfg.llm_timeout
@@ -49,7 +54,8 @@ class LLM:
     def summarise(self, context: str) -> dict:
         body = {
             "model": self.model, "temperature": 0.2, "max_tokens": 300, "stream": False,
-            "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": context}],
+            # Gemma gibi bazı modeller (ör. Gemini API'de) sistem mesajını kabul etmiyor; tek kullanıcı mesajı her yerde çalışır
+            "messages": [{"role": "user", "content": SYSTEM + "\n\n---\n\n" + context}],
         }
         headers = {"Content-Type": "application/json"}
         if self.key:
@@ -60,6 +66,11 @@ class LLM:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 text = json.load(r)["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as e:
+            self.failures += 1
+            detail = e.read().decode("utf-8", "replace")[:300]
+            self.last_error = f"HTTP {e.code}: {detail}"
+            raise LLMError(self.last_error) from e
         except (OSError, ValueError, KeyError, IndexError) as e:
             self.failures += 1
             self.last_error = str(e)
@@ -112,7 +123,7 @@ def build_context(inc: dict, others: list[str], top: list[str], kube: Kube | Non
             pod = kube.pod(ns, name)
             if pod:
                 lines += ["", *_pod_lines(pod)]
-            logs = kube.logs(ns, name, crashed.get(name, ""), previous=name in crashed)
+            logs = kube.logs(ns, name, crashed.get(name, ""), previous=name in crashed) if cfg.llm_logs else []
             if logs:
                 lines += ["", f"Son loglar ({name}{', çöken konteyner' if name in crashed else ''}):", *logs]
         events = kube.events(ns if inc["scope"] == "pod" else "", inc["workload"])

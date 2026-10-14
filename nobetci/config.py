@@ -10,6 +10,8 @@ def _env(name: str, default, cast=str):
     raw = os.environ.get("NOBETCI_" + name)
     if raw is None or raw == "":
         return default
+    if cast is bool:  # bool("false") True olurdu
+        return raw.strip().lower() in ("1", "true", "evet", "yes", "e")
     try:
         return cast(raw)
     except ValueError:  # ör. Kubernetes'in eklediği NOBETCI_PORT=tcp://... gibi başka amaçlı bir değişken
@@ -31,11 +33,12 @@ class Config:
     fill_horizon: int = 6 * 3600  # "limit dolacak" uyarısı için ufuk (sn)
     quiet: int = 600              # bulgu gelmeyince olayın kapanma süresi (sn)
     ns_exclude: str = ""          # izlenmeyecek namespace'ler (regex)
-    llm_url: str = ""             # OpenAI uyumlu uç, ör. http://ollama:11434
+    llm_url: str = ""             # OpenAI uyumlu uç: http://ollama:11434 ya da https://generativelanguage.googleapis.com/v1beta/openai
     llm_model: str = "gemma3:4b"
     llm_key: str = ""
     llm_timeout: int = 300
     llm_cooldown: int = 600       # aynı olay için yeniden yorum arası (sn)
+    llm_logs: bool = False        # çöken konteynerin logları da gönderilsin mi (dış servislerde kapalı tutun)
     webhook_url: str = ""
     db: str = "/data/nobetci.db"
     port: int = 8080
