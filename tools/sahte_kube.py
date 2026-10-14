@@ -26,7 +26,7 @@ IMAGE = {
     "kube-state-metrics": "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0",
     "nobetci": "nobetci:yerel",
 }
-LIMITS = {"api": "512Mi", "worker": "256Mi", "web": "256Mi", "nobetci": "384Mi", "prometheus-server": "1Gi"}
+LIMITS = {"alarm-api": "32Mi", "role-gecidi": "32Mi", "mobil-uygulama": "32Mi", "api": "512Mi", "worker": "256Mi", "web": "256Mi", "nobetci": "384Mi", "prometheus-server": "1Gi"}
 BOOT = time.time() - 3 * 86400
 
 
@@ -137,7 +137,7 @@ def respond(path: str, minute: float, node: str, pods_ns: dict[str, str]):
         "/api/v1/pods": pods,
         "/api/v1/namespaces": [{"metadata": {"name": n}} for n in
                                ("default", "kube-system", "kube-public", "kube-node-lease", "local-path-storage",
-                                "monitoring", "nobetci", "demo")],
+                                "monitoring", "nobetci", "demo", "alarm-ornek")],
         "/api/v1/services": [
             _svc("default", "kubernetes", {}, [{"port": 443, "targetPort": 6443, "name": "https"}], ip="10.96.0.1"),
             _svc("kube-system", "kube-dns", {"k8s-app": "kube-dns"}, [{"port": 53, "targetPort": 53, "name": "dns"}], ip="10.96.0.10"),
@@ -147,6 +147,8 @@ def respond(path: str, minute: float, node: str, pods_ns: dict[str, str]):
             _svc("monitoring", "prometheus-server", {"app": "prometheus-server"}, [{"port": 80, "targetPort": 9090}]),
             _svc("monitoring", "kube-state-metrics", {"app": "kube-state-metrics"}, [{"port": 8080, "targetPort": 8080}]),
             _svc("nobetci", "nobetci", {"app": "nobetci"}, [{"port": 80, "targetPort": 8080}]),
+            _svc("alarm-ornek", "alarm-api", {"app": "alarm-api"}, [{"port": 80, "targetPort": 8080}]),
+            _svc("alarm-ornek", "role-gecidi", {"app": "role-gecidi"}, [{"port": 80, "targetPort": 8080}]),
         ],
         "/apis/apps/v1/deployments": [{
             "metadata": {"namespace": ns, "name": wl, "generation": 3},

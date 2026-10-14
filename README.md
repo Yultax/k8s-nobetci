@@ -42,7 +42,7 @@ Güncelleme: `./nobetci-kurulum.sh guncelle` son sürümü indirir, özetini do�
 kayıtlı ayarlarla soru sormadan yeniden kurar (olay kayıtları korunur). `durum` yeni sürüm varsa söyler.
 Yeni sürüm yayınlamak: `nobetci/__init__.py` içindeki `__version__` artırılır, commit'lenir, `tools/yayinla.sh`.
 
-Menü: kur/güncelle, GitHub'dan güncelle, ekranı ağda aç, canlı bildirimleri izle, durum, demo sorunları kur/kaldır,
+Menü: kur/güncelle, GitHub'dan güncelle, ekranı ağda aç, canlı bildirimleri izle, durum, demo sorunları kur/kaldır, alarm sistemi örneğini kur/kaldır,
 kümeyi incele, kaldır. Aynı işler alt komutla da yapılır (`./nobetci-kurulum.sh kur`, `ekran`, `izle`…).
 
 Sihirbaz Prometheus'u kendisi bulur ve gereken ölçümlerin varlığını denetler; Docker temel imajı
@@ -70,6 +70,14 @@ Kümeyi ve nöbetçinin nasıl karar verdiğini öğrenmek için ayrı bir sayfa
   kubelet → kube-state-metrics → Prometheus → nöbetçi akışını numaralar. Her nesneye tıklayınca ne olduğunu,
   durumunu, sahiplik zincirini ve denenecek `kubectl` komutlarını anlatır. Son Kubernetes olayları ve rehberli tur.
 - **Simülasyonlar** (kümeye dokunmaz): pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse adım adım ne olur.
+  Adımlar kendiliğinden ilerlemez; "Sonraki adım" düğmesi ya da → tuşuyla ilerlenir.
+- **Öğren ve sına:** kavram haritası ve yedi aşamalı ders (pod, node ve kontrol düzlemi, istenen durum, Service,
+  dışarıdan erişim, izleme, ayakta kalmak). Her aşamada kısa anlatım ve sorular; soruların bir kısmı canlı kümeden
+  üretilir ("bu service hangi pod'lara gidiyor?", "bu pod silinirse ne olur?") ve cevaptan sonra haritada gösterilir.
+- **Örnek sistem:** iki sunuculu bir kümede uzaktan alarm kontrolü (telefon → alarm-api → role-gecidi → röleler).
+  Sunucu kapat, pod sil, kopya sayısını ve yaymayı değiştir; komutların düşüp düşmediğini ve Kubernetes'in tepkisini
+  adım adım izle. Tarayıcıda çalışan bir modeldir. Gerçeği `./kur.sh ornek` ile kümeye kurulabilir
+  (`deploy/ornek-alarm.yaml`, `alarm-ornek` namespace'i, busybox; `./kur.sh ornek-kaldir` ile silinir).
 - **Nöbetçinin beyni:** tespit hattı bu turun gerçek sayılarıyla akar; aşamalara tıklayınca parametreleriyle anlatır.
   **Algoritma laboratuvarı:** gerçek bir seride eşik, kalıcılık ve pencereyi değiştirip kararın nasıl değiştiğini,
   medyan/MAD ile ortalama/standart sapma farkını ve limit tahminini görürsünüz (hesap `detect.py` ile birebir aynı).

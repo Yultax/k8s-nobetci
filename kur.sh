@@ -6,6 +6,7 @@
 #   ./kur.sh durum        durum özeti             ./kur.sh ekran-kapat
 #   ./kur.sh izle         canlı bildirimler       ./kur.sh demo | demo-kaldir
 #   ./kur.sh kesif        yalnızca incele         ./kur.sh kaldir
+#   ./kur.sh ornek | ornek-kaldir   keşif ekranındaki alarm sistemi örneğini kümeye kurar
 #   ./kur.sh guncelle     GitHub'daki son sürümle kendini yenileyip yeniden kurar
 #   ./kur.sh llm          olay yorumcusunu (Gemini API / yerel model / kapalı) ayarlar
 #
@@ -384,11 +385,23 @@ cmd_izle() { need_cluster; kubectl -n nobetci logs -f deploy/nobetci --tail=40; 
 cmd_demo() { need_cluster; kubectl apply -f deploy/demo-yuk.yaml | sed 's/^/  /'
   info "çökme birkaç dakikada, bellek tahmini ~20 dk'da, CPU sıçraması ~25 dk'da görünür."; }
 cmd_demo_kaldir() { need_cluster; kubectl delete ns nobetci-demo --ignore-not-found | sed 's/^/  /'; }
+cmd_ornek() {
+  need_cluster
+  kubectl apply -f deploy/ornek-alarm.yaml | sed 's/^/  /'
+  info "pod'lar hazırlanıyor (busybox imajı ~2 MB)…"
+  kubectl -n alarm-ornek rollout status deploy --timeout=120s 2>&1 | sed 's/^/  /'
+  echo
+  info "Komutları canlı izle:     kubectl logs -n alarm-ornek deploy/mobil-uygulama -f"
+  info "Bir API kopyasını sil:    kubectl delete -n alarm-ornek \$(kubectl get pod -n alarm-ornek -l app=alarm-api -o name | head -1)"
+  info "Tek kopyalı geçidi sil:   kubectl delete pod -n alarm-ornek -l app=role-gecidi --wait=false"
+  info "Keşif ekranında: Küme haritası → alarm-ornek kutusu"
+}
+cmd_ornek_kaldir() { need_cluster; kubectl delete ns alarm-ornek --ignore-not-found | sed 's/^/  /'; }
 cmd_kaldir() {
   need_cluster
-  confirm "Nöbetçi, olay kayıtları ve demo yükü silinsin mi?" || return
+  confirm "Nöbetçi, olay kayıtları, demo yükü ve alarm örneği silinsin mi?" || return
   cmd_ekran_kapat
-  kubectl delete ns nobetci nobetci-demo --ignore-not-found | sed 's/^/  /'
+  kubectl delete ns nobetci nobetci-demo alarm-ornek --ignore-not-found | sed 's/^/  /'
   kubectl delete clusterrole,clusterrolebinding nobetci --ignore-not-found | sed 's/^/  /'
 }
 
@@ -401,18 +414,19 @@ menu() {
     printf '\n  %sNöbetçi%s %sv%s%s · %s · %s\n\n' "$B" "$N" "$D" "$VERSION" "$N" "$(kubectl config current-context 2>/dev/null)" "$st"
     printf '  1) Kur / güncelle\n  2) Ekranı ağda aç\n  3) Canlı bildirimleri izle\n  4) Durum\n'
     printf '  5) Demo sorunları kur\n  6) Demo sorunları kaldır\n  7) Kümeyi incele (bir şey değiştirmez)\n  8) Ekranı kapat\n  9) Kaldır\n'
+    printf '  o) Alarm sistemi örneğini kur\n  k) Alarm sistemi örneğini kaldır\n'
     printf "  g) GitHub'dan güncelle\n  l) LLM yorumcusu\n  q) Çık\n\n"
     local c; read -rp "  Seçim: " c </dev/tty
     case "$c" in
       1) (cmd_kur); [ -f "$CONF" ] && . "$CONF" ;; 2) cmd_ekran ;; 3) cmd_izle ;; 4) cmd_durum ;; 5) cmd_demo ;; 6) cmd_demo_kaldir ;;
-      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; g|G) cmd_guncelle ;; l|L) (cmd_llm); [ -f "$CONF" ] && . "$CONF" ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
+      7) (cmd_kesif) ;; 8) cmd_ekran_kapat ;; 9) cmd_kaldir ;; o|O) cmd_ornek ;; k|K) cmd_ornek_kaldir ;; g|G) cmd_guncelle ;; l|L) (cmd_llm); [ -f "$CONF" ] && . "$CONF" ;; q|Q) return ;; *) warn "geçersiz seçim" ;;
     esac
   done
 }
 
 case "${1:-menu}" in
   menu) menu ;; kur) cmd_kur ;; ekran) cmd_ekran ;; ekran-kapat) cmd_ekran_kapat ;; durum) cmd_durum ;;
-  izle) cmd_izle ;; guncelle) cmd_guncelle ;; llm) cmd_llm ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
-  *) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  izle) cmd_izle ;; guncelle) cmd_guncelle ;; llm) cmd_llm ;; demo) cmd_demo ;; demo-kaldir) cmd_demo_kaldir ;; ornek) cmd_ornek ;; ornek-kaldir) cmd_ornek_kaldir ;; kesif) cmd_kesif ;; kaldir) cmd_kaldir ;;
+  *) sed -n '2,13p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
 exit $?

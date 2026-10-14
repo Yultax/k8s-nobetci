@@ -1,0 +1,135 @@
+# Öğretici örnek: uzaktan alarm sistemi (keşif ekranındaki "Örnek sistem" sekmesinin gerçek hâli).
+#   mobil-uygulama  →  Service alarm-api  →  alarm-api (2 kopya)  →  Service role-gecidi  →  role-gecidi (1 kopya)
+# mobil-uygulama birkaç saniyede bir röle açıp kapatma komutu gönderir ve cevabı kimin verdiğini loglar.
+# Bir alarm-api pod'unu silince komutlar diğer kopyadan yürümeye devam eder; tek kopyalı role-gecidi
+# silinince yenisi açılana kadar komutlar başarısız olur. Kaldırmak için: kubectl delete ns alarm-ornek
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: alarm-ornek
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: alarm-api-cgi, namespace: alarm-ornek}
+data:
+  role: |
+    #!/bin/sh
+    # Mobil uygulamanın "röle aç/kapat" isteği: röle geçidine iletir, cevabı kimin verdiğiyle birlikte döndürür.
+    if cevap=$(wget -q -T 2 -O - "http://role-gecidi/cgi-bin/komut?$QUERY_STRING" 2>&1); then
+      printf 'Content-Type: application/json\r\n\r\n{"api":"%s","sonuc":%s}\n' "$HOSTNAME" "$cevap"
+    else
+      printf 'Status: 503 Service Unavailable\r\nContent-Type: application/json\r\n\r\n{"api":"%s","hata":"röle geçidine ulaşılamadı"}\n' "$HOSTNAME"
+    fi
+  saglik: |
+    #!/bin/sh
+    printf 'Content-Type: text/plain\r\n\r\ntamam\n'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: role-gecidi-cgi, namespace: alarm-ornek}
+data:
+  komut: |
+    #!/bin/sh
+    # Röleye komutu uygular (burada bir dosyaya yazar) ve sonucu döndürür.
+    no=$(echo "$QUERY_STRING" | sed -n 's/.*no=\([1-8]\).*/\1/p')
+    durum=$(echo "$QUERY_STRING" | sed -n 's/.*durum=\(ac\|kapat\).*/\1/p')
+    if [ -z "$no" ] || [ -z "$durum" ]; then
+      printf 'Status: 400 Bad Request\r\nContent-Type: application/json\r\n\r\n{"hata":"no (1-8) ve durum (ac|kapat) gerekli"}\n'; exit 0
+    fi
+    mkdir -p /tmp/roleler && echo "$durum" > "/tmp/roleler/$no"
+    printf 'Content-Type: application/json\r\n\r\n{"gecit":"%s","role":%s,"durum":"%s"}\n' "$HOSTNAME" "$no" "$durum"
+  saglik: |
+    #!/bin/sh
+    printf 'Content-Type: text/plain\r\n\r\ntamam\n'
+---
+# Durumsuz API: kopyalar birbirinin yerine geçebilir. Kopyalar mümkünse farklı node'lara yayılır;
+# tek node'lu kümede (kind) ikisi de aynı node'a düşer, bu da örneğin konusu.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: alarm-api, namespace: alarm-ornek}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: alarm-api}}
+  template:
+    metadata: {labels: {app: alarm-api}}
+    spec:
+      topologySpreadConstraints:
+        - {maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: {matchLabels: {app: alarm-api}}}
+      securityContext: {runAsNonRoot: true, runAsUser: 65534}
+      containers:
+        - name: api
+          image: busybox:1.36
+          command: ["httpd", "-f", "-p", "8080", "-h", "/www"]
+          ports: [{containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /cgi-bin/saglik, port: 8080}, periodSeconds: 3}
+          resources: {requests: {cpu: 5m, memory: 8Mi}, limits: {memory: 32Mi}}
+          volumeMounts: [{name: cgi, mountPath: /www/cgi-bin}]
+      volumes: [{name: cgi, configMap: {name: alarm-api-cgi, defaultMode: 0755}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: alarm-api, namespace: alarm-ornek}
+spec:
+  selector: {app: alarm-api}
+  ports: [{port: 80, targetPort: 8080}]
+---
+# Bilerek tek kopya: zincirin en zayıf halkası. Silinince yenisi hazır olana kadar komutlar başarısız olur.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: role-gecidi, namespace: alarm-ornek}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: role-gecidi}}
+  template:
+    metadata: {labels: {app: role-gecidi}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 65534}
+      containers:
+        - name: gecit
+          image: busybox:1.36
+          command: ["httpd", "-f", "-p", "8080", "-h", "/www"]
+          ports: [{containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /cgi-bin/saglik, port: 8080}, periodSeconds: 3}
+          resources: {requests: {cpu: 5m, memory: 8Mi}, limits: {memory: 32Mi}}
+          volumeMounts: [{name: cgi, mountPath: /www/cgi-bin}, {name: tmp, mountPath: /tmp}]
+      volumes:
+        - {name: cgi, configMap: {name: role-gecidi-cgi, defaultMode: 0755}}
+        - {name: tmp, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: role-gecidi, namespace: alarm-ornek}
+spec:
+  selector: {app: role-gecidi}
+  ports: [{port: 80, targetPort: 8080}]
+---
+# Telefonun yerine geçen istemci: 2 sn'de bir sıradaki röleyi açar ya da kapatır.
+# İzlemek için: kubectl logs -n alarm-ornek deploy/mobil-uygulama -f
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mobil-uygulama, namespace: alarm-ornek}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: mobil-uygulama}}
+  template:
+    metadata: {labels: {app: mobil-uygulama}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 65534}
+      containers:
+        - name: istemci
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              i=0
+              while true; do
+                i=$((i + 1)); no=$((i % 4 + 1)); d=ac; [ $((i / 4 % 2)) -eq 1 ] && d=kapat
+                if c=$(wget -q -T 3 -O - "http://alarm-api/cgi-bin/role?no=$no&durum=$d" 2>&1); then
+                  echo "$(date +%H:%M:%S) röle $no → $d   ✓ $c"
+                else
+                  echo "$(date +%H:%M:%S) röle $no → $d   ✗ $c"
+                fi
+                sleep 2
+              done
+          resources: {requests: {cpu: 5m, memory: 8Mi}, limits: {memory: 32Mi}}

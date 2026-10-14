@@ -50,6 +50,10 @@ SYSTEM = {
     "prometheus-server-7c9d5f8b6-t2wq9":      ("monitoring",         0.08,  380, 120e3),
     "kube-state-metrics-6d4f8b9c7-r5n2k":     ("monitoring",         0.01,  30,  40e3),
     "nobetci-5f6d7c8b9-v4m2x":                ("nobetci",            0.01,  45,  20e3),
+    "alarm-api-7c9d4b8f6-k2x8p":              ("alarm-ornek",        0.002, 3,   2e3),
+    "alarm-api-7c9d4b8f6-w5n7r":              ("alarm-ornek",        0.002, 3,   2e3),
+    "role-gecidi-5f8b6c7d9-h4j6m":            ("alarm-ornek",        0.002, 2,   1e3),
+    "mobil-uygulama-6d7f8c9b5-p2q4s":         ("alarm-ornek",        0.002, 2,   1e3),
 }
 NS = {p: "demo" for p in PODS} | {p: v[0] for p, v in SYSTEM.items()}
 VALUES = PODS | {p: v[1:] for p, v in SYSTEM.items()}
