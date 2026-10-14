@@ -64,11 +64,11 @@ Ekran, oturum kapansa da çalışan bir `port-forward` ile `http://<sunucu>:8080
 
 Kümeyi ve nöbetçinin nasıl karar verdiğini öğrenmek için ayrı bir sayfa; ana ekrandaki **Keşif** düğmesiyle açılır.
 
-- **Küme haritası:** node'lar, namespace'ler, pod'lar ve service'ler canlı (Kubernetes API, birkaç saniyede bir).
-  Pod büyüklüğü bellek, dış halka CPU, içindeki sıvı bellek/limit oranı; parıltı kendi normalinden sapma.
-  Akışlar: istek trafiği (Service → pod), ölçüm yolu (kubelet/cAdvisor → Prometheus → nöbetçi), her turda nöbetçi dalgası.
-  Her nesneye tıklayınca ne olduğunu, şu anki durumunu, sahiplik zincirini ve denenecek `kubectl` komutlarını anlatır.
-  Alt şeritte Kubernetes olayları ve anlamları. Rehberli tur.
+- **Küme haritası:** node → namespace → service'ler ve pod kartları, canlı (Kubernetes API, birkaç saniyede bir).
+  Renk yalnızca durum için (yeşil/sarı/kırmızı). Kartta CPU, bellek/limit çubuğu, kendi normalinden sapma (↑ z) ve
+  açık olay şeridi. Service → pod çizgileri üzerine gelince ya da seçince görünür (istenirse hepsi); "Veri yolu"
+  kubelet → kube-state-metrics → Prometheus → nöbetçi akışını numaralar. Her nesneye tıklayınca ne olduğunu,
+  durumunu, sahiplik zincirini ve denenecek `kubectl` komutlarını anlatır. Son Kubernetes olayları ve rehberli tur.
 - **Simülasyonlar** (kümeye dokunmaz): pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse adım adım ne olur.
 - **Nöbetçinin beyni:** tespit hattı bu turun gerçek sayılarıyla akar; aşamalara tıklayınca parametreleriyle anlatır.
   **Algoritma laboratuvarı:** gerçek bir seride eşik, kalıcılık ve pencereyi değiştirip kararın nasıl değiştiğini,

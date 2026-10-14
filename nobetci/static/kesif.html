@@ -4,228 +4,284 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nöbetçi · Keşif</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%2367e8f9' stroke-width='2'/%3E%3Ccircle cx='8' cy='8' r='2' fill='%2367e8f9'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%236ea8fe' stroke-width='2'/%3E%3C/svg%3E">
 <style>
-:root{--font:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --ok:#34d399;--warn:#fbbf24;--crit:#f87171;--info:#94a3b8;--flow:#67e8f9;--metric:#c4b5fd;--brain:#fbbf24;--up:#f87171;--down:#60a5fa}
-:root[data-theme=dark]{color-scheme:dark;--page:#06080c;--page2:#0b1018;--surface:#0e131b;--raised:#151c27;--ink:#e8edf5;--ink2:#a9b4c4;
-  --muted:#6b7789;--line:rgba(148,170,210,.13);--line2:rgba(148,170,210,.24);--node:#0d141e;--node2:#111b28;--dot:rgba(148,170,210,.07);
-  --shadow:0 18px 50px rgba(0,0,0,.45);--glass:rgba(12,17,25,.78)}
-:root[data-theme=light]{color-scheme:light;--page:#eef1f6;--page2:#f7f8fb;--surface:#ffffff;--raised:#f2f4f8;--ink:#0d1420;--ink2:#465366;
-  --muted:#7b8696;--line:rgba(20,40,80,.12);--line2:rgba(20,40,80,.22);--node:#ffffff;--node2:#f5f7fb;--dot:rgba(20,40,80,.07);
-  --shadow:0 18px 40px rgba(20,40,80,.12);--glass:rgba(255,255,255,.82);--flow:#0891b2;--metric:#7c3aed;--brain:#d97706;--ok:#059669;--warn:#d97706;--crit:#dc2626}
+:root{--font:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+/* Renk yalnızca anlam taşır: yeşil sağlıklı, sarı uyarı, kırmızı sorun, mavi seçim/akış. Gerisi gri. */
+:root[data-theme=dark]{color-scheme:dark;--page:#111214;--page2:#111214;--surface:#18191c;--raised:#202125;--ink:#e8e8eb;--ink2:#b2b3b9;
+  --muted:#84868d;--line:#2a2b30;--line2:#3b3d43;--accent:#6ea8fe;--accent-bg:#1a2638;--ok:#3fb950;--warn:#d29922;--crit:#f85149;
+  --info:#84868d;--up:#f85149;--down:#6ea8fe;--flow:#6ea8fe;--metric:#6ea8fe;--brain:#6ea8fe;--node:#18191c;--node2:#18191c;--dot:#2a2b30;
+  --crit-bg:#2a1718;--warn-bg:#272010}
+:root[data-theme=light]{color-scheme:light;--page:#f4f4f5;--page2:#f4f4f5;--surface:#ffffff;--raised:#f0f0f2;--ink:#1b1c20;--ink2:#4a4c54;
+  --muted:#7b7d86;--line:#e2e2e6;--line2:#cdced4;--accent:#2563eb;--accent-bg:#e9f0fd;--ok:#1a7f37;--warn:#9a6700;--crit:#cf222e;
+  --info:#7b7d86;--up:#cf222e;--down:#2563eb;--flow:#2563eb;--metric:#2563eb;--brain:#2563eb;--node:#ffffff;--node2:#ffffff;--dot:#e2e2e6;
+  --crit-bg:#fdf0f0;--warn-bg:#fdf6e6}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:radial-gradient(1200px 700px at 15% -10%,color-mix(in srgb,var(--flow) 9%,transparent),transparent 60%),
-  radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--metric) 8%,transparent),transparent 60%),var(--page);
-  background-repeat:no-repeat;background-attachment:fixed;color:var(--ink);font:14px/1.5 var(--font);overflow-x:hidden}
-html{background:var(--page)}
+html,body{margin:0;height:100%;background:var(--page)}
+body{color:var(--ink);font:14px/1.5 var(--font);overflow-x:hidden}
 button{font:inherit;color:inherit;cursor:pointer}
 a{color:inherit}
 .mono{font-family:var(--mono)}.muted{color:var(--muted)}.ink2{color:var(--ink2)}.num{font-variant-numeric:tabular-nums}
-:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
 /* üst çubuk */
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;padding:10px 18px;flex-wrap:wrap;
-  background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.01em;text-decoration:none}
-.brand small{font-weight:500;color:var(--muted);font-size:12px}
-.chipc{font:12px var(--mono);color:var(--ink2);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
-.tabs{display:flex;gap:4px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:3px}
-.tabs button{border:0;background:none;padding:6px 14px;border-radius:9px;color:var(--ink2);font-weight:600;font-size:13px;display:flex;gap:8px;align-items:center}
-.tabs button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line2),0 4px 14px rgba(0,0,0,.18)}
-.tabs button .k{width:8px;height:8px;border-radius:50%}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:20px;padding:0 20px;height:52px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:15px;text-decoration:none;white-space:nowrap}
+.brand small{font-weight:400;color:var(--muted);font-size:14px}
+.chipc{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:2px;align-self:stretch}
+.tabs button{border:0;background:none;padding:0 12px;white-space:nowrap;color:var(--ink2);font-weight:550;font-size:13.5px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
 .right{margin-left:auto;display:flex;gap:10px;align-items:center}
-.live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
-.live .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:beat 2s infinite}
-.live.down .dot{background:var(--crit);animation:none}
-@keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 70%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.ibtn{display:inline-grid;place-items:center;min-width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);padding:0 8px;font-size:12px;gap:6px}
+.live{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);white-space:nowrap}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.live.down .dot{background:var(--crit)}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;height:30px;min-width:30px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);padding:0 9px;font-size:12.5px;text-decoration:none;gap:6px}
 .ibtn:hover{color:var(--ink);border-color:var(--line2)}
-.ibtn[aria-pressed=true]{color:var(--ink);border-color:color-mix(in srgb,var(--flow) 60%,transparent);background:color-mix(in srgb,var(--flow) 10%,var(--surface))}
 .view{display:none}.view.on{display:block}
 
 /* harita */
-.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100vh - 57px);min-height:560px}
-.stage{position:relative;overflow:hidden;border-right:1px solid var(--line)}
-#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
-#map.drag{cursor:grabbing}#map.hover{cursor:pointer}
-.hud{position:absolute;z-index:3;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.hud.tl{top:12px;left:12px;right:12px}.hud.br{right:12px;bottom:64px;flex-direction:column}
-.seg{display:flex;gap:2px;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;padding:3px}
-.seg button{border:0;background:none;color:var(--ink2);font-size:12px;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.seg button .sw{width:10px;height:3px;border-radius:2px}
-.seg button[aria-pressed=true]{background:var(--raised);color:var(--ink)}
-.seg button[aria-pressed=false] .sw{opacity:.35}
-.seg .lbl{font-size:11px;color:var(--muted);padding:0 6px 0 8px;align-self:center;text-transform:uppercase;letter-spacing:.06em}
-.tip{position:fixed;z-index:50;pointer-events:none;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line2);
-  border-radius:10px;padding:8px 10px;font-size:12px;max-width:300px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s}
-.tip.on{opacity:1}.tip b{font-size:13px}.tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
-.ticker{position:absolute;left:0;right:0;bottom:0;height:52px;z-index:3;display:flex;align-items:center;gap:10px;padding:0 12px;
-  background:linear-gradient(transparent,var(--glass) 30%);overflow:hidden}
-.ticker .ttl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap}
-.ticker .rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
-.ev{flex:none;display:flex;align-items:center;gap:7px;font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 8px;color:var(--ink2);animation:slidein .5s ease both}
-.ev:hover{border-color:var(--line2);color:var(--ink)}
-.ev i{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}.ev.Warning i{background:var(--warn)}
-.ev b{color:var(--ink);font-weight:600}
-@keyframes slidein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.simbar{position:absolute;left:50%;top:60px;transform:translateX(-50%);z-index:4;width:min(620px,calc(100% - 24px));display:none;
-  background:var(--glass);backdrop-filter:blur(14px);border:1px solid color-mix(in srgb,var(--brain) 55%,transparent);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
-.simbar.on{display:block;animation:slidein .35s ease}
-.simbar .h{display:flex;gap:10px;align-items:center;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--brain);font-weight:700}
-.simbar .c{font-size:14px;margin:6px 0 8px;min-height:42px}
-.simbar .steps{display:flex;gap:5px}.simbar .steps i{flex:1;height:3px;border-radius:2px;background:var(--line2)}.simbar .steps i.on{background:var(--brain)}
+.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:calc(100vh - 52px);min-height:520px}
+.stage{position:relative;overflow:auto;border-right:1px solid var(--line)}
+.bar{position:sticky;top:0;z-index:6;display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 20px;background:var(--page);border-bottom:1px solid var(--line);font-size:13px}
+.tg{display:flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer;user-select:none}
+.tg input{accent-color:var(--accent);margin:0}
+.bar .sp{margin-left:auto}
+.pathnote{display:none;padding:8px 20px;font-size:12.5px;color:var(--ink2);border-bottom:1px solid var(--line);background:var(--surface)}
+.pathnote.on{display:block}
+.pathnote b{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--accent);color:var(--page);font-size:10.5px;margin:0 3px 0 8px}
+.board{position:relative;padding:18px 20px 40px}
+#wires{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
+.empty{padding:60px 20px;text-align:center;color:var(--muted);display:none}
+
+.node{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:18px}
+.node.down{border-color:var(--crit);border-style:dashed}
+.nh{padding:14px 16px 12px;border-bottom:1px solid var(--line);display:grid;gap:8px;cursor:pointer}
+.nh:hover .nt b{text-decoration:underline}
+.nt{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nt b{font-size:16px}
+.nt .role{font-size:12px;color:var(--muted);border:1px solid var(--line2);border-radius:5px;padding:0 6px}
+.nt .st{margin-left:auto;font-size:12.5px;font-weight:600}
+.nm{display:flex;gap:6px 22px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);align-items:center}
+.meter{display:inline-flex;align-items:center;gap:8px}
+.meter i{display:inline-block;width:110px;height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.meter i u{position:absolute;inset:0 auto 0 0;background:var(--ink2);border-radius:3px}
+.meter i u.w{background:var(--warn)}.meter i u.c{background:var(--crit)}
+.nc{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+.comp{position:relative;border:1px solid var(--line2);background:var(--raised);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--ink2)}
+.comp:hover{border-color:var(--accent);color:var(--ink)}
+.nsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;padding:14px}
+.ns{position:relative;border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;background:var(--page)}
+.ns.wide{grid-column:span 2}
+.ns > header{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.nsname{border:0;background:none;padding:0;font-weight:650;font-size:13.5px}
+.nsname:hover{text-decoration:underline}
+.ns > header span{font-size:12px;color:var(--muted)}
+.svcs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.svcs:empty{display:none}
+.svc{position:relative;z-index:3;display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12px;max-width:100%}
+.svc b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.svc span{color:var(--muted);white-space:nowrap}
+.svc .out{color:var(--accent)}
+.svc.nopods{border-style:dashed;border-color:var(--warn)}
+.svc.nopods span{color:var(--warn)}
+.svc:hover{border-color:var(--accent)}
+.pods{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
+.pod{position:relative;z-index:3;display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 9px 8px;min-width:0}
+.pod:hover{border-color:var(--line2);background:var(--raised)}
+.pn{display:flex;align-items:center;gap:6px;min-width:0}
+.pn i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.pn b{font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn em{font-style:normal;color:var(--muted);font-size:11px;font-family:var(--mono);flex:none}
+.pm{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.mb{height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.mb u{display:block;height:100%;background:var(--ink2)}
+.mb u.w{background:var(--warn)}.mb u.c{background:var(--crit)}
+.flag{position:absolute;top:6px;right:7px;font-size:10.5px;font-weight:650;padding:0 5px;border-radius:4px;background:var(--raised);color:var(--muted);font-variant-numeric:tabular-nums}
+.flag.hot{background:var(--crit-bg);color:var(--crit)}
+.pod.s-warn{border-color:var(--warn)}.pod.s-warn .pn i{background:var(--warn)}
+.pod.s-crit{border-color:var(--crit);background:var(--crit-bg)}.pod.s-crit .pn i{background:var(--crit)}
+.pod.s-info{border-style:dashed}.pod.s-info .pn i{background:var(--muted)}
+.pod.s-crit .pm{color:var(--crit)}
+.pod.inc::before{content:"";position:absolute;left:-1px;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--crit)}
+.pod.inc.i2::before{background:var(--warn)}
+.pod.has-flag .pn{padding-right:44px}
+.queue{border:1px dashed var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:18px;background:var(--warn-bg)}
+.queue h3{margin:0 0 8px;font-size:14px}.queue h3 span{font-weight:400;color:var(--muted);font-size:12.5px}
+.orphan{margin-top:6px;font-size:12.5px;color:var(--muted)}
+.orphan .svcs{margin-top:6px}
+/* odak: seçili nesneyle ilgisiz olanlar soluklaşır */
+.focus .pod:not(.rel),.focus .svc:not(.rel){opacity:.32}
+.focus .comp:not(.rel){opacity:.5}
+.pod.sel,.svc.sel,.comp.sel{outline:2px solid var(--accent);outline-offset:1px}
+.ns.sel,.node.sel{outline:2px solid var(--accent);outline-offset:2px}
+[data-step]::after{content:attr(data-step);position:absolute;top:-8px;left:-8px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--page);font:700 11px/18px var(--font);text-align:center;z-index:4}
+.pulse{animation:pulse 1.4s ease-out}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent)}100%{box-shadow:0 0 0 10px transparent}}
+
+.simbar{position:sticky;top:46px;z-index:7;margin:12px 20px 0;display:none;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.simbar.on{display:block}
+.simbar .h{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--accent);font-weight:650}
+.simbar .h span.muted{font-weight:400}
 .simbar .h button{margin-left:auto}
-.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);z-index:2;pointer-events:none}
+.simbar .c{font-size:14px;margin:6px 0 10px;cursor:pointer}
+.simbar .steps{display:flex;gap:4px}.simbar .steps i{flex:1;height:3px;border-radius:2px;background:var(--line2)}.simbar .steps i.on{background:var(--accent)}
 
 /* yan panel */
-.side{overflow-y:auto;background:color-mix(in srgb,var(--surface) 70%,transparent);padding:18px 18px 40px}
-.side h3{margin:0 0 2px;font-size:19px;letter-spacing:-.01em;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.kind{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
-.kind i{width:9px;height:9px;border-radius:3px}
+.side{overflow-y:auto;background:var(--surface);padding:20px 20px 48px}
+.side h3{margin:0 0 4px;font-size:18px;line-height:1.3;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kind{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.kind i{display:none}
 .lead{color:var(--ink2);margin:10px 0 14px}
 .lead b{color:var(--ink)}
-.box{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;margin:12px 0}
-.box h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.learn{border-color:color-mix(in srgb,var(--flow) 30%,var(--line));background:color-mix(in srgb,var(--flow) 5%,var(--surface))}
-.learn h4{color:var(--flow)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px}
+.box{border-top:1px solid var(--line);padding:14px 0 4px;margin:14px 0 0}
+.box h4{margin:0 0 8px;font-size:13px;font-weight:650;color:var(--ink)}
+.learn{background:var(--raised);border:0;border-radius:8px;padding:12px 14px;margin:14px 0 0;color:var(--ink2)}
+.learn h4{color:var(--ink)}
+.learn b{color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px;margin:0}
 .kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
-.stat{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;transition:border-color .2s,transform .2s}
-.stat:hover{border-color:var(--line2);transform:translateY(-1px)}
-.stat .v{font-size:24px;font-weight:700;line-height:1.1}.stat .l{font-size:12px;color:var(--ink2)}
-.stat .s{font-size:11px;color:var(--muted)}
+.stat{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;text-align:left}
+.stat:hover{border-color:var(--line2)}
+.stat .v{font-size:22px;font-weight:650;line-height:1.15}.stat .l{font-size:12.5px;color:var(--ink2)}
+.stat .s{font-size:11.5px;color:var(--muted)}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.btn{border:1px solid var(--line2);background:var(--raised);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600;display:inline-flex;gap:8px;align-items:center}
-.btn:hover{border-color:var(--flow)}
-.btn.pri{background:color-mix(in srgb,var(--flow) 16%,var(--surface));border-color:color-mix(in srgb,var(--flow) 55%,transparent)}
-.btn.sim{background:color-mix(in srgb,var(--brain) 12%,var(--surface));border-color:color-mix(in srgb,var(--brain) 50%,transparent)}
+.btn{border:1px solid var(--line2);background:var(--surface);border-radius:7px;padding:6px 11px;font-size:13px;font-weight:550;display:inline-flex;gap:7px;align-items:center;text-decoration:none}
+.btn:hover{border-color:var(--ink2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sim{border-color:var(--line2)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px 2px 7px;border-radius:999px;border:1px solid var(--line)}
-.status i{width:8px;height:8px;border-radius:50%}
-.chain{display:flex;flex-direction:column;gap:0}
-.chain button{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--raised);border-radius:10px;padding:7px 10px;text-align:left;font-size:13px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:1px 8px 1px 7px;border-radius:999px;border:1px solid var(--line)}
+.status i{width:7px;height:7px;border-radius:50%}
+.chain{display:flex;flex-direction:column}
+.chain button{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 10px;text-align:left;font-size:13px}
 .chain button:hover{border-color:var(--line2)}
 .chain button small{color:var(--muted);margin-left:auto}
-.chain .ar{height:14px;margin-left:22px;border-left:2px dashed var(--line2)}
+.chain .ar{height:12px;margin-left:20px;border-left:1px solid var(--line2)}
 .life{display:flex;gap:4px;margin-top:6px}
-.life div{flex:1;text-align:center;font-size:10.5px;color:var(--muted)}
-.life div i{display:block;height:5px;border-radius:3px;background:var(--line2);margin-bottom:5px}
+.life div{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+.life div i{display:block;height:4px;border-radius:2px;background:var(--line);margin-bottom:5px}
 .life div.on i{background:var(--ok)}.life div.on{color:var(--ink2)}
-.cmd{display:flex;align-items:center;gap:8px;font:12px var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:6px}
+.cmd{display:flex;align-items:center;gap:8px;font:12px var(--mono);background:var(--raised);border-radius:6px;padding:6px 8px;margin-top:6px}
 .cmd code{flex:1;overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
-.cmd button{border:0;background:none;color:var(--muted);font-size:11px}.cmd button:hover{color:var(--ink)}
-.spark{display:grid;grid-template-columns:80px 1fr 64px;gap:8px;align-items:center;font-size:12px;padding:6px 0;border-top:1px solid var(--line)}
+.cmd button{border:0;background:none;color:var(--muted);font:11px var(--font)}.cmd button:hover{color:var(--ink)}
+.spark{display:grid;grid-template-columns:80px 1fr 60px;gap:8px;align-items:center;font-size:12px;padding:6px 0;border-top:1px solid var(--line)}
 .spark:first-of-type{border-top:0}
-.spark canvas{width:100%;height:34px}
+.spark canvas{width:100%;height:32px}
 .spark .z{text-align:right;font:12px var(--mono)}
-.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2);margin:2px 4px 2px 0;font-family:var(--mono)}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2);margin:2px 4px 2px 0;background:none}
+button.pill:hover{border-color:var(--accent);color:var(--ink)}
 .gl{display:flex;flex-direction:column;gap:6px}
-.gl button{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+.gl button{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
 .gl button:hover{border-color:var(--line2)}
-.gl button b{display:block;font-size:13px}.gl button.ss b{display:inline;font-size:inherit}.gl button span{font-size:12px;color:var(--ink2)}
-.gl button .ic{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 10px var(--mono);color:#0b0f16}
-.back{display:block;border:0;background:none;color:var(--muted);font-size:12px;padding:0;margin-bottom:10px}
+.gl button b{display:block;font-size:13px}.gl button span{font-size:12.5px;color:var(--ink2)}
+.gl button.ss b{display:inline;font-size:inherit;color:var(--ink)}
+.gl button .ic{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font:600 11px var(--font);background:var(--raised);color:var(--ink2)}
+.back{display:block;border:0;background:none;color:var(--muted);font-size:12.5px;padding:0;margin-bottom:10px}
 .back:hover{color:var(--ink)}
 .inc{border-left:3px solid var(--crit);padding-left:10px;margin:8px 0;font-size:13px}
 .inc.s2{border-color:var(--warn)}.inc.s1{border-color:var(--info)}
+.evl{display:flex;flex-direction:column}
+.evl button{display:grid;grid-template-columns:8px 1fr auto;gap:8px;align-items:baseline;border:0;border-top:1px solid var(--line);background:none;padding:6px 0;text-align:left;font-size:12.5px}
+.evl button:hover b{text-decoration:underline}
+.evl i{width:7px;height:7px;border-radius:50%;background:var(--muted);align-self:center}
+.evl .Warning i{background:var(--warn)}
+.evl span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evl small{color:var(--muted)}
 
 /* beyin */
-.page{max-width:1400px;margin:0 auto;padding:22px 20px 70px}
-.hero{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 18px}
-.hero h1{margin:0;font-size:28px;letter-spacing:-.02em}
+.page{max-width:1320px;margin:0 auto;padding:24px 20px 70px}
+.hero{margin:4px 0 18px}
+.hero h1{margin:0;font-size:24px;letter-spacing:-.01em}
 .hero p{margin:6px 0 0;color:var(--ink2);max-width:780px}
-.flowcard{position:relative;border:1px solid var(--line);background:linear-gradient(180deg,var(--surface),var(--page2));border-radius:18px;padding:10px;overflow:hidden}
+.flowcard{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px}
 #flow{display:block;width:100%;height:auto}
-#flow .st rect{fill:var(--node2);stroke:var(--line2);stroke-width:1.2;transition:stroke .25s,fill .25s}
-#flow .st:hover rect,#flow .st.sel rect{stroke:var(--flow)}
-#flow .st.sel rect{fill:color-mix(in srgb,var(--flow) 10%,var(--node2))}
-#flow .st.lit rect{stroke:var(--brain);fill:color-mix(in srgb,var(--brain) 12%,var(--node2))}
+#flow .st rect{fill:var(--page);stroke:var(--line2);stroke-width:1;transition:stroke .25s,fill .25s}
+#flow .st:hover rect{stroke:var(--ink2)}
+#flow .st.sel rect{stroke:var(--accent);stroke-width:1.6;fill:var(--accent-bg)}
+#flow .st.lit rect{stroke:var(--accent)}
 #flow .st{cursor:pointer}
 #flow text{fill:var(--ink);font:600 13px var(--font)}
-#flow text.s{fill:var(--muted);font:500 11px var(--font)}
-#flow text.n{fill:var(--flow);font:700 15px var(--mono)}
-#flow path.e{fill:none;stroke:var(--line2);stroke-width:1.6}
-#flow .lane{fill:var(--muted);font:700 10px var(--font);letter-spacing:.12em}
-.flowbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 8px 4px}
+#flow text.s{fill:var(--muted);font:400 11.5px var(--font)}
+#flow text.n{fill:var(--ink);font:650 14px var(--font)}
+#flow path.e{fill:none;stroke:var(--line2);stroke-width:1.3}
+#flow .lane{fill:var(--muted);font:600 11px var(--font)}
+.flowbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 8px 4px}
 .flowbar .cap{flex:1;min-width:240px;font-size:13px;color:var(--ink2)}
-.flowbar .cap b{color:var(--brain)}
+.flowbar .cap b{color:var(--ink)}
 .grid2{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;margin-top:16px}
-.card{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 18px}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px 18px}
 .card h2{margin:0 0 4px;font-size:16px}
 .card .sub{color:var(--ink2);font-size:13px;margin:0 0 10px}
 .explain h3{margin:0 0 6px;font-size:18px}
 .explain p{color:var(--ink2);margin:8px 0}
-.explain .why{border-left:3px solid var(--brain);padding:2px 0 2px 12px;margin:12px 0;color:var(--ink)}
-.formula{font:13px var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0;overflow-x:auto;white-space:nowrap}
+.explain .why{border-left:2px solid var(--line2);padding:2px 0 2px 12px;margin:12px 0;color:var(--ink)}
+.formula{font:13px var(--mono);background:var(--raised);border-radius:7px;padding:9px 12px;margin:10px 0;overflow-x:auto;white-space:nowrap}
 .lab{margin-top:16px}
 .labhead{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.labhead select{background:var(--raised);color:var(--ink);border:1px solid var(--line2);border-radius:9px;padding:6px 10px;font:inherit;max-width:100%}
-#labc{display:block;width:100%;height:330px;margin-top:10px;touch-action:pan-y}
-.ctrls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:12px}
-.ctrl label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)}
-.ctrl label b{font:600 13px var(--mono);color:var(--ink)}
-.ctrl input[type=range]{width:100%;accent-color:var(--flow)}
-.ctrl .h{font-size:11px;color:var(--muted)}
+.labhead select{background:var(--surface);color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:5px 9px;font:inherit;max-width:100%}
+.seg{display:flex;gap:2px;border:1px solid var(--line2);border-radius:8px;padding:2px}
+.seg button{border:0;background:none;color:var(--ink2);font-size:12.5px;padding:4px 10px;border-radius:6px}
+.seg button[aria-pressed=true]{background:var(--raised);color:var(--ink);font-weight:600}
+#labc{display:block;width:100%;height:320px;margin-top:10px;touch-action:pan-y}
+.ctrls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:12px}
+.ctrl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2)}
+.ctrl label b{font-weight:600;color:var(--ink)}
+.ctrl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctrl .h{font-size:11.5px;color:var(--muted)}
 .verdict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
-.verdict .stat .v{font-size:22px}
-.math{font:12.5px/1.7 var(--mono);background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:12px;min-height:94px}
-.math .hl{color:var(--brain)}.math .ok{color:var(--ok)}.math .no{color:var(--muted)}.math .bad{color:var(--crit)}
+.math{font:12.5px/1.75 var(--mono);background:var(--raised);border-radius:8px;padding:10px 12px;margin-top:12px;min-height:94px}
+.math .hl{color:var(--ink);font-weight:700}.math .ok{color:var(--ok)}.math .no{color:var(--muted)}.math .bad{color:var(--crit);font-weight:700}
 .cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
-.mini{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px}
 .mini h4{margin:0 0 4px;font-size:14px}.mini p{margin:0;font-size:13px;color:var(--ink2)}
 
 /* ölçüm kataloğu */
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
-.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ink2)}
-.filters button[aria-pressed=true]{border-color:var(--flow);color:var(--ink);background:color-mix(in srgb,var(--flow) 10%,var(--surface))}
-.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
-.mc{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .2s}
-.mc:hover{border-color:var(--line2);transform:translateY(-2px)}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;color:var(--ink2)}
+.filters button[aria-pressed=true]{border-color:var(--ink2);color:var(--ink);font-weight:600}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.mc{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
 .mc .t{display:flex;gap:8px;align-items:flex-start}
 .mc .t h4{margin:0;font-size:15px;flex:1}
 .mc p{margin:0;font-size:13px;color:var(--ink2)}
-.mc .sc{font-size:13px;border-left:3px solid var(--metric);padding-left:10px;color:var(--ink)}
-.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.tag.det{background:color-mix(in srgb,var(--metric) 16%,transparent);color:var(--metric)}
-.tag.have{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
-.tag.no{background:var(--raised);color:var(--muted)}
-.tag.now{background:color-mix(in srgb,var(--flow) 16%,transparent);color:var(--flow)}
-.mc details summary{cursor:pointer;font-size:12px;color:var(--muted)}
+.mc .sc{font-size:13px;border-left:2px solid var(--line2);padding-left:10px;color:var(--ink)}
+.tag{font-size:11.5px;font-weight:550;padding:1px 7px;border-radius:5px;white-space:nowrap;background:var(--raised);color:var(--ink2)}
+.tag.have{background:none;color:var(--ok);border:1px solid var(--ok)}
+.tag.no,.tag.det,.tag.now{background:var(--raised);color:var(--ink2)}
+.mc details summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
 .sech{display:flex;align-items:baseline;gap:12px;margin:28px 0 4px;flex-wrap:wrap}
 .sech h2{margin:0;font-size:18px}.sech p{margin:0;color:var(--ink2);font-size:13px}
 
 @media (max-width:980px){
   .mapwrap{grid-template-columns:1fr;height:auto}
-  .stage{height:72vh;min-height:460px;border-right:0;border-bottom:1px solid var(--line)}
-  .side{max-height:none}
+  .stage{max-height:none;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+  .ns.wide{grid-column:auto}
   .grid2,.cards3{grid-template-columns:1fr}
   .ctrls{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .top{gap:10px;padding:8px 12px}.tabs button{padding:6px 9px}.live .t{display:none}
-  .hud .seg .lbl{display:none}
+  .top{gap:10px;padding:0 12px;height:auto;flex-wrap:wrap;padding-top:8px}.tabs{order:3;width:100%;height:40px;overflow-x:auto;scrollbar-width:none}.live .t,.chipc{display:none}
+  .bar,.simbar{top:0}
 }
-@media (max-width:560px){.tabs button .x{display:none}.brand small{display:none}.verdict{grid-template-columns:1fr}}
+@media (max-width:560px){.verdict{grid-template-columns:1fr}.nsgrid{grid-template-columns:1fr;padding:10px}.board{padding:12px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="/" title="Olay ekranına dön">
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--flow)" stroke-width="1.6"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="var(--metric)" stroke-width="1.2" opacity=".8"/><path d="M12 12 L19.5 5.5" stroke="var(--flow)" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="1.8" fill="var(--flow)"/></svg>
-    Nöbetçi <small>keşif</small>
-  </a>
+  <a class="brand" href="/" title="Olay ekranına dön">Nöbetçi <small>/ Keşif</small></a>
   <span class="chipc" id="cluster">…</span>
   <nav class="tabs" role="tablist">
-    <button role="tab" data-tab="map" aria-selected="true"><span class="k" style="background:var(--flow)"></span>Küme<span class="x"> haritası</span></button>
-    <button role="tab" data-tab="brain" aria-selected="false"><span class="k" style="background:var(--brain)"></span><span class="x">Nöbetçinin </span>beyni</button>
-    <button role="tab" data-tab="metrics" aria-selected="false"><span class="k" style="background:var(--metric)"></span>Ne izleyelim<span class="x">?</span></button>
+    <button role="tab" data-tab="map" aria-selected="true">Küme haritası</button>
+    <button role="tab" data-tab="brain" aria-selected="false">Nöbetçi nasıl karar veriyor?</button>
+    <button role="tab" data-tab="metrics" aria-selected="false">Ne izleyelim?</button>
   </nav>
   <div class="right">
     <div class="live" id="live"><span class="dot"></span><span class="t" id="liveT">bağlanıyor…</span></div>
     <a class="ibtn" href="/" title="Olay ekranı">Olaylar</a>
-    <button class="ibtn" id="themeBtn" title="Açık / koyu tema" aria-label="Tema"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
+    <button class="ibtn" id="themeBtn" title="Açık / koyu tema" aria-label="Tema"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
   </div>
 </header>
 
@@ -233,42 +289,35 @@ a{color:inherit}
 <section class="view on" id="v-map">
   <div class="mapwrap">
     <div class="stage" id="stage">
-      <canvas id="map" aria-label="Kümenin canlı haritası"></canvas>
-      <div class="empty" id="empty">küme okunuyor…</div>
-      <div class="hud tl">
-        <div class="seg" id="layers"><span class="lbl">Katman</span>
-          <button data-l="traffic" aria-pressed="true"><span class="sw" style="background:var(--flow)"></span>Trafik</button>
-          <button data-l="metrics" aria-pressed="true"><span class="sw" style="background:var(--metric)"></span>Ölçüm yolu</button>
-          <button data-l="owners" aria-pressed="false"><span class="sw" style="background:var(--ink2)"></span>Sahiplik</button>
-          <button data-l="heat" aria-pressed="true"><span class="sw" style="background:var(--up)"></span>Sapma</button>
-        </div>
-        <div class="seg"><button id="sysBtn" aria-pressed="true" title="kube-system gibi sistem namespace'lerini göster">Sistem pod'ları</button></div>
-        <div class="seg"><button id="tourBtn" aria-pressed="false">▶ Turu başlat</button></div>
+      <div class="bar">
+        <label class="tg" title="Kapalıyken çizgiler yalnızca bir service ya da pod'un üzerine gelince görünür"><input type="checkbox" data-l="links"> Tüm service bağlantıları</label>
+        <label class="tg" title="Ölçümlerin kubelet'ten nöbetçiye kadar izlediği yol"><input type="checkbox" data-l="path"> Veri yolu</label>
+        <label class="tg" title="Kendi normalinden sapan pod'larda etiket"><input type="checkbox" data-l="heat"> Sapmalar</label>
+        <label class="tg" title="kube-system gibi Kubernetes'in kendi namespace'leri"><input type="checkbox" id="sysBtn"> Sistem pod'ları</label>
+        <button class="btn sp" id="tourBtn">Turu başlat</button>
       </div>
-      <div class="hud br">
-        <div class="seg" style="flex-direction:column"><button id="zin" aria-label="Yakınlaş" title="Yakınlaş"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button id="zout" aria-label="Uzaklaş" title="Uzaklaş"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button id="zfit" aria-label="Sığdır" title="Hepsini sığdır"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 5V2h3M9 2h3v3M12 9v3H9M5 12H2V9"/></svg></button></div>
-      </div>
-      <div class="simbar" id="simbar"><div class="h"><span id="simT">Simülasyon</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">kümeye dokunmaz, yalnızca anlatır</span><button class="ibtn" id="simX">Bitir</button></div>
-        <div class="c" id="simC"></div><div class="steps" id="simS"></div></div>
-      <div class="ticker"><span class="ttl">Kubernetes olayları</span><div class="rail" id="rail"></div></div>
+      <div class="pathnote" id="pathnote">Veri yolu:<b>1</b>kubelet her konteynerin CPU/bellek/ağını ölçer<b>2</b>kube-state-metrics nesne durumlarını ölçüme çevirir<b>3</b>Prometheus ikisini de toplar<b>4</b>nöbetçi Prometheus'u sorgulayıp analiz eder</div>
+      <div class="simbar" id="simbar"><div class="h"><span id="simT">Simülasyon</span><span class="muted">kümeye dokunmaz, yalnızca canlandırır</span><button class="ibtn" id="simX">Bitir</button></div>
+        <div class="c" id="simC" title="Sonraki adım için tıkla"></div><div class="steps" id="simS"></div></div>
+      <div class="board" id="board"><canvas id="wires"></canvas><div id="nodes"></div><div class="empty" id="empty">küme okunuyor…</div></div>
     </div>
     <aside class="side" id="side" aria-live="polite"></aside>
   </div>
 </section>
 
-<!-- 2. nöbetçinin beyni -->
+<!-- 2. nöbetçi nasıl karar veriyor -->
 <section class="view" id="v-brain">
   <div class="page">
-    <div class="hero"><div><h1>Nöbetçinin beyni</h1>
-      <p>Her ölçüm turunda veri soldan sağa akar: Prometheus'tan gelen yüzlerce seri, istatistiksel süzgeçlerden geçerek birkaç anlamlı bulguya, bulgular da tek tek olaylara dönüşür. Bir aşamaya tıkla; ne yaptığını bu turun gerçek sayılarıyla anlatır.</p></div></div>
+    <div class="hero"><h1>Nöbetçi nasıl karar veriyor?</h1>
+      <p>Her ölçüm turunda veri soldan sağa akar. Prometheus'tan gelen seriler üç ayrı denetimden geçer; sorun görülenler "bulgu", aynı iş yükünün bulguları da tek bir "olay" olur. Bir kutuya tıkla; ne yaptığını bu turun gerçek sayılarıyla anlatır.</p></div>
     <div class="flowcard">
       <svg id="flow" viewBox="0 0 1515 372" role="img" aria-label="Tespit hattı"></svg>
-      <div class="flowbar"><button class="btn sim" id="replay">▶ Bir turu adım adım oynat</button><div class="cap" id="flowcap">Gerçek bir tur bitince akış kendiliğinden oynar.</div></div>
+      <div class="flowbar"><button class="btn" id="replay">Bir turu adım adım oynat</button><div class="cap" id="flowcap">Gerçek bir tur bitince akış kendiliğinden oynar.</div></div>
     </div>
     <div class="grid2">
       <div class="card explain" id="explain"></div>
       <div class="card">
-        <h2>Bu turda ne oldu?</h2><p class="sub">Son ölçüm turunun gerçek sayıları; her tur yenilenir.</p>
+        <h2>Son turda ne oldu?</h2><p class="sub">Gerçek sayılar; her tur yenilenir.</p>
         <div class="stats" id="cyc" style="grid-template-columns:repeat(3,1fr)"></div>
         <div id="openInc"></div>
       </div>
@@ -276,20 +325,20 @@ a{color:inherit}
 
     <div class="card lab">
       <div class="labhead"><div style="flex:1;min-width:260px"><h2>Algoritma laboratuvarı</h2>
-        <p class="sub" style="margin:0">Kümedeki gerçek bir seriyi seç; nöbetçinin "anomali" kararını adım adım izle, eşikleri değiştirip sonucun nasıl değiştiğini gör. Ayarlar yalnızca bu sayfada; nöbetçinin kendisi değişmez.</p></div>
+        <p class="sub" style="margin:0">Kümeden gerçek bir seri seç. Nöbetçinin "anormal mi?" kararını nokta nokta izle, ayarları değiştirip sonucun nasıl değiştiğini gör. Ayarlar yalnızca bu sayfayı etkiler.</p></div>
         <select id="labPod" aria-label="Pod"></select>
         <div class="seg" id="labSig"></div>
       </div>
       <canvas id="labc"></canvas>
       <div class="btnrow">
-        <button class="btn pri" id="scan">▶ Taramayı oynat</button>
-        <button class="btn" id="injSpike" title="Seriye yapay, kalıcı bir sıçrama ekler">+ Yapay sıçrama</button>
-        <button class="btn" id="injOne" title="Tek noktalık bir aykırı değer ekler">+ Tek aykırı nokta</button>
+        <button class="btn pri" id="scan">Taramayı oynat</button>
+        <button class="btn" id="injSpike" title="Seriye yapay, kalıcı bir sıçrama ekler">Yapay sıçrama ekle</button>
+        <button class="btn" id="injOne" title="Tek noktalık bir aykırı değer ekler">Tek aykırı nokta ekle</button>
         <button class="btn" id="injReset">Gerçek veriye dön</button>
         <button class="btn" id="cmpMean" aria-pressed="false" title="Ortalama ± standart sapma zarfını da çiz">Ortalama ile karşılaştır</button>
       </div>
       <div class="ctrls">
-        <div class="ctrl"><label>Eşik (z) <b id="zV"></b></label><input type="range" id="zR" min="2" max="12" step="0.5"><div class="h">normalden kaç "ölçek" uzak alarm sayılsın</div></div>
+        <div class="ctrl"><label>Eşik (z) <b id="zV"></b></label><input type="range" id="zR" min="2" max="12" step="0.5"><div class="h">normalden ne kadar uzak "anormal" sayılsın</div></div>
         <div class="ctrl"><label>Kalıcılık <b id="pV"></b></label><input type="range" id="pR" min="1" max="6" step="1"><div class="h">kaç ardışık nokta eşiği aşmalı</div></div>
         <div class="ctrl"><label>Pencere <b id="wV"></b></label><input type="range" id="wR" min="15" max="120" step="5"><div class="h">"normal" kaç geçmiş noktadan hesaplanır</div></div>
         <div class="ctrl"><label>Isınma <b id="uV"></b></label><input type="range" id="uR" min="5" max="60" step="5"><div class="h">bu kadar nokta birikmeden karar verilmez</div></div>
@@ -299,9 +348,9 @@ a{color:inherit}
     </div>
 
     <div class="cards3">
-      <div class="mini"><h4>Neden ortalama değil medyan?</h4><p>Tek bir dev sıçrama ortalamayı ve standart sapmayı şişirir, zarf genişler ve sonraki sıçramalar görünmez olur. Medyan ve MAD (sapmaların medyanı) aykırı değerlerden etkilenmez. Laboratuvarda "Ortalama ile karşılaştır"ı açıp farkı gör.</p></div>
-      <div class="mini"><h4>Neden "kalıcılık"?</h4><p>Ölçümler gürültülüdür. Tek noktalık bir zıplama çoğu zaman anlamsızdır (bir GC, bir log patlaması). Eşiği art arda iki kez aşmak gerçek bir durum değişikliğine işaret eder. "Tek aykırı nokta" ekleyip alarm üretmediğini gör.</p></div>
-      <div class="mini"><h4>Bu bir "makine öğrenmesi" mi?</h4><p>Gözetimsiz (etiketsiz) bir anomali tespitidir: her serinin "normal"ini kendi geçmişinden öğrenir, model eğitmez ve kara kutu değildir. Her karar yeniden hesaplanabilir. LLM yalnızca sonucu insan diliyle anlatır, karar vermez.</p></div>
+      <div class="mini"><h4>Neden ortalama değil medyan?</h4><p>Tek bir dev sıçrama ortalamayı ve standart sapmayı şişirir; "normal" aralık genişler ve sonraki sıçramalar görünmez olur. Medyan ve MAD (sapmaların medyanı) aykırı değerlerden etkilenmez. "Ortalama ile karşılaştır" ile farkı gör.</p></div>
+      <div class="mini"><h4>Neden kalıcılık?</h4><p>Ölçümler gürültülüdür; tek noktalık bir zıplama çoğu zaman anlamsızdır. Eşiği art arda iki kez aşmak gerçek bir değişikliğe işaret eder. "Tek aykırı nokta ekle" deyip alarm üretmediğini gör.</p></div>
+      <div class="mini"><h4>Bu makine öğrenmesi mi?</h4><p>Etiketsiz (gözetimsiz) bir anomali tespiti: her serinin normalini kendi geçmişinden çıkarır; model eğitmez, her kararı yeniden hesaplanabilir. LLM yalnızca sonucu insan diliyle anlatır, karar vermez.</p></div>
     </div>
   </div>
 </section>
@@ -309,19 +358,18 @@ a{color:inherit}
 <!-- 3. ne izleyelim -->
 <section class="view" id="v-metrics">
   <div class="page">
-    <div class="hero"><div><h1>Ne izliyoruz, ne izleyebiliriz?</h1>
-      <p>Nöbetçi şu an pod ve node başına 6 sinyali istatistiksel olarak, 7 durumu da kuralla izliyor. Aşağıda projeye eklenebilecek ölçümler var. <span class="tag have">bu kümede var</span> rozeti, verinin kümedeki Prometheus'ta zaten bulunduğunu gösterir; yani yalnızca nöbetçiye öğretmek kalıyor.</p></div></div>
+    <div class="hero"><h1>Ne izliyoruz, ne izleyebiliriz?</h1>
+      <p>Nöbetçi şu an pod ve node başına 6 ölçümü istatistikle, 7 durumu kuralla izliyor. Aşağıda eklenebilecekler var. <span class="tag have">bu kümede var</span> işareti, verinin kümedeki Prometheus'ta zaten olduğunu gösterir; geriye yalnızca nöbetçiye öğretmek kalır.</p></div>
     <div class="sech"><h2>Şu an izlenenler</h2><p>Sayılar nöbetçi başladığından beri üretilen bulgular.</p></div>
     <div class="mgrid" id="mNow"></div>
     <div class="sech"><h2>Eklenebilecek ölçümler</h2><p id="catState">Prometheus'a soruluyor…</p></div>
     <div class="filters" id="mFilt"></div>
     <div class="mgrid" id="mAdd"></div>
-    <div class="sech"><h2>Projeyi bir üst seviyeye taşıyacak fikirler</h2><p>Yeni ölçümden çok, var olan veriyi daha akıllı kullanmak.</p></div>
+    <div class="sech"><h2>Projeyi ileri taşıyacak fikirler</h2><p>Yeni ölçümden çok, var olan veriyi daha akıllı kullanmak.</p></div>
     <div class="mgrid" id="mIdeas"></div>
   </div>
 </section>
 
-<div class="tip" id="tip"></div>
 <script>
 "use strict";
 /* ============================================================== yardımcılar */
@@ -457,14 +505,7 @@ const SIGNALS = [
   {k: "rx", sig: "pod_net_rx", t: "Gelen ağ", unit: "bps", min: 100e3},
   {k: "tx", sig: "pod_net_tx", t: "Giden ağ", unit: "bps", min: 100e3},
 ];
-const NS_FIXED = {"kube-system": "#64748b", "monitoring": "#c4b5fd", "nobetci": "#fbbf24", "local-path-storage": "#64748b", "kube-public": "#64748b", "kube-node-lease": "#64748b", "default": "#94a3b8"};
-const NS_PAL = ["#2dd4bf", "#38bdf8", "#f472b6", "#a3e635", "#fb923c", "#818cf8", "#22d3ee", "#e879f9", "#facc15"];
-function nsColor(ns) {
-  if (NS_FIXED[ns]) return NS_FIXED[ns];
-  let h = 0;
-  for (const ch of ns) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return NS_PAL[h % NS_PAL.length];
-}
+const nsColor = () => "var(--ink2)";
 const shortName = (p) => {
   const r = role(p);
   if (r && G[r].g) return G[r].g;
@@ -472,22 +513,21 @@ const shortName = (p) => {
   return w.length > 10 ? w.slice(0, 9) + "…" : w;
 };
 
+
 /* ============================================================== durum ve veri */
 const S = {
-  topo: null, simT: null, cycle: -1, cycleAt: 0, sel: null, hover: null, hist: [],
-  layers: Object.assign({traffic: true, metrics: true, owners: false, heat: true}, store("kesif.layers") || {}),
+  topo: null, simT: null, cycle: -1, cycleAt: 0, sel: null, hist: [],
+  layers: Object.assign({links: false, path: false, heat: true}, store("kesif.layers3") || {}),
   showSys: store("kesif.sys") ?? true, tab: "map",
-  ents: new Map(), vis: new Map(), edges: [], bounds: null, special: {},
-  cam: {x: 0, y: 0, k: 1}, camT: null, userCam: false,
-  parts: [], acc: new Map(), sim: null, tour: null, t: 0, rings: [], nextScrape: 2,
-  seriesCache: new Map(), evSeen: new Set(), catalog: null, ghosts: new Map(),
+  ents: new Map(), special: {}, html: "", geo: null, animUntil: 0,
+  parts: [], acc: new Map(), sim: null, tour: null, t: 0, nextScrape: 3,
+  seriesCache: new Map(), evMap: new Map(), events: [], catalog: null,
 };
-const entOf = (id) => S.ents.get(id) || S.ghosts.get(id);
 const T = () => S.simT || S.topo;
 let C = {};
 function readColors() {
   const cs = getComputedStyle(document.documentElement);
-  for (const k of ["page", "page2", "surface", "raised", "ink", "ink2", "muted", "line", "line2", "node", "node2", "dot", "ok", "warn", "crit", "info", "flow", "metric", "brain", "up", "down"])
+  for (const k of ["page", "surface", "raised", "ink", "ink2", "muted", "line", "line2", "accent", "ok", "warn", "crit", "info", "flow", "metric", "brain", "up", "down"])
     C[k] = cs.getPropertyValue("--" + k).trim();
   C.dark = document.documentElement.dataset.theme !== "light";
 }
@@ -513,13 +553,14 @@ async function loadTopo() {
       if (S.cycle >= 0) onCycle(t);
       S.cycle = t.cycle; S.cycleAt = Date.now();
     }
-    if (!S.sim) { layout(); refreshSide(); }
     ticker(t.events);
+    if (!S.sim) { layout(); refreshSide(); }
     if (S.tab === "brain") renderBrain();
     if (S.tab === "metrics" && !$("#mNow").childElementCount) renderMetrics();
-    $("#empty").style.display = t.pods.length ? "none" : "grid";
+    $("#empty").style.display = t.pods.length ? "none" : "block";
     $("#empty").textContent = t.ready ? "Kümede pod görünmüyor." : "nöbetçi ilk ölçüm turunu yapıyor…";
   } catch (e) {
+    console.error(e);
     $("#live").classList.add("down");
     $("#liveT").textContent = "bağlantı yok";
   }
@@ -530,661 +571,341 @@ async function ping() {
     if (p.cycle !== S.cycle && S.cycle >= 0) loadTopo();
   } catch { $("#live").classList.add("down"); }
   const s = Math.round((Date.now() - S.cycleAt) / 1000);
-  if (S.topo) $("#liveT").textContent = `canlı · tur #${S.cycle} · ${s < 5 ? "şimdi" : s + " sn önce"}`;
+  if (S.topo) $("#liveT").textContent = `canlı · tur ${S.cycle} · ${s < 5 ? "şimdi" : s + " sn önce"}`;
 }
 
-/* ============================================================== yerleşim
-   Dünya koordinatları: node'lar yan yana; içlerinde namespace kutuları, kutularda pod'lar.
-   Service'ler node'ların üstünde bir şeritte, bağlandıkları pod'ların hizasında durur. */
-const CELL = 62, NSP = 14, NSH = 30, NP = 22, NH = 134, GAP = 100, SVC_Y = -130;
+/* ============================================================== harita
+   Sade HTML: node → namespace → (service'ler, pod kartları). Service'ler kendi namespace'inde,
+   pod'larının hemen üstünde durur; bağlantı çizgileri kısa kalır. Yeniden çizimde kartlar
+   eski yerlerinden yenisine kayar (FLIP), yeni gelen belirir, giden söner. */
 const nsRank = (ns) => ns === "default" ? 1 : ns === "monitoring" ? 2 : ns === "nobetci" ? 3 : isSys(ns) ? 4 : 0;
+const pid = (p) => `p:${p.ns}/${p.name}`;
+function podTitle(p, many) {
+  const r = role(p);
+  if (r && G[r] && G[r].t.length <= 18) return {t: G[r].t, s: ""};
+  const w = p.workload?.name || p.name;
+  return {t: w, s: many && p.name !== w ? p.name.slice(w.length + 1).split("-").pop() : ""};
+}
+const memPair = (m, l) => l < 1024 * MiB ? `${Math.round((m || 0) / MiB)}/${Math.round(l / MiB)} MiB` : `${((m || 0) / MiB / 1024).toFixed(1)}/${(l / MiB / 1024).toFixed(1)} GiB`;
+function podCard(p, many) {
+  const st = stc(p.status), t = T(), thr = t.detector?.z || 5;
+  const {t: title, s: suf} = podTitle(p, many);
+  const lim = p.mem_limit || p.lim_mem;
+  const z = maxZ(p);
+  let flag = "";
+  if (S.layers.heat && Math.abs(z) >= 2) {
+    const hot = Math.abs(z) >= thr;
+    flag = `<span class="flag${hot ? " hot" : ""}" title="${hot ? "Eşiği aştı: " : ""}kendi normalinden ${Math.abs(z).toFixed(1)} ölçek ${z > 0 ? "yukarıda" : "aşağıda"} (z-skoru)">${z > 0 ? "↑" : "↓"} ${Math.abs(z).toFixed(1)}</span>`;
+  }
+  const metrics = st === "crit" || st === "warn" || (st === "info" && p.status && p.status !== "Running")
+    ? `${esc(p.status)}${p.restarts ? ` · ${p.restarts} yeniden başlama` : ""}`
+    : p.cpu == null ? esc(p.status || "ölçüm yok") : `CPU ${fmt.cores(p.cpu)} · ${lim ? memPair(p.mem, lim) : fmt.bytes(p.mem)}`;
+  const f = lim && p.mem ? clamp(p.mem / lim, 0, 1) : null;
+  const inc = p.incident ? ` inc${p.incident.severity < 3 ? " i2" : ""}` : "";
+  return `<button class="pod s-${st}${inc}${flag ? " has-flag" : ""}" data-id="${esc(pid(p))}" title="${esc(p.name)}${p.incident ? "\n● " + esc(p.incident.title) : ""}">
+    <span class="pn"><i></i><b>${esc(title)}</b>${suf ? `<em>${esc(suf)}</em>` : ""}</span>
+    <span class="pm">${metrics}</span>${f != null ? `<span class="mb" title="bellek limitin %${Math.round(f * 100)}'i"><u class="${f > 0.85 ? "c" : f > 0.65 ? "w" : ""}" style="width:${(f * 100).toFixed(1)}%"></u></span>` : ""}${flag}</button>`;
+}
+function svcChip(s) {
+  const nopods = !s.pods.length && !(s.ns === "default" && s.name === "kubernetes");
+  const port = s.ports[0];
+  const kind = s.cluster_ip === "None" ? "headless" : s.type;
+  return `<button class="svc${nopods ? " nopods" : ""}" data-id="s:${esc(s.ns)}/${esc(s.name)}" title="Service ${esc(s.name)} · ${esc(kind)}${nopods ? " · seçici hiçbir pod'la eşleşmiyor" : ""}">
+    <b>${esc(s.name)}</b><span>${nopods ? "uç yok" : `${esc(kind)}${port ? " :" + port.port : ""}`}</span>${port?.node_port ? `<span class="out" title="Dışarıdan node IP'si ve bu portla erişilir">↗ ${port.node_port}</span>` : ""}</button>`;
+}
+const meter = (label, used, cap, f) => {
+  const r = cap && used != null ? clamp(used / cap, 0, 1) : null;
+  return `<span class="meter">${label}${r != null ? `<i><u class="${r > 0.85 ? "c" : r > 0.65 ? "w" : ""}" style="width:${(r * 100).toFixed(1)}%"></u></i>` : ""}<span class="num">${f(used)}${cap ? " / " + f(cap) : ""}</span></span>`;
+};
 
 function layout() {
   const t = T();
   if (!t) return;
-  const ents = new Map(), edges = [], put = (e) => (ents.set(e.id, e), e);
+  const ents = new Map();
   const pods = t.pods.filter((p) => S.showSys || !isSys(p.ns));
-  const maxMem = Math.max(128 * MiB, ...pods.map((p) => p.mem || 0));
-  const radius = (p) => p.mem ? 11 + 11 * Math.sqrt(p.mem / maxMem) : 14;
   const nodes = [...t.nodes].sort((a, b) => (b.roles.includes("control-plane") - a.roles.includes("control-plane")) || a.name.localeCompare(b.name));
-  const per = new Map(nodes.map((n) => [n.name, []]));
-  const queue = [];
-  for (const p of pods) (p.node && per.has(p.node) ? per.get(p.node) : queue).push(p);
+  const known = new Set(nodes.map((n) => n.name));
   const order = (a, b) => (a.workload?.name || "").localeCompare(b.workload?.name || "") || a.name.localeCompare(b.name);
-  const podEnt = (p, x, y) => put({id: `p:${p.ns}/${p.name}`, type: "pod", x, y, r: radius(p), data: p});
+  const wlCount = {};
+  for (const p of pods) wlCount[p.ns + "/" + p.workload?.name] = (wlCount[p.ns + "/" + p.workload?.name] || 0) + 1;
+  const card = (p) => { ents.set(pid(p), {type: "pod", data: p}); return podCard(p, wlCount[p.ns + "/" + p.workload?.name] > 1); };
 
-  let x = 0;
+  // service'in "evi": pod'larının en çok bulunduğu node'daki namespace kutusu
+  const svcs = t.services.filter((s) => S.showSys || !isSys(s.ns));
+  const home = new Map(), homeless = [];
+  for (const s of svcs) {
+    const cnt = {};
+    for (const n of s.pods) { const p = pods.find((x) => x.ns === s.ns && x.name === n); if (p?.node && known.has(p.node)) cnt[p.node] = (cnt[p.node] || 0) + 1; }
+    let node = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!node) node = nodes.find((n) => pods.some((p) => p.node === n.name && p.ns === s.ns))?.name;
+    if (node) (home.get(`${node}/${s.ns}`) || home.set(`${node}/${s.ns}`, []).get(`${node}/${s.ns}`)).push(s);
+    else homeless.push(s);
+    ents.set(`s:${s.ns}/${s.name}`, {type: "svc", data: s, nopods: !s.pods.length});
+  }
+  const svcHtml = (list) => list.sort((a, b) => a.name.localeCompare(b.name)).map(svcChip).join("");
+
+  let html = "";
+  const queue = pods.filter((p) => !p.node || !known.has(p.node));
   if (queue.length) {
-    const cols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(queue.length)))), rows = Math.ceil(queue.length / cols);
-    const w = cols * CELL + 2 * NP, h = 70 + rows * CELL + NP;
-    put({id: "q:", type: "queue", x, y: 0, w, h, data: {count: queue.length}});
-    queue.sort(order).forEach((p, i) => podEnt(p, x + NP + (i % cols) * CELL + CELL / 2, 70 + Math.floor(i / cols) * CELL + CELL / 2));
-    x += w + GAP;
+    ents.set("q:", {type: "queue", data: {count: queue.length}});
+    html += `<section class="queue" data-id="q:"><h3>Yerleşmeyi bekleyen pod'lar <span>· scheduler henüz bir node seçmedi (Pending)</span></h3><div class="pods">${queue.sort(order).map(card).join("")}</div></section>`;
   }
-  S.special.spawn = {x: x - GAP / 2, y: NH};
   for (const n of nodes) {
+    ents.set(`n:${n.name}`, {type: "node", data: n});
+    ents.set(`c:${n.name}/kubelet`, {type: "comp", kind: "kubelet", data: n});
+    ents.set(`c:${n.name}/runtime`, {type: "comp", kind: "runtime", data: n});
+    const mine = pods.filter((p) => p.node === n.name);
     const groups = new Map();
-    for (const p of per.get(n.name)) (groups.get(p.ns) || groups.set(p.ns, []).get(p.ns)).push(p);
-    const blocks = [...groups].sort((a, b) => nsRank(a[0]) - nsRank(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]))
-      .map(([ns, ps]) => {
-        const cols = Math.min(6, Math.max(1, Math.ceil(Math.sqrt(ps.length * 1.5))));
-        return {ns, ps: ps.sort(order), cols, w: Math.max(cols * CELL, 120) + 2 * NSP, h: NSH + Math.ceil(ps.length / cols) * CELL + NSP - 8};
-      });
-    const area = blocks.reduce((s, b) => s + (b.w + 14) * (b.h + 14), 0);
-    const W = Math.max(clamp(Math.sqrt(area) * 1.5, 480, 1250), ...blocks.map((b) => b.w));
-    let cx = 0, cy = 0, rowH = 0, used = 0;
-    for (const b of blocks) {
-      if (cx > 0 && cx + b.w > W) { cx = 0; cy += rowH + 14; rowH = 0; }
-      b.x = cx; b.y = cy; cx += b.w + 14; rowH = Math.max(rowH, b.h); used = Math.max(used, cx - 14);
-    }
-    const nw = Math.max(used, 580) + 2 * NP, nh = NH + cy + rowH + NP;
-    put({id: `n:${n.name}`, type: "node", x, y: 0, w: nw, h: nh, data: n});
-    put({id: `c:${n.name}/kubelet`, type: "comp", kind: "kubelet", x: x + NP, y: 92, w: 118, h: 24, data: n});
-    put({id: `c:${n.name}/runtime`, type: "comp", kind: "runtime", x: x + NP + 126, y: 92, w: 118, h: 24, data: n});
-    for (const b of blocks) {
-      const bx = x + NP + b.x, by = NH + b.y;
-      put({id: `ns:${n.name}/${b.ns}`, type: "ns", x: bx, y: by, w: b.w, h: b.h, data: {ns: b.ns, node: n.name, count: b.ps.length}});
-      b.ps.forEach((p, i) => podEnt(p, bx + NSP + (i % b.cols) * CELL + CELL / 2, by + NSH + Math.floor(i / b.cols) * CELL + CELL / 2 - 2));
-    }
-    x += nw + GAP;
+    for (const p of mine) (groups.get(p.ns) || groups.set(p.ns, []).get(p.ns)).push(p);
+    for (const key of home.keys()) { const [nn, ns] = key.split("/"); if (nn === n.name && !groups.has(ns)) groups.set(ns, []); }
+    const blocks = [...groups].sort((a, b) => nsRank(a[0]) - nsRank(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    const cp = n.roles.includes("control-plane");
+    html += `<section class="node${n.ready ? "" : " down"}" data-id="n:${esc(n.name)}">
+      <header class="nh" data-id="n:${esc(n.name)}">
+        <div class="nt"><b>${esc(n.name)}</b><span class="role">${cp ? "control-plane" : esc(n.roles[0] || "worker")}</span>
+          <span class="st" style="color:${n.ready && !n.pressure.length ? "var(--ok)" : "var(--crit)"}">${n.ready ? "Ready" : "NotReady"}${n.pressure.length ? " · " + n.pressure.join(", ") : ""}</span></div>
+        <div class="nm">${meter("CPU", n.cpu, n.cpu_alloc || n.cpu_cap, fmt.cores)}${meter("Bellek", n.mem, n.mem_alloc || n.mem_cap, fmt.bytes)}<span class="num">${mine.length}${n.pods_cap ? " / " + n.pods_cap : ""} pod</span></div>
+        <div class="nc">Node üzerinde çalışan süreçler:
+          <button class="comp" data-id="c:${esc(n.name)}/kubelet">kubelet</button><button class="comp" data-id="c:${esc(n.name)}/runtime">${esc((n.runtime || "containerd").replace("://", " "))}</button>
+          <span>${esc([n.os, n.ip].filter(Boolean).join(" · "))}</span></div>
+      </header>
+      <div class="nsgrid">${blocks.map(([ns, ps]) => {
+        const id = `ns:${n.name}/${ns}`, sv = home.get(`${n.name}/${ns}`) || [];
+        ents.set(id, {type: "ns", data: {ns, node: n.name, count: ps.length}});
+        return `<section class="ns${ps.length > 8 ? " wide" : ""}" data-id="${esc(id)}"><header><button class="nsname" data-id="${esc(id)}">${esc(ns)}</button><span>${ps.length} pod${sv.length ? ` · ${sv.length} service` : ""}</span></header>
+          <div class="svcs">${svcHtml(sv)}</div><div class="pods">${ps.sort(order).map(card).join("")}</div></section>`;
+      }).join("")}</div></section>`;
   }
+  if (homeless.length) {
+    html += `<div class="orphan">Pod'u bu haritada olmayan namespace'lerdeki service'ler:<div class="svcs">${svcHtml(homeless)}</div></div>`;
+  }
+  const find = (r) => { const es = [...ents.entries()].filter(([, e]) => e.type === "pod" && role(e.data) === r); return (es.find(([, e]) => /server/.test(e.data.name)) || es[0])?.[0]; };
+  S.special = {prom: find("prometheus"), ksm: find("ksm"), api: find("apiserver"), nob: find("nobetci")};
+  for (const k of ["prom", "ksm", "api", "nob"]) if (S.special[k]) S.special[k] = {id: S.special[k]};
+  for (const [k, v] of ents) v.id = k;
+  S.ents = ents;
+  if (html !== S.html) { S.html = html; flip(html); }
+  decorate();
+}
 
-  // özel roller: ölçüm yolu ve kontrol düzlemi
-  const find = (r) => { const es = [...ents.values()].filter((e) => e.type === "pod" && role(e.data) === r); return es.find((e) => /server/.test(e.data.name)) || es[0]; };
-  const sp = S.special = {spawn: S.special.spawn, prom: find("prometheus"), ksm: find("ksm"), api: find("apiserver"), nob: find("nobetci")};
+/* eski konumlardan yenilerine kaydır */
+function flip(html) {
+  const host = $("#nodes"), board = $("#board");
+  const old = new Map();
+  for (const el of host.querySelectorAll(".pod,.svc")) old.set(el.dataset.id, {r: el.getBoundingClientRect(), el});
+  const first = !host.childElementCount;
+  host.innerHTML = html;
+  const br = board.getBoundingClientRect();
+  const seen = new Set();
+  for (const el of host.querySelectorAll(".pod,.svc")) {
+    const id = el.dataset.id, o = old.get(id);
+    seen.add(id);
+    if (o) {
+      const r = el.getBoundingClientRect(), dx = o.r.left - r.left, dy = o.r.top - r.top;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{transform: `translate(${dx}px,${dy}px)`}, {transform: "none"}], {duration: 650, easing: "cubic-bezier(.2,.7,.2,1)"});
+    } else if (!first) el.animate([{opacity: 0, transform: "scale(.9)"}, {opacity: 1, transform: "none"}], {duration: 450, easing: "ease-out"});
+  }
+  for (const [id, o] of old) {
+    if (seen.has(id)) continue;
+    const g = o.el;
+    Object.assign(g.style, {position: "absolute", left: o.r.left - br.left + "px", top: o.r.top - br.top + "px", width: o.r.width + "px", height: o.r.height + "px", margin: 0, zIndex: 5, pointerEvents: "none"});
+    board.appendChild(g);
+    g.animate([{opacity: 1}, {opacity: 0, transform: "scale(.9)"}], {duration: 500, easing: "ease-in", fill: "forwards"}).onfinish = () => g.remove();
+  }
+  S.animUntil = performance.now() + 700;
+}
 
-  // service şeridi
-  const svcs = [];
+/* seçim, odak ve veri yolu işaretleri (yeniden çizmeden) */
+function decorate() {
+  const host = $("#nodes");
+  const focus = S.tour?.target || (S.sel && !S.sel.startsWith("@") ? S.sel : null);
+  const rel = focus ? related(focus) : null;
+  host.classList.toggle("focus", !!rel);
+  for (const el of host.querySelectorAll("[data-id]")) {
+    el.classList.toggle("rel", !!rel?.has(el.dataset.id));
+    el.classList.toggle("sel", el.dataset.id === focus && !el.classList.contains("nh") && !el.classList.contains("nsname"));
+    el.removeAttribute("data-step");
+  }
+  if (S.layers.path) {
+    const sp = S.special, mark = (id, n) => { const el = id && host.querySelector(`.pod[data-id="${CSS.escape(id)}"],.comp[data-id="${CSS.escape(id)}"]`); if (el) el.dataset.step = n; };
+    for (const el of host.querySelectorAll('.comp[data-id$="/kubelet"]')) el.dataset.step = 1;
+    mark(sp.ksm?.id, 2); mark(sp.prom?.id, 3); mark(sp.nob?.id, 4);
+  }
+  $("#pathnote").classList.toggle("on", S.layers.path);
+  S.animUntil = Math.max(S.animUntil, performance.now() + 50);
+}
+
+function related(id) {
+  const set = new Set([id]), e = S.ents.get(id), t = T();
+  if (!e || !t) return set;
+  const podsOf = (fn) => { for (const [k, x] of S.ents) if (x.type === "pod" && fn(x.data)) set.add(k); };
+  if (e.type === "pod") {
+    const p = e.data;
+    set.add(`n:${p.node}`); set.add(`ns:${p.node}/${p.ns}`);
+    podsOf((q) => q.ns === p.ns && q.workload?.name === p.workload?.name);
+    for (const s of t.services) if (s.ns === p.ns && s.pods.includes(p.name)) set.add(`s:${s.ns}/${s.name}`);
+    if (role(p) === "apiserver") set.add("s:default/kubernetes");
+  } else if (e.type === "svc") {
+    const s = e.data;
+    podsOf((q) => q.ns === s.ns && s.pods.includes(q.name));
+    if (s.ns === "default" && s.name === "kubernetes" && S.special.api) set.add(S.special.api.id);
+  } else if (e.type === "node") {
+    podsOf((q) => q.node === e.data.name);
+    for (const k of S.ents.keys()) if (k.startsWith(`c:${e.data.name}/`) || k.startsWith(`ns:${e.data.name}/`)) set.add(k);
+  } else if (e.type === "ns") {
+    podsOf((q) => q.node === e.data.node && q.ns === e.data.ns);
+    for (const s of t.services) if (s.ns === e.data.ns) set.add(`s:${s.ns}/${s.name}`);
+  } else if (e.type === "queue") {
+    podsOf((q) => !S.ents.has(`n:${q.node}`));
+  } else if (e.type === "comp") {
+    set.add(`n:${e.data.name}`);
+    if (e.kind === "kubelet") { for (const k of ["prom", "ksm", "api", "nob"]) if (S.special[k]) set.add(S.special[k].id); }
+    else podsOf((q) => q.node === e.data.name);
+  }
+  return set;
+}
+
+/* ---- çizgiler (canvas, kartların altında) */
+const wc = $("#wires"), wx = wc.getContext("2d");
+function measure() {
+  const board = $("#board"), br = board.getBoundingClientRect();
+  const W = board.scrollWidth, H = board.scrollHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (wc.width !== Math.round(W * dpr) || wc.height !== Math.round(H * dpr)) {
+    wc.width = Math.round(W * dpr); wc.height = Math.round(H * dpr); wc.style.width = W + "px"; wc.style.height = H + "px";
+  }
+  const pos = new Map();
+  for (const el of $("#nodes").querySelectorAll(".pod,.svc,.comp")) {
+    const r = el.getBoundingClientRect();
+    pos.set(el.dataset.id, {x: r.left - br.left + r.width / 2, top: r.top - br.top, bot: r.bottom - br.top, l: r.left - br.left, r: r.right - br.left, w: r.width, h: r.height});
+  }
+  S.geo = {pos, dpr, W, H};
+}
+function wireList() {
+  const t = T(), out = [];
+  if (!t || !S.geo) return out;
+  const focus = S.tour?.target || (S.sel && !S.sel.startsWith("@") ? S.sel : null);
+  const rel = focus ? related(focus) : null, hrel = S.hover ? related(S.hover) : null;
   for (const s of t.services) {
-    if (!S.showSys && isSys(s.ns)) continue;
-    let targets = s.pods.map((n) => ents.get(`p:${s.ns}/${n}`)).filter(Boolean);
-    if (s.ns === "default" && s.name === "kubernetes" && sp.api) targets = [sp.api];
-    let tx;
-    if (targets.length) tx = targets.reduce((a, e) => a + e.x, 0) / targets.length;
-    else {
-      const blk = [...ents.values()].find((e) => e.type === "ns" && e.data.ns === s.ns);
-      if (!blk) continue;
-      tx = blk.x + blk.w / 2;
-    }
-    svcs.push({s, targets, tx});
-  }
-  svcs.sort((a, b) => a.tx - b.tx);
-  const SP = 92, last = [-1e9, -1e9];
-  for (const v of svcs) {
-    let row = v.tx - last[0] >= SP ? 0 : v.tx - last[1] >= SP ? 1 : last[0] <= last[1] ? 0 : 1;
-    const sx = Math.max(v.tx, last[row] + SP);
-    last[row] = sx;
-    const e = put({id: `s:${v.s.ns}/${v.s.name}`, type: "svc", x: sx, y: SVC_Y - row * 74, r: 18, data: v.s, nopods: !v.targets.length});
-    for (const tg of v.targets) edges.push({k: "svc", a: e.id, b: tg.id, ready: v.s.name === "kubernetes" || tg.data.ready !== false});
-  }
-  // dış dünya
-  const xs = [...ents.values()].filter((e) => e.type === "svc").map((e) => e.x);
-  const ext = put({id: "x:", type: "ext", x: xs.length ? Math.min(...xs) - 150 : -150, y: SVC_Y - 150, r: 26, data: {}});
-  for (const e of ents.values()) {
-    if (e.type !== "svc") continue;
-    if (["NodePort", "LoadBalancer"].includes(e.data.type)) edges.push({k: "ext", a: ext.id, b: e.id, ready: true});
-    if (e.data.ns === "nobetci" && e.data.name === "nobetci") edges.push({k: "pf", a: ext.id, b: e.id, ready: true});
-  }
-  // ölçüm yolu: kubelet(cAdvisor) → Prometheus, API server → kube-state-metrics → Prometheus → nöbetçi
-  if (sp.prom) {
-    for (const n of nodes) edges.push({k: "m", a: `c:${n.name}/kubelet`, b: sp.prom.id});
-    if (sp.ksm) edges.push({k: "m", a: sp.ksm.id, b: sp.prom.id});
-    if (sp.api && sp.ksm) edges.push({k: "m", a: sp.api.id, b: sp.ksm.id});
-    if (sp.nob) edges.push({k: "m2", a: sp.prom.id, b: sp.nob.id});
-  }
-
-  // sınırlar
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const e of ents.values()) {
-    const w = e.w ?? e.r * 2, h = e.h ?? e.r * 2, ex = e.w ? e.x : e.x - e.r, ey = e.h ? e.y : e.y - e.r;
-    x0 = Math.min(x0, ex); y0 = Math.min(y0, ey); x1 = Math.max(x1, ex + w); y1 = Math.max(y1, ey + h + (e.type === "svc" ? 30 : 0));
-  }
-  S.bounds = {x0, y0: y0 - 20, x1, y1};
-  for (const [id, e] of S.ents) if (!ents.has(id)) S.ghosts.set(id, e);
-  for (const id of ents.keys()) S.ghosts.delete(id);
-  S.ents = ents; S.edges = edges;
-
-  // görünür hâller: var olan yumuşakça hedefe kayar, yeni gelen belirir, giden söner
-  for (const e of ents.values()) {
-    const v = S.vis.get(e.id);
-    const tgt = {tx: e.x, ty: e.y, tr: e.r ?? 0, tw: e.w ?? 0, th: e.h ?? 0, ta: 1};
-    if (v) Object.assign(v, tgt, {dead: false});
-    else {
-      const born = e.type === "pod" && S.sim?.spawnFrom?.has(e.id) ? S.special.spawn : null;
-      S.vis.set(e.id, {...tgt, x: born ? born.x : e.x, y: born ? born.y : e.y, r: e.type === "pod" && !S.firstLayoutDone ? e.r : 0,
-                       w: e.w ?? 0, h: e.h ?? 0, a: S.firstLayoutDone ? 0 : 1});
+    const sid = `s:${s.ns}/${s.name}`;
+    if (!S.geo.pos.has(sid)) continue;
+    let targets = s.pods.map((n) => `p:${s.ns}/${n}`);
+    if (s.ns === "default" && s.name === "kubernetes" && S.special.api) targets = [S.special.api.id];
+    for (const pidv of targets) {
+      if (!S.geo.pos.has(pidv)) continue;
+      const hot = (rel && rel.has(sid) && rel.has(pidv) && (focus === sid || focus === pidv)) ||
+                  (hrel && hrel.has(sid) && hrel.has(pidv) && (S.hover === sid || S.hover === pidv));
+      if (!S.layers.links && !hot) continue;
+      const p = S.ents.get(pidv)?.data;
+      out.push({k: "svc", a: sid, b: pidv, hot, ready: s.name === "kubernetes" || p?.ready !== false, rx: p?.rx});
     }
   }
-  for (const [id, v] of S.vis) if (!ents.has(id)) { v.ta = 0; v.tr = 0; v.dead = true; }
-  if (!S.userCam && !S.tour) fit(!S.firstLayoutDone);
-  S.firstLayoutDone = true;
-  if (S.sel && !ents.has(S.sel) && !S.sel.startsWith("@")) S.sel = null;
-}
-
-/* ============================================================== kamera */
-const cv = $("#map"), cx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1;
-function resize() {
-  const r = cv.getBoundingClientRect();
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = r.width; H = r.height;
-  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-}
-new ResizeObserver(() => { resize(); if (!S.userCam) fit(true); }).observe($("#stage"));
-function camFor(b, pad = 70) {
-  const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
-  const top = 60, bottom = 64;
-  const k = clamp(Math.min((W - 2 * pad) / bw, (H - top - bottom - pad) / bh), 0.2, 2.2);
-  return {k, x: W / 2 - (b.x0 + bw / 2) * k, y: top + (H - top - bottom) / 2 - (b.y0 + bh / 2) * k};
-}
-function fit(instant) {
-  if (!S.bounds || !W) return;
-  const c = camFor(S.bounds);
-  if (instant) { S.cam = c; S.camT = null; } else S.camT = c;
-}
-function focusOn(ids, pad = 120, maxK = 1.8) {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const id of ids) {
-    const e = S.ents.get(id);
-    if (!e) continue;
-    const ex = e.w ? e.x : e.x - e.r, ey = e.h ? e.y : e.y - e.r, w = e.w ?? e.r * 2, h = e.h ?? e.r * 2;
-    x0 = Math.min(x0, ex); y0 = Math.min(y0, ey); x1 = Math.max(x1, ex + w); y1 = Math.max(y1, ey + h);
+  if (S.layers.path && S.special.prom) {
+    const sp = S.special;
+    for (const k of S.geo.pos.keys()) if (k.endsWith("/kubelet")) out.push({k: "path", a: k, b: sp.prom.id});
+    if (sp.ksm) out.push({k: "path", a: sp.ksm.id, b: sp.prom.id});
+    if (sp.api && sp.ksm) out.push({k: "path", a: sp.api.id, b: sp.ksm.id});
+    if (sp.nob) out.push({k: "path", a: sp.prom.id, b: sp.nob.id});
   }
-  if (x0 > x1) return;
-  const c = camFor({x0, y0, x1, y1}, pad);
-  c.k = Math.min(c.k, maxK);
-  const cxw = (x0 + x1) / 2, cyw = (y0 + y1) / 2;
-  const top = S.sim ? 190 : 60;
-  c.k = Math.min(c.k, (H - top - 80) / Math.max(1, y1 - y0 + 2 * 40));
-  c.x = W / 2 - cxw * c.k; c.y = top + (H - top - 64) / 2 - cyw * c.k;
-  S.camT = c; S.userCam = true;
+  return out;
 }
-const toWorld = (sx, sy) => ({x: (sx - S.cam.x) / S.cam.k, y: (sy - S.cam.y) / S.cam.k});
-
-/* ============================================================== çizim */
-function rr(x, y, w, h, r) {
-  cx.beginPath();
-  cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
-  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
-}
-function text(s, x, y, size, color, weight = 500, align = "left", mono = false) {
-  if (size * S.cam.k < 5.5) return;
-  cx.font = `${weight} ${size}px ${mono ? "ui-monospace,Menlo,Consolas,monospace" : "system-ui,-apple-system,Segoe UI,sans-serif"}`;
-  cx.fillStyle = color; cx.textAlign = align; cx.textBaseline = "middle";
-  cx.fillText(s, x, y);
-}
-function anchor(id, end, kind) {
-  const v = S.vis.get(id), e = S.ents.get(id);
-  if (!v || !e) return null;
-  if (e.type === "svc") return {x: v.x, y: v.y + (end === "a" ? v.r + 3 : -v.r - 3)};
-  if (e.type === "pod") return {x: v.x, y: v.y - v.r - 3};
-  if (e.type === "comp") return {x: v.x + v.w / 2, y: v.y};
-  if (e.type === "ext") return {x: v.x + (kind === "pf" ? v.r * 0.7 : 0), y: v.y + v.r * 0.7};
-  return {x: v.x, y: v.y};
-}
-function ctrl(a, b, k) {
-  const dx = b.x - a.x, dy = b.y - a.y;
-  if (k === "m" || k === "m2" || k === "scr") {
-    const top = Math.min(a.y, b.y) - (k === "scr" ? 18 + Math.abs(dx) * 0.08 : 46 + Math.abs(dx) * 0.16);
-    return [a.x + dx * 0.12, top, b.x - dx * 0.12, top];
+function geom(w) {
+  const A = S.geo.pos.get(w.a), B = S.geo.pos.get(w.b);
+  if (!A || !B) return null;
+  if (w.k === "svc") {
+    const a = {x: A.x, y: A.bot}, b = {x: B.x, y: B.top}, dy = Math.max(16, (b.y - a.y) * 0.5);
+    return [a, [a.x, a.y + dy, b.x, b.y - dy], b];
   }
-  return [a.x, a.y + dy * 0.55, b.x, b.y - dy * 0.55];
+  // veri yolu: kutuların kenarından kenarına, yumuşak yay
+  const a = {x: A.x, y: A.top}, b = {x: B.x, y: B.top};
+  const lift = 30 + Math.abs(b.x - a.x) * 0.08, top = Math.min(a.y, b.y) - lift;
+  return [a, [a.x, top, b.x, top], b];
 }
 function bez(a, c, b, t) {
   const u = 1 - t;
   return {x: u * u * u * a.x + 3 * u * u * t * c[0] + 3 * u * t * t * c[2] + t * t * t * b.x,
           y: u * u * u * a.y + 3 * u * u * t * c[1] + 3 * u * t * t * c[3] + t * t * t * b.y};
 }
-function edgePath(a, c, b) { cx.beginPath(); cx.moveTo(a.x, a.y); cx.bezierCurveTo(c[0], c[1], c[2], c[3], b.x, b.y); }
-
+function spawn(k, a, b, o = {}) { S.parts.push({k, a, b, t: -(o.delay || 0), dur: o.dur || 1.2, rev: !!o.rev, size: o.size || 2.2}); }
+function scrapeBurst() {
+  if (!S.layers.path) return;
+  for (const w of wireList()) if (w.k === "path" && w.b === S.special.prom?.id) for (let i = 0; i < 3; i++) spawn("path", w.a, w.b, {delay: i * 0.2});
+}
+function onCycle(t) {
+  const sp = S.special;
+  if (sp.prom && sp.nob && S.layers.path) for (let i = 0; i < 5; i++) spawn("path", sp.prom.id, sp.nob.id, {delay: i * 0.15, size: 2.6});
+  const el = sp.nob && $("#nodes").querySelector(`[data-id="${CSS.escape(sp.nob.id)}"]`);
+  if (el) { el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
+  if (S.tab === "brain") playWave(t, false);
+}
+function draw(dt) {
+  measure();  // kartlar kayarken çizgiler de izlesin diye her karede
+  const {dpr, W, H} = S.geo;
+  wx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  wx.clearRect(0, 0, W, H);
+  const wires = wireList();
+  for (const w of wires) {
+    const g = geom(w);
+    if (!g) continue;
+    const [a, c, b] = g;
+    wx.beginPath(); wx.moveTo(a.x, a.y); wx.bezierCurveTo(c[0], c[1], c[2], c[3], b.x, b.y);
+    if (w.k === "path") { wx.strokeStyle = C.accent; wx.lineWidth = 1.4; wx.setLineDash([4, 4]); }
+    else if (!w.ready) { wx.strokeStyle = C.crit; wx.lineWidth = w.hot ? 1.6 : 1.1; wx.setLineDash([4, 4]); }
+    else { wx.strokeStyle = w.hot ? C.accent : C.line2; wx.lineWidth = w.hot ? 1.8 : 1; wx.setLineDash([]); }
+    wx.stroke(); wx.setLineDash([]);
+    // seçili service/pod hattında trafik noktaları
+    if (w.hot && w.ready) {
+      const key = w.a + ">" + w.b, rate = clamp(0.5 + Math.log10(1 + (w.rx ?? 2e4) / 2e4) * 0.8, 0.4, 3);
+      let acc = (S.acc.get(key) ?? Math.random()) + rate * dt;
+      while (acc >= 1) { acc -= 1; spawn("svc", w.a, w.b, {dur: 1.1}); if (Math.random() < 0.5) spawn("svc", w.a, w.b, {dur: 1.3, rev: true, size: 1.6}); }
+      S.acc.set(key, acc);
+    }
+  }
+  if (S.layers.path) { S.nextScrape -= dt; if (S.nextScrape <= 0) { S.nextScrape = 8; scrapeBurst(); } }
+  wx.fillStyle = C.accent;
+  for (const p of S.parts) {
+    p.t += dt / p.dur;
+    if (p.t < 0 || p.t > 1) continue;
+    const g = geom(p);
+    if (!g) { p.t = 2; continue; }
+    const pt = bez(g[0], g[1], g[2], p.rev ? 1 - p.t : p.t);
+    wx.globalAlpha = p.rev ? 0.55 : 1;
+    wx.beginPath(); wx.arc(pt.x, pt.y, p.size, 0, 7); wx.fill();
+  }
+  wx.globalAlpha = 1;
+  S.parts = S.parts.filter((p) => p.t <= 1);
+}
+new ResizeObserver(() => { S.animUntil = performance.now() + 100; }).observe($("#board"));
 function maxZ(p) {
   let best = 0;
   for (const s of SIGNALS) { const z = p[s.k + "_z"]; if (z != null && Math.abs(z) > Math.abs(best)) best = z; }
   return best;
 }
-function related(id) {
-  const set = new Set([id]), e = S.ents.get(id);
-  if (!e) return set;
-  const add = (x) => x && set.add(x);
-  if (e.type === "pod") {
-    const p = e.data;
-    add(`n:${p.node}`); add(`ns:${p.node}/${p.ns}`);
-    for (const ed of S.edges) if (ed.b === id || ed.a === id) { add(ed.a); add(ed.b); }
-    for (const o of S.ents.values()) if (o.type === "pod" && o.data.ns === p.ns && o.data.workload?.name === p.workload?.name) add(o.id);
-  } else if (e.type === "svc") {
-    for (const ed of S.edges) if (ed.a === id || ed.b === id) { add(ed.a); add(ed.b); }
-  } else if (e.type === "node" || e.type === "ns" || e.type === "queue") {
-    for (const o of S.ents.values()) if (o.type === "pod" && (e.type === "queue" ? !S.ents.get(`n:${o.data.node}`) : o.data.node === (e.data.node || e.data.name) && (e.type === "node" || o.data.ns === e.data.ns))) add(o.id);
-    if (e.type === "node") for (const o of S.ents.keys()) if (o.startsWith(`ns:${e.data.name}/`) || o.startsWith(`c:${e.data.name}/`)) add(o);
-    if (e.type === "ns") add(`n:${e.data.node}`);
-  } else if (e.type === "comp") {
-    add(`n:${e.data.name}`);
-    if (e.kind === "kubelet") { for (const ed of S.edges) if (ed.k.startsWith("m")) { add(ed.a); add(ed.b); } }
-    for (const o of S.ents.values()) if (o.type === "pod" && o.data.node === e.data.name) add(o.id);
-  } else if (e.type === "ext") {
-    for (const ed of S.edges) if (ed.a === id) { add(ed.b); for (const e2 of S.edges) if (e2.a === ed.b) add(e2.b); }
-  }
-  return set;
+/* bir nesneyi görünür yap (eski "kameraya odaklan"ın karşılığı) */
+function focusOn(ids) {
+  const host = $("#nodes");
+  const els = ids.map((id) => host.querySelector(`[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
+  const el = els.find((x) => x.classList.contains("pod") || x.classList.contains("svc")) || els[0];
+  el?.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
 }
-
-function drawNode(e, v, A) {
-  const n = e.data, x = v.x, y = v.y, w = v.w, h = v.h;
-  cx.save();
-  cx.globalAlpha = A * v.a;
-  cx.shadowColor = C.dark ? "rgba(0,0,0,.5)" : "rgba(20,40,80,.12)"; cx.shadowBlur = 30; cx.shadowOffsetY = 10;
-  rr(x, y, w, h, 20);
-  const g = cx.createLinearGradient(x, y, x, y + h);
-  g.addColorStop(0, C.node2); g.addColorStop(1, C.node);
-  cx.fillStyle = g; cx.fill();
-  cx.shadowColor = "transparent";
-  cx.lineWidth = 1.4; cx.strokeStyle = n.ready ? C.line2 : C.crit;
-  if (!n.ready) cx.setLineDash([8, 6]);
-  cx.stroke(); cx.setLineDash([]);
-  // başlık
-  const cp = n.roles.includes("control-plane");
-  cx.fillStyle = n.ready ? C.ok : C.crit;
-  cx.beginPath(); cx.arc(x + NP + 5, y + 26, 5, 0, 7); cx.fill();
-  text(n.name, x + NP + 18, y + 26, 17, C.ink, 700);
-  cx.font = "700 17px system-ui"; const nw = cx.measureText(n.name).width;
-  text(cp ? "CONTROL-PLANE" : (n.roles[0] || "WORKER").toUpperCase(), x + NP + 30 + nw, y + 27, 10, cp ? C.brain : C.muted, 700);
-  text(`${n.ready ? "Ready" : "NotReady"}${n.pressure.length ? " · " + n.pressure.join(", ") : ""}`, x + w - NP, y + 26, 12, n.ready && !n.pressure.length ? C.ok : C.crit, 600, "right");
-  // kaynak çubukları
-  const bar = (yy, label, used, cap, f, col) => {
-    text(label, x + NP, yy, 10.5, C.muted, 700);
-    const bx = x + NP + 50, bw = 170;
-    rr(bx, yy - 4.5, bw, 9, 4.5); cx.fillStyle = C.line; cx.fill();
-    const frac = cap ? clamp(used / cap, 0, 1) : 0;
-    if (frac > 0) { rr(bx, yy - 4.5, Math.max(9, bw * frac), 9, 4.5); cx.fillStyle = frac > 0.85 ? C.crit : frac > 0.65 ? C.warn : col; cx.fill(); }
-    text(cap ? `${f(used)} / ${f(cap)}` : f(used), bx + bw + 10, yy, 11, C.ink2, 500, "left", true);
-  };
-  bar(y + 54, "CPU", n.cpu, n.cpu_alloc || n.cpu_cap, fmt.cores, C.flow);
-  bar(y + 73, "BELLEK", n.mem, n.mem_alloc || n.mem_cap, fmt.bytes, C.metric);
-  const np = [...S.ents.values()].filter((o) => o.type === "pod" && o.data.node === n.name).length;
-  text(`${np}${n.pods_cap ? " / " + n.pods_cap : ""} pod`, x + w - NP, y + 54, 11, C.ink2, 600, "right", true);
-  text([n.os, n.ip].filter(Boolean).join(" · "), x + w - NP, y + 104, 10.5, C.muted, 500, "right");
-  if (n.incident) { cx.fillStyle = n.incident.severity >= 3 ? C.crit : C.warn; cx.beginPath(); cx.arc(x + w - 8, y + 8, 9, 0, 7); cx.fill(); text("!", x + w - 8, y + 8.5, 12, "#fff", 800, "center"); }
-  cx.restore();
-}
-function drawComp(e, v, A) {
-  cx.save(); cx.globalAlpha = A * v.a;
-  rr(v.x, v.y, v.w, v.h, 7);
-  cx.fillStyle = C.raised; cx.fill();
-  cx.strokeStyle = e.kind === "kubelet" && S.layers.metrics ? alpha(C.metric, 0.7) : C.line2; cx.lineWidth = 1; cx.stroke();
-  const rt = (e.data.runtime || "containerd").replace("://", " ");
-  text(e.kind === "kubelet" ? "kubelet · cAdvisor" : rt.length > 18 ? rt.slice(0, 17) + "…" : rt, v.x + v.w / 2, v.y + v.h / 2 + 0.5, 10.5, C.ink2, 600, "center", true);
-  cx.restore();
-}
-function drawNs(e, v, A) {
-  const col = nsColor(e.data.ns);
-  cx.save(); cx.globalAlpha = A * v.a;
-  rr(v.x, v.y, v.w, v.h, 14);
-  cx.fillStyle = alpha(col, C.dark ? 0.045 : 0.06); cx.fill();
-  cx.strokeStyle = alpha(col, 0.32); cx.lineWidth = 1; cx.stroke();
-  text(e.data.ns, v.x + 12, v.y + 15, 11.5, col, 700);
-  cx.font = "700 11.5px system-ui";
-  text(String(e.data.count), v.x + 20 + cx.measureText(e.data.ns).width, v.y + 15, 10.5, C.muted, 600);
-  cx.restore();
-}
-function drawQueue(e, v, A) {
-  cx.save(); cx.globalAlpha = A * v.a;
-  rr(v.x, v.y, v.w, v.h, 18);
-  cx.fillStyle = alpha(C.warn, 0.05); cx.fill();
-  cx.setLineDash([7, 6]); cx.lineDashOffset = -S.t * 12; cx.strokeStyle = alpha(C.warn, 0.6); cx.lineWidth = 1.4; cx.stroke(); cx.setLineDash([]);
-  text("Zamanlayıcı kuyruğu", v.x + NP, v.y + 24, 14, C.ink, 700);
-  text("henüz node'a yerleşmedi (Pending)", v.x + NP, v.y + 44, 10.5, C.muted);
-  cx.restore();
-}
-function drawPod(e, v, A) {
-  const p = e.data, x = v.x, y = v.y, r = Math.max(0.1, v.r), col = nsColor(p.ns), sc = stc(p.status);
-  cx.save(); cx.globalAlpha = A * v.a;
-  // sapma parıltısı
-  const z = maxZ(p), thr = T()?.detector?.z || 5;
-  if (S.layers.heat && Math.abs(z) >= 2) {
-    const s = clamp(Math.abs(z) / thr, 0.3, 1.6), pul = 0.5 + 0.5 * Math.sin(S.t * (Math.abs(z) >= thr ? 5 : 2.2));
-    const g = cx.createRadialGradient(x, y, r * 0.6, x, y, r + 10 + 14 * s);
-    const c = z > 0 ? C.up : C.down;
-    g.addColorStop(0, alpha(c, 0.55 * s * (0.6 + 0.4 * pul))); g.addColorStop(1, alpha(c, 0));
-    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r + 10 + 14 * s, 0, 7); cx.fill();
-  }
-  // gövde
-  const g = cx.createRadialGradient(x - r * 0.35, y - r * 0.45, r * 0.1, x, y, r);
-  g.addColorStop(0, alpha(col, C.dark ? 0.34 : 0.28)); g.addColorStop(1, alpha(col, C.dark ? 0.1 : 0.12));
-  cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill();
-  // bellek / limit: sıvı seviyesi
-  const lim = p.mem_limit || p.lim_mem;
-  if (p.mem && lim) {
-    const f = clamp(p.mem / lim, 0, 1), level = y + r - 2 * r * f;
-    cx.save(); cx.beginPath(); cx.arc(x, y, Math.max(0, r - 1.5), 0, 7); cx.clip();
-    cx.beginPath(); cx.moveTo(x - r, y + r);
-    for (let i = 0; i <= 16; i++) { const xx = x - r + (2 * r * i) / 16; cx.lineTo(xx, level + Math.sin(S.t * 2.4 + i * 0.8 + x) * Math.min(2.2, r * 0.12)); }
-    cx.lineTo(x + r, y + r); cx.closePath();
-    cx.fillStyle = alpha(f > 0.85 ? C.crit : f > 0.65 ? C.warn : col, 0.5); cx.fill();
-    cx.restore();
-  }
-  // kenar: durum
-  cx.lineWidth = 1.8;
-  if (sc === "crit") { cx.strokeStyle = C.crit; cx.lineWidth = 2 + 1.2 * (0.5 + 0.5 * Math.sin(S.t * 6)); }
-  else if (sc === "warn") cx.strokeStyle = C.warn;
-  else if (sc === "info" && p.status && p.status !== "Running") { cx.strokeStyle = C.muted; cx.setLineDash([4, 4]); cx.lineDashOffset = S.t * 10; }
-  else cx.strokeStyle = alpha(col, 0.95);
-  cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.stroke(); cx.setLineDash([]);
-  // CPU halkası (limit varsa limite, yoksa 1 çekirdeğe göre)
-  if (p.cpu != null && r > 4) {
-    const ref = p.lim_cpu || 1, f = clamp(p.cpu / ref, 0.01, 1);
-    cx.strokeStyle = alpha(C.ink, 0.12); cx.lineWidth = 2.4; cx.beginPath(); cx.arc(x, y, r + 4.5, 0, 7); cx.stroke();
-    cx.strokeStyle = f > 0.85 ? C.crit : C.flow; cx.lineCap = "round";
-    cx.beginPath(); cx.arc(x, y, r + 4.5, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); cx.stroke(); cx.lineCap = "butt";
-  }
-  // simge / ad
-  const rl = role(p);
-  if (rl && G[rl].g && r > 9) text(G[rl].g, x, y + 0.5, rl === "nobetci" ? 13 : 9.5, rl === "nobetci" ? C.brain : C.ink, 800, "center", true);
-  if (CELL * S.cam.k > 44) text(shortName(p), x, y + r + 14, 10.5, C.ink2, 500, "center");
-  // rozetler
-  if (p.incident) {
-    const bx = x + r * 0.75, by = y - r * 0.75;
-    cx.fillStyle = p.incident.severity >= 3 ? C.crit : p.incident.severity === 2 ? C.warn : C.info;
-    cx.beginPath(); cx.arc(bx, by, 7.5, 0, 7); cx.fill();
-    text("!", bx, by + 0.5, 10, p.incident.severity === 2 ? "#111" : "#fff", 800, "center");
-  }
-  if (p.restarts > 0) text(`↻${p.restarts}`, x + r * 0.9, y + r * 0.85, 9.5, C.warn, 700, "left", true);
-  cx.restore();
-}
-function hex(x, y, r) { cx.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; cx[i ? "lineTo" : "moveTo"](x + r * Math.cos(a), y + r * Math.sin(a)); } cx.closePath(); }
-function drawSvc(e, v, A) {
-  const s = e.data, r = Math.max(0.1, v.r);
-  cx.save(); cx.globalAlpha = A * v.a;
-  const g = cx.createRadialGradient(v.x, v.y, 2, v.x, v.y, r * 2.2);
-  g.addColorStop(0, alpha(C.flow, e.nopods ? 0.05 : 0.22)); g.addColorStop(1, alpha(C.flow, 0));
-  cx.fillStyle = g; cx.beginPath(); cx.arc(v.x, v.y, r * 2.2, 0, 7); cx.fill();
-  hex(v.x, v.y, r); cx.fillStyle = C.surface; cx.fill();
-  cx.lineWidth = 1.8; cx.strokeStyle = e.nopods ? C.warn : C.flow;
-  if (e.nopods) cx.setLineDash([4, 3]);
-  cx.stroke(); cx.setLineDash([]);
-  const tag = s.cluster_ip === "None" ? "HL" : {NodePort: "NP", LoadBalancer: "LB", ExternalName: "EN"}[s.type] || "IP";
-  text(tag, v.x, v.y + 0.5, 10, e.nopods ? C.warn : C.flow, 800, "center", true);
-  text(s.name.length > 16 ? s.name.slice(0, 15) + "…" : s.name, v.x, v.y + r + 13, 11, C.ink, 600, "center");
-  text(e.nopods ? "uç yok" : `${s.type === "ClusterIP" && s.cluster_ip === "None" ? "Headless" : s.type} · :${s.ports[0]?.port ?? ""}`, v.x, v.y + r + 26, 9.5, e.nopods ? C.warn : C.muted, 500, "center", true);
-  cx.restore();
-}
-function drawExt(e, v, A) {
-  cx.save(); cx.globalAlpha = A * v.a;
-  const r = Math.max(0.1, v.r);
-  const g = cx.createRadialGradient(v.x, v.y, 1, v.x, v.y, r * 2.4);
-  g.addColorStop(0, alpha(C.flow, 0.25)); g.addColorStop(1, alpha(C.flow, 0));
-  cx.fillStyle = g; cx.beginPath(); cx.arc(v.x, v.y, r * 2.4, 0, 7); cx.fill();
-  cx.strokeStyle = C.flow; cx.lineWidth = 1.5;
-  cx.beginPath(); cx.arc(v.x, v.y, r, 0, 7); cx.stroke();
-  cx.beginPath(); cx.ellipse(v.x, v.y, r * 0.45, r, 0, 0, 7); cx.stroke();
-  cx.beginPath(); cx.moveTo(v.x - r, v.y); cx.lineTo(v.x + r, v.y); cx.stroke();
-  const spin = S.t * 0.6;
-  cx.beginPath(); cx.ellipse(v.x, v.y, Math.abs(Math.cos(spin)) * r, r, 0, 0, 7); cx.strokeStyle = alpha(C.flow, 0.4); cx.stroke();
-  text("Dış dünya", v.x, v.y + r + 15, 12, C.ink, 700, "center");
-  text("kullanıcılar · sen", v.x, v.y + r + 29, 10, C.muted, 500, "center");
-  cx.restore();
-}
-
-function drawEdges(rel) {
-  for (const ed of S.edges) {
-    const a = anchor(ed.a, "a", ed.k), b = anchor(ed.b, "b", ed.k);
-    if (!a || !b) continue;
-    const isM = ed.k === "m" || ed.k === "m2";
-    if (isM && !S.layers.metrics) continue;
-    if (!isM && !S.layers.traffic && ed.k !== "pf") continue;
-    const dim = rel && !(rel.has(ed.a) && rel.has(ed.b));
-    const va = S.vis.get(ed.a), vb = S.vis.get(ed.b);
-    cx.globalAlpha = (dim ? 0.12 : 1) * Math.min(va.a, vb.a);
-    edgePath(a, ctrl(a, b, ed.k), b);
-    if (isM) { cx.strokeStyle = alpha(ed.k === "m2" ? C.brain : C.metric, 0.45); cx.lineWidth = 1.6; cx.setLineDash([2, 5]); }
-    else if (ed.k === "pf") { cx.strokeStyle = alpha(C.brain, 0.45); cx.lineWidth = 1.2; cx.setLineDash([6, 6]); }
-    else if (!ed.ready) { cx.strokeStyle = alpha(C.crit, 0.7); cx.lineWidth = 1.4; cx.setLineDash([5, 5]); }
-    else { cx.strokeStyle = alpha(C.flow, C.dark ? 0.2 : 0.35); cx.lineWidth = 1.3; }
-    cx.stroke(); cx.setLineDash([]);
-  }
-  cx.globalAlpha = 1;
-}
-function drawOwners(rel) {
-  const groups = new Map();
-  for (const e of S.ents.values()) {
-    if (e.type !== "pod") continue;
-    const k = `${e.data.node}|${e.data.ns}|${e.data.workload?.kind}|${e.data.workload?.name}`;
-    (groups.get(k) || groups.set(k, []).get(k)).push(e);
-  }
-  const L = {Deployment: "D", StatefulSet: "SS", DaemonSet: "DS", Static: "ST", Job: "J", CronJob: "CJ", Pod: "P"};
-  for (const es of groups.values()) {
-    const vs = es.map((e) => S.vis.get(e.id)).filter(Boolean);
-    if (!vs.length) continue;
-    const dim = rel && !es.some((e) => rel.has(e.id));
-    cx.globalAlpha = dim ? 0.15 : 0.9;
-    cx.strokeStyle = alpha(C.ink2, 0.55); cx.lineWidth = 1.2;
-    for (let i = 1; i < vs.length; i++) { cx.beginPath(); cx.moveTo(vs[i - 1].x, vs[i - 1].y); cx.lineTo(vs[i].x, vs[i].y); cx.stroke(); }
-    const w = es[0].data.workload, f = vs[0];
-    const label = `${L[w?.kind] || "?"} ${w?.name || ""}${es.length > 1 ? " ×" + es.length : ""}`;
-    cx.font = "700 9.5px ui-monospace,Menlo,monospace";
-    const tw = cx.measureText(label).width + 10;
-    rr(f.x - tw / 2, f.y - f.r - 22, tw, 14, 7); cx.fillStyle = C.raised; cx.fill(); cx.strokeStyle = C.line2; cx.stroke();
-    text(label, f.x, f.y - f.r - 15, 9.5, C.ink2, 700, "center", true);
-  }
-  cx.globalAlpha = 1;
-}
-
-/* ---- parçacıklar: trafik (camgöbeği), ölçüm (mor), nöbetçi turu (kehribar) */
-function spawn(k, a, b, o = {}) { S.parts.push({k, a, b, t: -(o.delay || 0), dur: o.dur || 1.4, col: o.col || C.flow, size: o.size || 2.2, rev: !!o.rev, then: o.then}); }
-function trafficRate(ed) {
-  if (ed.k === "ext") return 0.9;
-  if (ed.k === "pf") return 0.35;
-  if (ed.k !== "svc" || !ed.ready) return 0;
-  const p = S.ents.get(ed.b)?.data;
-  const rx = p?.rx ?? 2e4;
-  return clamp(0.25 + Math.log10(1 + rx / 2e4) * 0.9, 0.2, 3.2);
-}
-function stepParticles(dt) {
-  if (S.layers.traffic) {
-    for (const ed of S.edges) {
-      if (ed.k === "m" || ed.k === "m2") continue;
-      const key = ed.a + ">" + ed.b, rate = trafficRate(ed);
-      if (!rate) continue;
-      let acc = (S.acc.get(key) || Math.random()) + rate * dt;
-      while (acc >= 1) {
-        acc -= 1;
-        if (ed.k === "pf") spawn(ed.k, ed.a, ed.b, {col: C.brain, dur: 2.2, size: 2});
-        else {
-          spawn(ed.k, ed.a, ed.b, {dur: 1.3 + Math.random() * 0.5});
-          if (ed.k === "svc" && Math.random() < 0.6) spawn(ed.k, ed.a, ed.b, {rev: true, dur: 1.6, size: 1.6, col: alpha(C.flow, 0.6)});
-        }
-      }
-      S.acc.set(key, acc);
-    }
-  }
-  if (S.layers.metrics && S.special.prom) {
-    S.nextScrape -= dt;
-    if (S.nextScrape <= 0) { S.nextScrape = 7; scrapeBurst(); }
-  }
-  S.parts = S.parts.filter((p) => (p.t += dt / p.dur) < 1);
-}
-function scrapeBurst() {
-  const sp = S.special, pods = [...S.ents.values()].filter((e) => e.type === "pod");
-  const sample = pods.length > 60 ? pods.filter(() => Math.random() < 60 / pods.length) : pods;
-  for (const e of sample) spawn("scr", e.id, `c:${e.data.node}/kubelet`, {col: C.metric, dur: 0.9, size: 1.7, delay: Math.random() * 0.4});
-  for (const ed of S.edges) if (ed.k === "m") for (let i = 0; i < 3; i++) spawn("m", ed.a, ed.b, {col: C.metric, dur: 1.2, delay: 1.1 + i * 0.18, size: 2.2});
-}
-function onCycle(t) {
-  const sp = S.special;
-  if (sp.prom && sp.nob) {
-    for (let i = 0; i < 9; i++) spawn("m2", sp.prom.id, sp.nob.id, {col: C.brain, dur: 1.3, delay: i * 0.12, size: 2.8});
-    setTimeout(() => S.rings.push({id: sp.nob.id, t0: S.t, col: C.brain}), 1500);
-  }
-  if (S.tab === "brain") playWave(t, false);
-}
-function drawParticles(rel) {
-  for (const p of S.parts) {
-    if (p.t < 0) continue;
-    const kind = p.k === "scr" ? "scr" : p.k;
-    const a = anchor(p.a, "a", kind), b = kind === "scr" ? (() => { const v = S.vis.get(p.b); return v && {x: v.x + v.w / 2, y: v.y + v.h}; })() : anchor(p.b, "b", kind);
-    if (!a || !b) continue;
-    const c = ctrl(a, b, kind), pt = bez(a, c, b, p.rev ? 1 - p.t : p.t);
-    const dim = rel && !(rel.has(p.a) || rel.has(p.b));
-    cx.globalAlpha = (dim ? 0.15 : 1) * Math.sin(Math.PI * clamp(p.t, 0, 1)) ** 0.4;
-    cx.fillStyle = p.col;
-    cx.beginPath(); cx.arc(pt.x, pt.y, p.size, 0, 7); cx.fill();
-    if (p.size > 2) { cx.globalAlpha *= 0.25; cx.beginPath(); cx.arc(pt.x, pt.y, p.size * 2.6, 0, 7); cx.fill(); }
-  }
-  cx.globalAlpha = 1;
-  S.rings = S.rings.filter((r) => S.t - r.t0 < 1.6);
-  for (const r of S.rings) {
-    const v = S.vis.get(r.id);
-    if (!v) continue;
-    const f = (S.t - r.t0) / 1.6;
-    cx.strokeStyle = alpha(r.col, 1 - f); cx.lineWidth = 2;
-    cx.beginPath(); cx.arc(v.x, v.y, v.r + 6 + f * 46, 0, 7); cx.stroke();
-  }
-}
-
-function draw(dt) {
-  if (!W) resize();
-  const f = 1 - Math.exp(-dt * 7);
-  if (S.camT) {
-    const g = 1 - Math.exp(-dt * 5);
-    for (const k of ["x", "y", "k"]) S.cam[k] = lerp(S.cam[k], S.camT[k], g);
-    if (Math.abs(S.cam.k - S.camT.k) < 1e-3 && Math.abs(S.cam.x - S.camT.x) < 0.5) S.camT = null;
-  }
-  for (const [id, v] of S.vis) {
-    v.x = lerp(v.x, v.tx, f); v.y = lerp(v.y, v.ty, f); v.r = lerp(v.r, v.tr, f);
-    v.w = lerp(v.w, v.tw, f); v.h = lerp(v.h, v.th, f); v.a = lerp(v.a, v.ta, f * 0.8);
-    if (v.dead && v.a < 0.02) { S.vis.delete(id); S.ghosts.delete(id); }
-  }
-  stepParticles(dt);
-  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  cx.clearRect(0, 0, W, H);
-  // nokta ızgarası
-  const sp = 28 * S.cam.k;
-  if (sp > 9) {
-    cx.fillStyle = C.dot;
-    const ox = ((S.cam.x % sp) + sp) % sp, oy = ((S.cam.y % sp) + sp) % sp;
-    for (let x = ox; x < W; x += sp) for (let y = oy; y < H; y += sp) cx.fillRect(x, y, 1.2, 1.2);
-  }
-  if (!S.topo) return;
-  cx.setTransform(DPR * S.cam.k, 0, 0, DPR * S.cam.k, DPR * S.cam.x, DPR * S.cam.y);
-  const focus = S.tour?.target || (S.sel && !S.sel.startsWith("@") ? S.sel : null) || null;
-  const rel = focus ? related(focus) : null;
-  const A = (id) => (rel && !rel.has(id) ? 0.22 : 1);
-  const byType = (t) => [...S.vis].filter(([id]) => entOf(id)?.type === t);
-  for (const [id, v] of byType("queue")) drawQueue(entOf(id), v, A(id));
-  for (const [id, v] of byType("node")) drawNode(entOf(id), v, A(id));
-  for (const [id, v] of byType("comp")) drawComp(entOf(id), v, A(id));
-  for (const [id, v] of byType("ns")) drawNs(entOf(id), v, A(id));
-  drawEdges(rel);
-  if (S.layers.owners) drawOwners(rel);
-  drawParticles(rel);
-  for (const [id, v] of byType("pod")) drawPod(entOf(id), v, A(id));
-  for (const [id, v] of byType("svc")) drawSvc(entOf(id), v, A(id));
-  const xv = S.vis.get("x:");
-  if (xv) drawExt(S.ents.get("x:"), xv, A("x:"));
-  // seçim halkası
-  const hl = [S.sel, S.hover].filter((id) => id && S.vis.has(id));
-  for (const id of hl) {
-    const v = S.vis.get(id), e = S.ents.get(id);
-    if (!e) continue;
-    cx.strokeStyle = id === S.sel ? C.ink : alpha(C.ink, 0.5); cx.lineWidth = 1.5 / S.cam.k * 1.4;
-    cx.setLineDash(id === S.sel ? [] : [3, 3]);
-    if (e.w) { rr(v.x - 4, v.y - 4, v.w + 8, v.h + 8, 16); cx.stroke(); }
-    else { cx.beginPath(); cx.arc(v.x, v.y, v.r + 10 + (id === S.sel ? Math.sin(S.t * 4) * 1.5 : 0), 0, 7); cx.stroke(); }
-    cx.setLineDash([]);
-  }
-  // tur: hedef dışını karart
-  if (S.tour?.target) {
-    const v = S.vis.get(S.tour.target), e = S.ents.get(S.tour.target);
-    if (v && e) {
-      cx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      cx.fillStyle = C.dark ? "rgba(3,5,9,.55)" : "rgba(230,235,245,.55)";
-      cx.beginPath(); cx.rect(0, 0, W, H);
-      const k = S.cam.k, sx = v.x * k + S.cam.x, sy = v.y * k + S.cam.y;
-      if (e.w) { const m = 14; cx.roundRect(sx - m, sy - m, v.w * k + 2 * m, v.h * k + 2 * m, 18); }
-      else { const R = (v.r + 22) * k; cx.moveTo(sx + R, sy); cx.arc(sx, sy, R, 0, Math.PI * 2, true); }
-      cx.fill("evenodd");
-    }
-  }
-}
+function fit() { $("#stage").scrollTo({top: 0, behavior: "smooth"}); }
 
 /* ============================================================== etkileşim */
-function hit(wx, wy) {
-  const order = ["pod", "svc", "ext", "comp", "ns", "queue", "node"];
-  for (const t of order) {
-    for (const e of S.ents.values()) {
-      if (e.type !== t) continue;
-      const v = S.vis.get(e.id);
-      if (!v) continue;
-      if (e.w) { if (wx >= v.x && wx <= v.x + v.w && wy >= v.y && wy <= v.y + v.h) return e.id; }
-      else if (Math.hypot(wx - v.x, wy - v.y) <= v.r + (t === "svc" ? 6 : 4)) return e.id;
-    }
-  }
-  return null;
-}
-const tip = $("#tip");
-function setHover(id, ev) {
-  S.hover = id;
-  cv.classList.toggle("hover", !!id);
-  if (!id) { tip.classList.remove("on"); return; }
-  const e = S.ents.get(id), d = e.data;
-  let h = "";
-  const row = (a, b) => `<div class="r"><span>${a}</span><span class="mono">${b}</span></div>`;
-  if (e.type === "pod") {
-    h = `<b>${esc(d.name)}</b><div class="muted">${esc(d.ns)} · ${esc(d.workload?.kind || "")}</div>` +
-      row("durum", `<span style="color:${statusColor(d.status)}">${esc(d.status || "—")}</span>`) + row("CPU", fmt.cores(d.cpu)) +
-      row("bellek", fmt.bytes(d.mem) + ((d.mem_limit || d.lim_mem) ? ` / ${fmt.bytes(d.mem_limit || d.lim_mem)}` : "")) +
-      row("gelen ağ", fmt.bps(d.rx)) + (d.restarts ? row("yeniden başlama", d.restarts) : "") +
-      (Math.abs(maxZ(d)) >= 2 ? row("en büyük sapma", `z=${maxZ(d).toFixed(1)}`) : "") +
-      (d.incident ? `<div style="color:var(--crit);margin-top:4px">● ${esc(d.incident.title)}</div>` : "");
-  } else if (e.type === "svc") {
-    h = `<b>${esc(d.name)}</b> <span class="muted">Service · ${esc(d.type)}</span>` + row("adres", `${esc(d.cluster_ip)}:${d.ports[0]?.port ?? ""}`) + row("pod", d.pods.length);
-  } else if (e.type === "node") {
-    h = `<b>${esc(d.name)}</b> <span class="muted">Node</span>` + row("CPU", `${fmt.cores(d.cpu)} / ${fmt.cores(d.cpu_alloc)}`) + row("bellek", `${fmt.bytes(d.mem)} / ${fmt.bytes(d.mem_alloc)}`);
-  } else if (e.type === "ns") h = `<b>${esc(d.ns)}</b> <span class="muted">namespace · ${d.count} pod</span>`;
-  else if (e.type === "comp") h = `<b>${esc(G[e.kind].t)}</b><div class="muted">node üzerinde çalışan süreç (pod değil)</div>`;
-  else if (e.type === "ext") h = `<b>Dış dünya</b><div class="muted">küme dışından gelen istekler</div>`;
-  else if (e.type === "queue") h = `<b>Zamanlayıcı kuyruğu</b><div class="muted">${d.count} pod node bekliyor</div>`;
-  tip.innerHTML = h + `<div class="muted" style="margin-top:4px;font-size:11px">tıkla: ayrıntı ve açıklama</div>`;
-  tip.classList.add("on");
-  if (ev) {
-    const x = ev.clientX + 16, y = ev.clientY + 14;
-    tip.style.left = Math.min(x, innerWidth - tip.offsetWidth - 10) + "px";
-    tip.style.top = Math.min(y, innerHeight - tip.offsetHeight - 10) + "px";
-  }
-}
-function zoomAt(sx, sy, f) {
-  S.camT = null;
-  const k = clamp(S.cam.k * f, 0.15, 4);
-  S.cam.x = sx - (sx - S.cam.x) * k / S.cam.k; S.cam.y = sy - (sy - S.cam.y) * k / S.cam.k; S.cam.k = k;
-  S.userCam = true;
-}
-let drag = null;
-const local = (e) => { const r = cv.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; };
-cv.addEventListener("pointerdown", (e) => { drag = {x: e.clientX, y: e.clientY, cx: S.cam.x, cy: S.cam.y, moved: false}; cv.setPointerCapture(e.pointerId); });
-cv.addEventListener("pointermove", (e) => {
-  if (drag) {
-    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (Math.hypot(dx, dy) > 4) drag.moved = true;
-    if (drag.moved) { S.cam.x = drag.cx + dx; S.cam.y = drag.cy + dy; S.camT = null; S.userCam = true; cv.classList.add("drag"); setHover(null); }
-    return;
-  }
-  const p = local(e), w = toWorld(p.x, p.y);
-  setHover(hit(w.x, w.y), e);
+$("#board").addEventListener("mouseover", (e) => {
+  const el = e.target.closest(".pod,.svc");
+  S.hover = el && $("#nodes").contains(el) ? el.dataset.id : null;
 });
-cv.addEventListener("pointerup", (e) => {
-  if (drag && !drag.moved) { const p = local(e), w = toWorld(p.x, p.y); select(hit(w.x, w.y)); }
-  drag = null; cv.classList.remove("drag");
+$("#board").addEventListener("mouseleave", () => { S.hover = null; });
+$("#board").addEventListener("click", (e) => {
+  const el = e.target.closest("[data-id]");
+  if (!el || !$("#nodes").contains(el)) return;
+  select(el.dataset.id);
 });
-cv.addEventListener("pointerleave", () => setHover(null));
-cv.addEventListener("wheel", (e) => { e.preventDefault(); const p = local(e); zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0016)); }, {passive: false});
-cv.addEventListener("dblclick", (e) => { const p = local(e), w = toWorld(p.x, p.y), id = hit(w.x, w.y); if (id) focusOn([...related(id)]); });
-$("#zin").onclick = () => zoomAt(W / 2, H / 2, 1.3);
-$("#zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.3);
-$("#zfit").onclick = () => { S.userCam = false; fit(false); };
-$$("#layers button").forEach((b) => {
-  b.setAttribute("aria-pressed", String(!!S.layers[b.dataset.l]));
-  b.onclick = () => { S.layers[b.dataset.l] = !S.layers[b.dataset.l]; b.setAttribute("aria-pressed", String(S.layers[b.dataset.l])); store("kesif.layers", S.layers); };
+$$(".bar input[data-l]").forEach((b) => {
+  b.checked = !!S.layers[b.dataset.l];
+  b.onchange = () => { S.layers[b.dataset.l] = b.checked; store("kesif.layers3", S.layers); S.html = ""; layout(); };
 });
-$("#sysBtn").setAttribute("aria-pressed", String(S.showSys));
-$("#sysBtn").onclick = () => { S.showSys = !S.showSys; $("#sysBtn").setAttribute("aria-pressed", String(S.showSys)); store("kesif.sys", S.showSys); S.userCam = false; layout(); };
+$("#sysBtn").checked = S.showSys;
+$("#sysBtn").onchange = () => { S.showSys = $("#sysBtn").checked; store("kesif.sys", S.showSys); layout(); };
 document.addEventListener("keydown", (e) => {
   if (e.target.matches("input,select,textarea")) return;
   if (e.key === "Escape") { if (S.tour) endTour(); else if (S.sim) endSim(); else select(null); }
@@ -1199,11 +920,13 @@ function select(id, push = true) {
   if (S.hist.length > 30) S.hist.shift();
   S.sel = id;
   renderSide(true);
+  decorate();
 }
-function goBack() { S.sel = S.hist.pop() ?? null; renderSide(true); }
+function goBack() { S.sel = S.hist.pop() ?? null; renderSide(true); decorate(); }
 $("#side").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-go],[data-concept],[data-sim],[data-act],[data-lab],[data-simstep]");
+  const b = e.target.closest("[data-go],[data-concept],[data-sim],[data-act],[data-lab],[data-simstep],[data-ev]");
   if (!b) return;
+  if (b.dataset.ev) return select("@e:" + b.dataset.ev);
   if (b.dataset.simstep) return simJump(+b.dataset.simstep);
   if (b.dataset.go !== undefined) {
     const id = b.dataset.go;
@@ -1222,7 +945,7 @@ $("#side").addEventListener("click", (e) => {
 });
 const cbtn = (key, label) => `<button class="pill" style="cursor:pointer" data-concept="${key}">${esc(label || G[key]?.t || key)}</button>`;
 const statusPill = (s) => `<span class="status"><i style="background:${statusColor(s)}"></i>${esc(s || "bilinmiyor")}</span>`;
-const kindHead = (label, color) => `<div class="kind"><i style="background:${color}"></i>${label}</div>`;
+const kindHead = (label) => `<div class="kind">${label}</div>`;
 const backBtn = () => S.hist.length ? `<button class="back" data-act="back">← geri</button>` : "";
 const learn = (title, html) => `<div class="box learn"><h4>${title}</h4><div>${html}</div></div>`;
 const kv = (rows) => `<dl class="kv">${rows.filter(Boolean).map(([a, b]) => `<dt>${a}</dt><dd title="${esc(String(b).replace(/<[^>]+>/g, ""))}">${b}</dd>`).join("")}</dl>`;
@@ -1263,15 +986,16 @@ function homeHTML() {
   const node = [...S.ents.values()].find((e) => e.type === "node");
   const src = t.source === "kube" ? "" : `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Kubernetes API okunamadı</h4>Harita yalnızca Prometheus'taki pod'larla kuruldu; service, sahiplik ve durum bilgisi yok. Yetki güncellemesi için sunucuda <span class="mono">./nobetci-kurulum.sh guncelle</span> yeterli.</div>`;
   const miss = t.missing?.length ? `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Bazı listeler okunamadı</h4><span class="mono">${t.missing.join(", ")}</span>. Muhtemelen eski yetki tanımı; <span class="mono">./nobetci-kurulum.sh guncelle</span> düzeltir.</div>` : "";
+  const dot = (c, dash) => `<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${dash ? "none" : c};${dash ? `border:1px dashed ${c}` : ""};margin:0 3px 0 6px"></i>`;
   const legend = [
-    [`<svg width="26" height="26"><circle cx="13" cy="13" r="8" fill="${alpha("#2dd4bf", .2)}" stroke="#2dd4bf" stroke-width="1.6"/><path d="M13 1.5 A11.5 11.5 0 0 1 24.3 15" fill="none" stroke="${C.flow}" stroke-width="2.2" stroke-linecap="round"/></svg>`, "Pod. Büyüklük bellek kullanımı, dış halka CPU (limit ya da 1 çekirdeğe göre)."],
-    [`<svg width="26" height="26"><circle cx="13" cy="13" r="10" fill="none" stroke="#2dd4bf" stroke-width="1.6"/><path d="M3.5 16 Q8 14 13 16 T22.5 16 L22 19 A10 10 0 0 1 4 19 Z" fill="${alpha("#2dd4bf", .55)}"/></svg>`, "Sıvı seviyesi: belleğin limite oranı. Kırmızıya dönerse limit yakın."],
-    [`<svg width="26" height="26"><circle cx="13" cy="13" r="12" fill="${alpha(C.up, .3)}"/><circle cx="13" cy="13" r="7" fill="none" stroke="#2dd4bf" stroke-width="1.6"/></svg>`, "Parıltı: kendi normalinden sapma (kırmızı artış, mavi düşüş). Eşiği geçince hızlı yanıp söner."],
-    [`<svg width="26" height="26"><polygon points="13,2 23,7.5 23,18.5 13,24 3,18.5 3,7.5" fill="none" stroke="${C.flow}" stroke-width="1.6"/></svg>`, "Service. İçindeki kısaltma türü: IP (ClusterIP), NP (NodePort), HL (headless)."],
-    [`<svg width="26" height="26"><circle cx="5" cy="13" r="2.4" fill="${C.flow}"/><circle cx="13" cy="13" r="2.4" fill="${C.metric}"/><circle cx="21" cy="13" r="2.4" fill="${C.brain}"/></svg>`, "Akış: camgöbeği istek trafiği, mor ölçüm toplama, kehribar nöbetçinin turu."],
-    [`<svg width="26" height="26"><path d="M3 20 C 8 4, 18 4, 23 20" fill="none" stroke="${C.crit}" stroke-width="1.6" stroke-dasharray="4 3"/></svg>`, "Kırmızı kesikli: pod hazır değil, Service ona trafik göndermiyor."],
-  ].map(([i, d]) => `<div style="display:flex;gap:10px;align-items:center;margin:6px 0;font-size:12.5px;color:var(--ink2)">${i}<span>${d}</span></div>`).join("");
-  const concepts = ["cluster", "node", "namespace", "pod", "Deployment", "ReplicaSet", "StatefulSet", "DaemonSet", "service", "kubelet", "apiserver", "etcd", "scheduler", "controller", "prometheus", "ksm"];
+    ["Kart", `Her kart bir pod. Nokta durumu gösterir:${dot(C.ok)}çalışıyor${dot(C.warn)}hazır değil${dot(C.crit)}sorunlu${dot(C.muted, 1)}bekliyor.`],
+    ["Çubuk", "Kartın altındaki ince çubuk, belleğin limite oranı (limit tanımlıysa). Sarı %65, kırmızı %85 üstü."],
+    ["↑ 6.1", "Pod kendi normalinden sapıyor (z-skoru). Kırmızı zeminliyse nöbetçinin eşiğini aştı."],
+    ["Şerit", "Kartın solunda kırmızı/sarı şerit: nöbetçinin bu pod için açık bir olayı var."],
+    ["Service", "Yuvarlak etiketler service. Çizgiler trafiği gönderdikleri pod'lara gider; kesikli kırmızı çizgi hazır olmayan pod'dur. ↗ dışarı açık port."],
+  ].map(([k, d]) => `<div style="display:grid;grid-template-columns:58px 1fr;gap:8px;margin:6px 0;font-size:12.5px;color:var(--ink2)"><b style="color:var(--ink);font-weight:600">${k}</b><span>${d}</span></div>`).join("");
+  const evs = [...(S.events || [])].reverse().slice(0, 10);
+  const concepts = ["external", "cluster", "node", "namespace", "pod", "Deployment", "ReplicaSet", "StatefulSet", "DaemonSet", "service", "kubelet", "apiserver", "etcd", "scheduler", "controller", "prometheus", "ksm"];
   return `${kindHead("Canlı küme", C.flow)}<h3>${esc(t.cluster || "küme")}</h3>
     <p class="lead">Bu harita kümenin <b>şu anki</b> hâli: yapı Kubernetes API'den birkaç saniyede bir, ölçümler her nöbetçi turunda Prometheus'tan gelir. Herhangi bir şeye tıkla, ne olduğunu ve şu an ne yaptığını anlatır. Sürükle, kaydır, yakınlaş.</p>
     ${src}${miss}
@@ -1283,15 +1007,16 @@ function homeHTML() {
     </div>
     ${t.incidents.length ? `<div class="box"><h4>Nöbetçinin açık olayları</h4>${t.incidents.map((i) => `<div class="inc s${i.severity}">${esc(i.title)}</div>`).join("")}</div>` : ""}
     <div class="box"><h4>Öğrenmeye buradan başla</h4>
-      <div class="btnrow"><button class="btn pri" data-act="tour">▶ 2 dakikalık tur</button></div>
+      <div class="btnrow"><button class="btn pri" data-act="tour">2 dakikalık turu başlat</button></div>
       <div style="font-size:12.5px;color:var(--ink2);margin:6px 0 8px">Senaryolar kümeye dokunmaz; haritada "ne olurdu" diye canlandırır:</div>
       <div class="gl">
-        ${firstUser ? `<button data-sim="delete" data-target="${firstUser.id}"><span class="ic" style="background:var(--crit)">✕</span><span><b>Bir pod silinirse?</b><span>Kendi kendini iyileştirme: ReplicaSet, scheduler, kubelet sırayla ne yapar.</span></span></button>
-        <button data-sim="scale" data-target="${firstUser.id}"><span class="ic" style="background:var(--flow)">+2</span><span><b>Ölçeklersek?</b><span>Yeni pod'lar nasıl yerleşir, Service trafiği nasıl paylaştırır.</span></span></button>` : ""}
-        ${leakT ? `<button data-sim="leak" data-target="${leakT.id}"><span class="ic" style="background:var(--warn)">≋</span><span><b>Bellek sızarsa?</b><span>Nöbetçi limit dolmadan nasıl uyarır, OOMKilled nasıl olur.</span></span></button>` : ""}
-        ${node ? `<button data-sim="nodedown" data-target="${node.id}"><span class="ic" style="background:var(--muted)">↯</span><span><b>Node çökerse?</b><span>Tek node'lu kümenin zaafı ve üretimde neden 3+ node olur.</span></span></button>` : ""}
+        ${firstUser ? `<button data-sim="delete" data-target="${firstUser.id}"><span class="ic">1</span><span><b>Bir pod silinirse?</b><span>Kendi kendini iyileştirme: ReplicaSet, scheduler, kubelet sırayla ne yapar.</span></span></button>
+        <button data-sim="scale" data-target="${firstUser.id}"><span class="ic">2</span><span><b>Ölçeklersek?</b><span>Yeni pod'lar nasıl yerleşir, Service trafiği nasıl paylaştırır.</span></span></button>` : ""}
+        ${leakT ? `<button data-sim="leak" data-target="${leakT.id}"><span class="ic">3</span><span><b>Bellek sızarsa?</b><span>Nöbetçi limit dolmadan nasıl uyarır, OOMKilled nasıl olur.</span></span></button>` : ""}
+        ${node ? `<button data-sim="nodedown" data-target="${node.id}"><span class="ic">4</span><span><b>Node çökerse?</b><span>Tek node'lu kümenin zaafı ve üretimde neden 3+ node olur.</span></span></button>` : ""}
       </div></div>
     <div class="box"><h4>Haritayı okumak</h4>${legend}</div>
+    <div class="box"><h4>Son Kubernetes olayları</h4>${evs.length ? `<div class="evl">${evs.map((e) => `<button class="${esc(e.type)}" data-ev="${esc(e.key)}"><i></i><span><b>${esc(e.reason)}</b> · ${esc(e.kind)} ${esc(e.name)}</span><small>${ago(e.time)}</small></button>`).join("")}</div>` : `<p class="muted" style="margin:0;font-size:13px">Son bir saatte olay yok.</p>`}</div>
     <div class="box"><h4>Sözlük</h4>${concepts.map((k) => cbtn(k)).join("")}</div>`;
 }
 
@@ -1310,9 +1035,9 @@ function podHTML(e) {
       ${wk === "Static" ? `<div class="ar"></div><button data-go="n:${p.node}"><span class="pill">Node</span>${esc(p.node)}<small>kubelet dosyadan başlatır</small></button>` : ""}
       <div class="ar"></div><button disabled style="cursor:default;border-color:${col}"><span class="pill">Pod</span>${esc(p.name)}</button></div>` : learn("Sahibi yok", G.Pod.d);
   const inc = p.incident ? t.incidents.find((i) => i.id === p.incident.id) : null;
-  const sims = [`<button class="btn sim" data-sim="delete" data-target="${e.id}">✕ Bu pod silinirse?</button>`];
-  if (["Deployment", "StatefulSet"].includes(wk)) sims.push(`<button class="btn sim" data-sim="scale" data-target="${e.id}">+2 Ölçekle</button>`);
-  if (p.status === "Running") sims.push(`<button class="btn sim" data-sim="leak" data-target="${e.id}">≋ Bellek sızarsa?</button>`);
+  const sims = [`<button class="btn sim" data-sim="delete" data-target="${e.id}">Bu pod silinirse?</button>`];
+  if (["Deployment", "StatefulSet"].includes(wk)) sims.push(`<button class="btn sim" data-sim="scale" data-target="${e.id}">2 kopya ekle (ölçekle)</button>`);
+  if (p.status === "Running") sims.push(`<button class="btn sim" data-sim="leak" data-target="${e.id}">Bellek sızarsa?</button>`);
   return `${backBtn()}${kindHead(`Pod${rl ? " · " + G[rl].t : ""}`, col)}
     <h3 style="word-break:break-all">${esc(p.name)}</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${statusPill(p.status)}<button class="pill" data-go="ns:${p.node}/${p.ns}" style="cursor:pointer;border-color:${col};color:${col}">${esc(p.ns)}</button>${p.node ? `<button class="pill" data-go="n:${p.node}" style="cursor:pointer">${esc(p.node)}</button>` : ""}</div>
@@ -1352,6 +1077,7 @@ function svcHTML(e) {
       <div>${Object.entries(s.selector || {}).map(([k, v]) => `<span class="pill">${esc(k)}=${esc(v)}</span>`).join("") || `<span class="muted">seçici yok${isApi ? " (uçları API server kendisi yönetir)" : ""}</span>`}</div>
       <div style="margin-top:8px">${pods.map((p) => `<button class="pill" style="cursor:pointer;border-color:${statusColor(p.status)}" data-go="p:${p.ns}/${p.name}">${p.ready ? "●" : "○"} ${esc(p.name)}</button>`).join("")}</div>
       <div class="muted" style="font-size:12px;margin-top:6px">Yalnızca hazır (●) pod'lar trafik alır. kube-proxy her node'da bu listeye göre yönlendirme kuralı yazar.</div></div>
+    ${s.ns === "nobetci" ? `<div class="box"><h4>Sen bu ekrana nasıl ulaşıyorsun?</h4><p class="ink2" style="margin:0;font-size:13px">Bu Service ClusterIP türünde, yani dışarı kapalı. Kurulum betiği <span class="mono">kubectl port-forward</span> çalıştırır: isteğin sunucudaki porta, oradan API server ve kubelet üzerinden doğrudan nöbetçi pod'una tünellenir.</p></div>` : ""}
     <div class="box"><h4>Portlar</h4>${kv(s.ports.map((p) => [p.name || p.protocol, `${p.port} → ${p.target ?? p.port}${p.node_port ? ` · node :${p.node_port}` : ""}`]))}</div>
     <div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl -n ${s.ns} describe svc ${s.name}`)}${copyBtn(`kubectl -n ${s.ns} get endpointslices -l kubernetes.io/service-name=${s.name}`)}</div>`;
 }
@@ -1375,7 +1101,7 @@ function nodeHTML(e) {
     <div class="box"><h4>Yazılım</h4>${kv([["kubelet", n.kubelet], ["çalışma ortamı", n.runtime], ["işletim sistemi", n.os], ["çekirdek", n.kernel], ["mimari", n.arch], ["iç IP", n.ip], ["yaş", age(n.created)]])}
       <div style="margin-top:8px">${cbtn("kubelet")}${cbtn("runtime")}</div></div>
     <div class="box"><h4>Pod'lar · namespace'e göre</h4>${Object.entries(byNs).sort((a, b) => b[1] - a[1]).map(([ns, c]) => `<button class="pill" style="cursor:pointer;color:${nsColor(ns)};border-color:${nsColor(ns)}" data-go="ns:${n.name}/${ns}">${esc(ns)} · ${c}</button>`).join("")}</div>
-    <div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="nodedown" data-target="${e.id}">↯ Bu node çökerse?</button></div></div>
+    <div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="nodedown" data-target="${e.id}">Bu node çökerse?</button></div></div>
     <div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl describe node ${n.name}`)}${copyBtn(`kubectl get pods -A -o wide --field-selector spec.nodeName=${n.name}`)}</div>`;
 }
 function nsHTML(e) {
@@ -1392,7 +1118,7 @@ function compHTML(e) {
   const k = e.kind, n = e.data;
   return `${backBtn()}${kindHead("Node bileşeni", C.ink2)}<h3>${esc(G[k].t)}</h3><p class="lead"><b>${esc(n.name)}</b> üzerinde ${k === "kubelet" ? `sürüm ${esc(n.kubelet)}` : esc(n.runtime)}.</p>
     ${learn("Ne yapar?", G[k].d)}
-    ${k === "kubelet" ? `<div class="box"><h4>Haritada izle</h4>"Ölçüm yolu" katmanı açıkken birkaç saniyede bir pod'lardan kubelet'e mor noktalar akar (cAdvisor ölçer), oradan Prometheus'a gider (kazıma). Her nöbetçi turunda Prometheus'tan nöbetçiye kehribar bir dalga gider.<div class="btnrow"><button class="btn" data-go="${S.special.prom?.id || ""}">Prometheus'a git</button></div></div>` : ""}
+    ${k === "kubelet" ? `<div class="box"><h4>Haritada izle</h4>Üstteki "Veri yolu" kutusunu işaretle: kubelet (1) → kube-state-metrics (2) → Prometheus (3) → nöbetçi (4) numaralanır ve ölçümlerin akışı çizgi üzerinde görünür.<div class="btnrow"><button class="btn" data-go="${S.special.prom?.id || ""}">Prometheus'a git</button></div></div>` : ""}
     <div class="box"><h4>Kendin dene</h4>${copyBtn(k === "kubelet" ? `kubectl get --raw /api/v1/nodes/${n.name}/proxy/metrics/cadvisor | head` : `kubectl get node ${n.name} -o jsonpath='{.status.nodeInfo.containerRuntimeVersion}'`)}</div>`;
 }
 function extHTML() {
@@ -1431,7 +1157,7 @@ function workloadHTML(kind, ns, name) {
     ${w && w.ready < w.desired ? `<div class="box" style="border-color:var(--warn)"><h4 style="color:var(--warn)">Eksik kopya</h4>İstenen ${w.desired}, hazır ${w.ready}. Denetleyici farkı kapatmaya çalışıyor; kapanmıyorsa pod'ların durumuna bak.</div>` : ""}
     ${rss.length ? `<div class="box"><h4>ReplicaSet'ler</h4>${rss.map((r) => `<span class="pill">${esc(r.name)} · ${r.ready}/${r.desired}</span>`).join("")}<div class="muted" style="font-size:12px;margin-top:6px">Sürüm geçişinde eski ve yeni ReplicaSet bir süre birlikte görünür; eskisi sıfıra iner.</div></div>` : ""}
     <div class="box"><h4>Pod'lar</h4>${pods.map((p) => `<button class="pill" style="cursor:pointer;border-color:${statusColor(p.status)}" data-go="p:${p.ns}/${p.name}">${esc(p.name)}</button>`).join("") || "<span class='muted'>—</span>"}</div>
-    ${pods[0] && ["Deployment", "StatefulSet"].includes(kind) ? `<div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="scale" data-target="p:${pods[0].ns}/${pods[0].name}">+2 Ölçekle</button><button class="btn sim" data-sim="delete" data-target="p:${pods[0].ns}/${pods[0].name}">✕ Bir pod'u sil</button></div></div>` : ""}
+    ${pods[0] && ["Deployment", "StatefulSet"].includes(kind) ? `<div class="box"><h4>Ne olurdu?</h4><div class="btnrow"><button class="btn sim" data-sim="scale" data-target="p:${pods[0].ns}/${pods[0].name}">2 kopya ekle (ölçekle)</button><button class="btn sim" data-sim="delete" data-target="p:${pods[0].ns}/${pods[0].name}">Bir pod'u sil</button></div></div>` : ""}
     ${verb ? `<div class="box"><h4>Kendin dene</h4>${copyBtn(`kubectl -n ${ns} get ${verb} ${name} -o wide`)}${kind !== "DaemonSet" ? copyBtn(`kubectl -n ${ns} rollout history ${verb}/${name}`) : ""}<div class="muted" style="font-size:12px;margin-top:6px">Bu ekran salt okunurdur; ölçekleme gibi değişiklikleri yalnızca simülasyonda gösterir.</div></div>` : ""}`;
 }
 function eventHTML(key) {
@@ -1492,22 +1218,11 @@ function drawSpark(c, d, z = 0) {
   g.fillStyle = C.flow; g.beginPath(); g.arc(X(n - 1), Y(last), 2.6, 0, 7); g.fill();
 }
 
-/* ---- olay şeridi */
+/* ---- Kubernetes olayları (ana panelde listelenir) */
 function ticker(events) {
-  S.evMap = S.evMap || new Map();
-  const rail = $("#rail");
-  const list = [...(events || [])].reverse().slice(0, 25);
-  const keys = list.map((e) => `${e.time}|${e.reason}|${e.name}|${e.count}`);
-  if (rail.dataset.k === keys.join(",")) return;
-  rail.dataset.k = keys.join(",");
-  rail.innerHTML = list.map((e, i) => {
-    S.evMap.set(keys[i], e);
-    const fresh = !S.evSeen.has(keys[i]);
-    S.evSeen.add(keys[i]);
-    return `<button class="ev ${esc(e.type)}" data-ev="${esc(keys[i])}" style="${fresh ? "" : "animation:none"}" title="${esc(e.message)}"><i></i><b>${esc(e.reason)}</b>${esc(e.kind)} ${esc(e.name.length > 28 ? e.name.slice(0, 27) + "…" : e.name)}<span class="muted">${ago(e.time)}</span></button>`;
-  }).join("") || `<span class="muted" style="font-size:12px">son 1 saatte olay yok</span>`;
+  S.events = (events || []).map((e) => ({...e, key: `${e.time}|${e.reason}|${e.name}|${e.count}`}));
+  for (const e of S.events) S.evMap.set(e.key, e);
 }
-$("#rail").addEventListener("click", (e) => { const b = e.target.closest("[data-ev]"); if (b) select("@e:" + b.dataset.ev); });
 
 /* ============================================================== simülasyonlar
    Gerçek verinin bir kopyası adım adım değiştirilir; harita her adımda yeniden yerleşir
@@ -1627,7 +1342,7 @@ function startSim(kind, target) {
   $("#simS").innerHTML = def.steps.map(() => "<i></i>").join("");
   $("#simbar").classList.add("on");
   S.sel = def.target; renderSide(true);
-  focusOn([...related(def.target)], 160);
+  focusOn([def.target]);
   simNext();
 }
 function simNext() {
@@ -1647,7 +1362,7 @@ function simNext() {
   $$("#simS i").forEach((el, i) => el.classList.toggle("on", i <= s.i));
   if (S.ents.has(s.target)) S.sel = s.target;
   const ids = [...S.sim.spawnFrom].filter((x) => S.ents.has(x));
-  focusOn([...(S.ents.has(s.target) ? related(s.target) : []), ...ids, ...(ids.length ? ["q:"] : [])], 160);
+  focusOn([...ids, s.target]);
   renderSide(false);
   s.timer = setTimeout(simNext, Math.max(3600, st.c.replace(/<[^>]+>/g, "").length * 42));
 }
@@ -1655,8 +1370,8 @@ function simHTML() {
   const s = S.sim;
   return `${kindHead("Simülasyon · kümeye dokunmaz", C.brain)}<h3>${esc(s.title)}</h3>
     <p class="lead">Gerçek verinin bir kopyası adım adım değiştiriliyor; haritadaki nesneler yeni hâllerine süzülüyor. Bir adıma tıklayarak oraya atlayabilirsin.</p>
-    <div class="gl">${s.steps.map((st, i) => `<button class="ss" data-simstep="${i}" style="${i === s.i ? "border-color:var(--brain);background:color-mix(in srgb,var(--brain) 8%,var(--surface))" : i > s.i ? "opacity:.5" : ""}">
-      <span class="ic" style="background:${i <= s.i ? C.brain : C.line2}">${i + 1}</span><span style="font-size:13px;color:var(--ink)">${st.c}</span></button>`).join("")}</div>
+    <div class="gl">${s.steps.map((st, i) => `<button class="ss" data-simstep="${i}" style="${i === s.i ? "border-color:var(--accent);background:var(--accent-bg)" : i > s.i ? "opacity:.5" : ""}">
+      <span class="ic" style="${i <= s.i ? `background:${C.accent};color:#fff` : ""}">${i + 1}</span><span style="font-size:13px;color:var(--ink)">${st.c}</span></button>`).join("")}</div>
     <div class="btnrow"><button class="btn" data-act="endsim">Canlı veriye dön</button></div>`;
 }
 function simJump(k) {
@@ -1672,7 +1387,7 @@ function endSim(silent) {
   clearTimeout(S.sim.timer);
   S.sim = null; S.simT = null;
   $("#simbar").classList.remove("on");
-  if (!silent) { layout(); S.userCam = false; fit(false); renderSide(false); }
+  if (!silent) { layout(); renderSide(false); }
 }
 $("#simX").onclick = () => endSim();
 for (const b of ["simbar"]) $("#" + b).addEventListener("click", (e) => { if (e.target.closest(".c") && S.sim && S.sim.i < S.sim.steps.length - 1) { clearTimeout(S.sim.timer); simNext(); } });
@@ -1687,22 +1402,22 @@ function tourSteps() {
   const svc = ents.filter((e) => e.type === "svc" && e.data.pods.length && !isSys(e.data.ns)).sort((a, b) => b.data.pods.length - a.data.pods.length)[0] || ents.find((e) => e.type === "svc");
   const node = ents.find((e) => e.type === "node"), sp = S.special;
   return [
-    {t: "Kümeye hoş geldin", target: null, c: "Bu ekran kümenin canlı bir haritası. Kubernetes'i büyük bir <b>işletim sistemi</b> gibi düşünebilirsin: makineleri (node) tek bir bilgisayar gibi yönetir, uygulamaları (pod) nereye koyacağına kendisi karar verir. Turda yukarıdan aşağı, dıştan içe gideceğiz."},
-    node && {t: "Node: makine", target: node.id, c: `Bu büyük kutu bir <b>node</b>, yani bir makine: <b>${esc(node.data.name)}</b>. Üstte CPU ve bellek kullanımı var. Bu kümede tek node var; kontrol düzlemi de uygulamalar da burada.`},
-    node && {t: "kubelet ve containerd", target: `c:${node.data.name}/kubelet`, c: "Her node'da iki süreç çalışır: <b>kubelet</b> (Kubernetes'in node'daki ajanı: pod'ları başlatır, izler, ölçer) ve <b>containerd</b> (konteynerleri gerçekten çalıştıran motor). Bunlar pod değildir, makinede doğrudan çalışırlar."},
-    userNs && {t: "Namespace: bölme", target: userNs.id, c: `Renkli çerçeveler <b>namespace</b>. Kümeyi mantıksal bölmelere ayırırlar: <b>${esc(userNs.data.ns)}</b> bir uygulama ekibinin alanı olabilir, <b>kube-system</b> Kubernetes'in kendisinin.`},
-    userPod && {t: "Pod: çalışan uygulama", target: userPod.id, c: `Her daire bir <b>pod</b>: bir ya da birkaç konteyner, kendi IP'si. Bu <b>${esc(userPod.data.name)}</b>. Daire bellek kadar büyür, dış halka CPU'yu gösterir. Pod'lar geçicidir; ölürler ve yenileri gelir. Sağ panelde "Bu pod silinirse?" simülasyonu bunu gösterir.`},
-    svc && {t: "Service: sabit adres", target: svc.id, c: `Altıgenler <b>Service</b>. Pod'lar gelip gittiği için onlara doğrudan bağlanılmaz; Service sabit bir ad ve IP verir (<span class="mono">${esc(svc.data.name)}.${esc(svc.data.ns)}.svc</span>) ve trafiği hazır pod'lara dağıtır. Akan camgöbeği noktalar bu istekler.`},
-    sp.api && {t: "Kontrol düzlemi", target: sp.api.id, c: "Bu <b>API server</b>: kümenin beyni ve tek kapısı. Yanındaki <b>etcd</b> hafızası, <b>scheduler</b> pod'lara node seçer, <b>controller-manager</b> \"istenen durum = gerçek durum mu?\" diye sürekli kontrol eder. Hepsi kube-system içinde statik pod olarak çalışıyor."},
-    sp.prom && {t: "Ölçüm yolu", target: sp.prom.id, c: "Şimdi nöbetçinin veri yolu (mor). kubelet içindeki <b>cAdvisor</b> her konteynerin CPU, bellek ve ağını ölçer; <b>Prometheus</b> bunları düzenli aralıklarla kazır. <b>kube-state-metrics</b> da API'deki durumu (yeniden başlama, bekleme nedeni, limit) ölçüme çevirir.", go: () => scrapeBurst()},
-    sp.nob && {t: "Nöbetçi", target: sp.nob.id, c: "Ve <b>nöbetçi</b>: her turda Prometheus'u sorgular (kehribar dalga), her serinin kendi normalinden sapmasını hesaplar, bulguları olaylara toplar. Nasıl karar verdiğini görmek için <b>Nöbetçinin beyni</b> sekmesine geç.", go: () => onCycle(S.topo), brain: true},
-    {t: "Sıra sende", target: null, c: "Herhangi bir şeye tıkla: pod, service, node, hatta alttaki Kubernetes olaylarına. Her biri ne olduğunu ve şu an ne yaptığını anlatır. Sağ panelde senaryolar var: pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse ne olur?"},
+    {t: "Kümeye hoş geldin", target: null, c: "Bu sayfa kümenin canlı haritası. Kubernetes'i birçok makineyi tek bir bilgisayar gibi yöneten bir <b>işletim sistemi</b> gibi düşünebilirsin: uygulamaları nereye koyacağına, çökünce yeniden başlatmaya kendisi karar verir. Dıştan içe gideceğiz: makine, bölme, uygulama, adres."},
+    node && {t: "Node: makine", target: node.id, c: `En dıştaki büyük kutu bir <b>node</b>, yani bir makine: <b>${esc(node.data.name)}</b>. Başlığında CPU ve bellek kullanımı var. Bu kümede tek node var; Kubernetes'in kendi bileşenleri de uygulamalar da burada çalışıyor.`},
+    node && {t: "kubelet ve containerd", target: `c:${node.data.name}/kubelet`, c: "Node başlığındaki iki etiket, makinede doğrudan çalışan süreçler: <b>kubelet</b> (Kubernetes'in node'daki ajanı; pod'ları başlatır, izler, ölçer) ve <b>containerd</b> (konteynerleri gerçekten çalıştıran motor). Bunlar pod değildir."},
+    userNs && {t: "Namespace: bölme", target: userNs.id, c: `Node'un içindeki her kutu bir <b>namespace</b>, yani mantıksal bir bölme: <b>${esc(userNs.data.ns)}</b> bir ekibin ya da uygulamanın alanı olabilir, <b>kube-system</b> Kubernetes'in kendisinin. Yetkiler ve kotalar bu bölmelere göre verilir.`},
+    userPod && {t: "Pod: çalışan uygulama", target: userPod.id, c: `Her kart bir <b>pod</b>: çalışan uygulamanın kendisi (bir ya da birkaç konteyner, kendi IP'si). Kartta durumu, CPU'su ve belleği yazar. Pod'lar geçicidir; ölürler, yerlerine yenileri gelir. Bir karta tıklayınca açılan "Bu pod silinirse?" simülasyonu bunu adım adım gösterir.`},
+    svc && {t: "Service: sabit adres", target: svc.id, c: `Pod'ların üstündeki yuvarlak etiketler <b>Service</b>. Pod'lar gelip gittiği için onlara doğrudan bağlanılmaz; Service sabit bir ad verir (<span class="mono">${esc(svc.data.name)}.${esc(svc.data.ns)}.svc</span>) ve gelen istekleri hazır pod'lara dağıtır. Çizgi üzerinde akan noktalar bu istekler.`},
+    sp.api && {t: "Kontrol düzlemi", target: sp.api.id, c: "Bu <b>API server</b>: kümenin tek kapısı; kubectl dahil herkes onunla konuşur. Yanında <b>etcd</b> (kümenin hafızası), <b>scheduler</b> (pod'lara node seçer) ve <b>controller manager</b> (\"istenen durum gerçekleşti mi?\" diye sürekli kontrol eder) var. Hepsi kube-system içinde çalışıyor."},
+    sp.prom && {t: "Ölçüm yolu", target: sp.prom.id, c: "Şimdi nöbetçinin veri yolu (numaralar haritada). <b>1</b> kubelet her konteynerin CPU, bellek ve ağını ölçer. <b>2</b> kube-state-metrics API'deki durumu (yeniden başlama, bekleme nedeni, limit) ölçüme çevirir. <b>3</b> Prometheus ikisini de düzenli aralıklarla toplar.", go: () => { if (!S.layers.path) { S.layers.path = true; $('.bar input[data-l=path]').checked = true; S.html = ""; layout(); } scrapeBurst(); }},
+    sp.nob && {t: "Nöbetçi", target: sp.nob.id, c: "<b>4</b> Ve <b>nöbetçi</b>: her turda Prometheus'u sorgular, her serinin kendi normalinden ne kadar saptığını hesaplar, sorunları olaylara toplar. Nasıl karar verdiğini görmek için <b>Nöbetçi nasıl karar veriyor?</b> sekmesine geç.", go: () => onCycle(S.topo), brain: true},
+    {t: "Sıra sende", target: null, c: "Artık herhangi bir şeye tıklayabilirsin: pod, service, node ya da sağ paneldeki Kubernetes olayları. Her biri ne olduğunu ve şu an ne yaptığını anlatır. Sağ panelde dört senaryo da var: pod silinirse, ölçeklenirse, bellek sızarsa, node çökerse ne olur?"},
   ].filter(Boolean);
 }
 function startTour() {
   endSim(true);
   S.tour = {i: 0, steps: tourSteps()};
-  $("#tourBtn").setAttribute("aria-pressed", "true");
+  $("#tourBtn").textContent = "Turu bitir";
   tourShow();
 }
 function tourGo(d) {
@@ -1713,23 +1428,24 @@ function tourGo(d) {
 function tourShow() {
   const st = S.tour.steps[S.tour.i];
   S.tour.target = st.target;
-  if (st.target) focusOn([st.target], st.target.startsWith("n:") ? 60 : 220, 1.25);
-  else { S.userCam = false; fit(false); }
+  if (st.target) focusOn([st.target]); else fit();
   st.go?.();
   renderSide(true);
+  decorate();
 }
 function endTour(silent) {
   if (!S.tour) return;
   S.tour = null;
-  $("#tourBtn").setAttribute("aria-pressed", "false");
-  if (!silent) { S.userCam = false; fit(false); renderSide(true); }
+  $("#tourBtn").textContent = "Turu başlat";
+  decorate();
+  if (!silent) renderSide(true);
 }
 function tourHTML() {
   const {i, steps} = S.tour, st = steps[i];
   return `${kindHead(`Tur · ${i + 1} / ${steps.length}`, C.brain)}<h3>${st.t}</h3><p class="lead" style="font-size:15px">${st.c}</p>
     <div class="steps" style="display:flex;gap:4px;margin:14px 0">${steps.map((_, j) => `<i style="flex:1;height:3px;border-radius:2px;background:${j <= i ? C.brain : C.line2}"></i>`).join("")}</div>
     <div class="btnrow">${i ? `<button class="btn" data-act="prev">← Geri</button>` : ""}${i < steps.length - 1 ? `<button class="btn pri" data-act="next">Devam →</button>` : `<button class="btn pri" data-act="endtour">Haritayı keşfet</button>`}
-      ${st.brain ? `<button class="btn sim" data-act="brain">Nöbetçinin beynine geç</button>` : ""}<button class="btn" data-act="endtour">Turu bitir</button></div>
+      ${st.brain ? `<button class="btn" data-act="brain">Karar sekmesine geç</button>` : ""}<button class="btn" data-act="endtour">Turu bitir</button></div>
     <div class="muted" style="font-size:12px">Klavye: ← → ile ilerle, Esc ile çık.</div>`;
 }
 $("#tourBtn").onclick = () => (S.tour ? endTour() : startTour());
@@ -2217,7 +1933,7 @@ function setTab(tab) {
   $$(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + tab));
   if (tab === "brain") { renderBrain(); requestAnimationFrame(() => labDraw()); }
   if (tab === "metrics") { renderMetrics(); if (!S.catalog) loadCatalog(); }
-  if (tab === "map") requestAnimationFrame(resize);
+  if (tab === "map") S.animUntil = performance.now() + 200;
   history.replaceState(null, "", tab === "map" ? location.pathname : "#" + tab);
 }
 $$(".tabs button").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
@@ -2226,7 +1942,7 @@ readColors();
 $("#themeBtn").onclick = () => {
   const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = t; store("theme", t); readColors();
-  renderSide(false); if (S.tab === "brain") labDraw();
+  S.html = ""; layout(); renderSide(false); if (S.tab === "brain") labDraw();
 };
 window.addEventListener("resize", () => { if (S.tab === "brain") labDraw(); });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); setTab(["brain", "metrics"].includes(h) ? h : "map"); });
