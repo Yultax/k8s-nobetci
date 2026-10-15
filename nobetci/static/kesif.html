@@ -236,6 +236,12 @@ button.pill:hover{border-color:var(--accent);color:var(--ink)}
 .verdict{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
 .math{font:12.5px/1.75 var(--mono);background:var(--raised);border-radius:8px;padding:10px 12px;margin-top:12px;min-height:94px}
 .math .hl{color:var(--ink);font-weight:700}.math .ok{color:var(--ok)}.math .no{color:var(--muted)}.math .bad{color:var(--crit);font-weight:700}
+.mlgrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;margin-top:10px}
+#mlc{display:block;width:100%;height:380px;touch-action:pan-y}
+#mls{display:block;width:100%;height:150px;margin-top:4px}
+.mlstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.mlstats .stat .v{font-size:18px}
+.mlnote{font-size:12px;color:var(--muted);margin:6px 0 0}
 .cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .mini{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px}
 .mini h4{margin:0 0 4px;font-size:14px}.mini p{margin:0;font-size:13px;color:var(--ink2)}
@@ -353,12 +359,12 @@ button.pill:hover{border-color:var(--accent);color:var(--ink)}
   .mapwrap{grid-template-columns:1fr;height:auto}
   .stage{max-height:none;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
   .ns.wide{grid-column:auto}
-  .grid2,.cards3{grid-template-columns:minmax(0,1fr)}
+  .grid2,.cards3,.mlgrid{grid-template-columns:minmax(0,1fr)}
   .ctrls{grid-template-columns:repeat(2,minmax(0,1fr))}
   .top{gap:10px;padding:0 12px;height:auto;flex-wrap:wrap;padding-top:8px}.tabs{order:3;width:100%;height:40px;overflow-x:auto;scrollbar-width:none}.live .t,.chipc{display:none}
   .bar,.simbar{top:0}
 }
-@media (max-width:560px){.verdict{grid-template-columns:1fr}.nsgrid{grid-template-columns:1fr;padding:10px}.board{padding:12px}}
+@media (max-width:560px){.verdict,.mlstats{grid-template-columns:1fr 1fr}#cyc{grid-template-columns:1fr 1fr!important}.nsgrid{grid-template-columns:1fr;padding:10px}.board{padding:12px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -451,16 +457,16 @@ button.pill:hover{border-color:var(--accent);color:var(--ink)}
 <section class="view" id="v-brain">
   <div class="page">
     <div class="hero"><h1>Nöbetçi nasıl karar veriyor?</h1>
-      <p>Her ölçüm turunda veri soldan sağa akar. Prometheus'tan gelen seriler üç ayrı denetimden geçer; sorun görülenler "bulgu", aynı iş yükünün bulguları da tek bir "olay" olur. Bir kutuya tıkla; ne yaptığını bu turun gerçek sayılarıyla anlatır.</p></div>
+      <p>Her ölçüm turunda veri soldan sağa akar. Prometheus'tan gelen seriler dört ayrı denetimden geçer (istatistik, tahmin, makine öğrenmesi, kural); sorun görülenler "bulgu", aynı iş yükünün bulguları da tek bir "olay" olur. Bir kutuya tıkla; ne yaptığını bu turun gerçek sayılarıyla anlatır.</p></div>
     <div class="flowcard">
-      <svg id="flow" viewBox="0 0 1515 372" role="img" aria-label="Tespit hattı"></svg>
+      <svg id="flow" viewBox="0 0 1515 496" role="img" aria-label="Tespit hattı"></svg>
       <div class="flowbar"><button class="btn" id="replay">Bir turu adım adım oynat</button><div class="cap" id="flowcap">Gerçek bir tur bitince akış kendiliğinden oynar.</div></div>
     </div>
     <div class="grid2">
       <div class="card explain" id="explain"></div>
       <div class="card">
         <h2>Son turda ne oldu?</h2><p class="sub">Gerçek sayılar; her tur yenilenir.</p>
-        <div class="stats" id="cyc" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div class="stats" id="cyc" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
         <div id="openInc"></div>
       </div>
     </div>
@@ -489,10 +495,33 @@ button.pill:hover{border-color:var(--accent);color:var(--ink)}
       <div class="math" id="math">Grafiğin üzerinde gezin ya da taramayı oynat: her noktada nöbetçinin hesabı burada yazar.</div>
     </div>
 
+    <div class="card lab" id="mlLab">
+      <div class="labhead"><div style="flex:1;min-width:260px"><h2>ML laboratuvarı: Isolation Forest</h2>
+        <p class="sub" style="margin:0">Her iş yükünün kendi modeli var. Model son 7 günün verisinden kendi kendine eğitilir, 6 saatte bir yenilenir, kimse etiket vermez. Gri noktalar modelin gördüğü normal anlar, renkli noktalar pod'ların şu anki hâli. Gerçek model 4 ölçüme birlikte bakar; burada ikisini seçip düzlemde gösteriyoruz.</p></div>
+        <select id="mlWl" aria-label="İş yükü"></select>
+        <div class="seg" id="mlAx"></div>
+      </div>
+      <div class="mlgrid">
+        <div><canvas id="mlc"></canvas>
+          <div class="btnrow">
+            <button class="btn pri" id="mlIso" title="Rastgele bir ağaç kurar; hedef pod'un şu anki noktası">Şu anki noktayı yalnızlaştır</button>
+            <button class="btn" id="mlIsoN" title="Aynısını kalabalığın ortasındaki sıradan bir noktayla yapar">Sıradan bir noktayla dene</button>
+            <button class="btn" id="mlStep" disabled>Sonraki bölme →</button>
+            <button class="btn" id="mlAvg" title="İki nokta için 200 rastgele ağaç kurar">200 ağaçta karşılaştır</button>
+          </div>
+          <div class="math" id="mlMath"></div></div>
+        <div><div class="mlstats" id="mlStats"></div>
+          <h4 style="margin:4px 0 0;font-size:13.5px">Skor geçmişi</h4>
+          <canvas id="mls"></canvas>
+          <p class="mlnote" id="mlNote"></p>
+          <div class="why" id="mlWhy" style="font-size:13px"></div></div>
+      </div>
+    </div>
+
     <div class="cards3">
       <div class="mini"><h4>Neden ortalama değil medyan?</h4><p>Tek bir dev sıçrama ortalamayı ve standart sapmayı şişirir; "normal" aralık genişler ve sonraki sıçramalar görünmez olur. Medyan ve MAD (sapmaların medyanı) aykırı değerlerden etkilenmez. "Ortalama ile karşılaştır" ile farkı gör.</p></div>
       <div class="mini"><h4>Neden kalıcılık?</h4><p>Ölçümler gürültülüdür; tek noktalık bir zıplama çoğu zaman anlamsızdır. Eşiği art arda iki kez aşmak gerçek bir değişikliğe işaret eder. "Tek aykırı nokta ekle" deyip alarm üretmediğini gör.</p></div>
-      <div class="mini"><h4>Bu makine öğrenmesi mi?</h4><p>Etiketsiz (gözetimsiz) bir anomali tespiti: her serinin normalini kendi geçmişinden çıkarır; model eğitmez, her kararı yeniden hesaplanabilir. LLM yalnızca sonucu insan diliyle anlatır, karar vermez.</p></div>
+      <div class="mini"><h4>Hangisi makine öğrenmesi?</h4><p>İstatistik şeridi her serinin normalini kendi geçmişinden hesaplar, model eğitmez. ML şeridi (Isolation Forest) iş yükü başına bir model eğitir ve kendini yeniler. İkisi de etiket istemez (gözetimsiz). LLM yalnızca sonucu insan diliyle anlatır, karar vermez.</p></div>
     </div>
   </div>
 </section>
@@ -1605,18 +1634,19 @@ function tourHTML() {
 $("#tourBtn").onclick = () => (S.tour ? endTour() : startTour());
 
 /* ============================================================== nöbetçinin beyni: tespit hattı */
-const COLX = (i) => 12 + i * 168, ROWY = [34, 158, 282], BW = 152, BH = 64;
+const COLX = (i) => 12 + i * 168, ROWY = [34, 158, 282, 406], BW = 152, BH = 64;
 const STAGES = {
   prom: [0, 1, "Prometheus", "zaman serisi veritabanı"], collect: [1, 1, "Toplama", "6 sinyal + 7 kural"],
   buffer: [2, 1, "Tampon", "seri başına 3 saat"], base: [3, 0, "Normal", "medyan + MAD"],
   z: [4, 0, "Sapma (z)", "normalden uzaklık"], persist: [5, 0, "Kalıcılık", "art arda N nokta"],
   profile: [6, 0, "Saatlik profil", "bu saatte olağan mı?"], supp: [7, 0, "Bastırıldı", "her gün olağan", true],
   fill: [3, 1, "Limit tahmini", "doğrusal eğilim"], checks: [3, 2, "Kurallar", "OOMKilled, CrashLoop…"],
+  train: [2, 3, "Eğitim", "7 gün · 6 saatte bir"], ml: [3, 3, "ML skoru", "Isolation Forest"],
   find: [7, 1, "Bulgu", "ham tespitler"], inc: [8, 1, "Olay", "iş yükü başına"],
   llm: [8, 2, "Yorum", "kural + LLM"], out: [7, 2, "Çıkış", "ekran · webhook"],
 };
 const FLOW_EDGES = [["prom", "collect"], ["collect", "buffer"], ["buffer", "base"], ["buffer", "fill"], ["collect", "checks"], ["base", "z"], ["z", "persist"],
-  ["persist", "profile"], ["profile", "supp"], ["profile", "find"], ["fill", "find"], ["checks", "find"], ["find", "inc"], ["inc", "llm"], ["llm", "out"]];
+  ["persist", "profile"], ["profile", "supp"], ["profile", "find"], ["fill", "find"], ["checks", "find"], ["collect", "train"], ["train", "ml"], ["buffer", "ml"], ["ml", "find"], ["find", "inc"], ["inc", "llm"], ["llm", "out"]];
 const box = (id) => { const [c, r] = STAGES[id]; return {x: COLX(c), y: ROWY[r], w: BW, h: BH}; };
 function flowPath(a, b) {
   const A = box(a), B = box(b);
@@ -1627,7 +1657,7 @@ function flowPath(a, b) {
 }
 function buildFlow() {
   const svg = $("#flow");
-  const lanes = [["İSTATİSTİK · ani sıçrama ve düşüş", 0], ["TAHMİN · limit ne zaman dolar", 1], ["KURAL · bilinen kötü durumlar", 2]];
+  const lanes = [["İSTATİSTİK · ani sıçrama ve düşüş", 0], ["TAHMİN · limit ne zaman dolar", 1], ["KURAL · bilinen kötü durumlar", 2], ["ML · ölçümlerin birleşimi tuhaf mı", 3]];
   let h = lanes.map(([l, r]) => `<text class="lane" x="${COLX(3)}" y="${ROWY[r] - 10}">${l}</text>`).join("");
   h += FLOW_EDGES.map(([a, b]) => `<path class="e" id="fe-${a}-${b}" d="${flowPath(a, b)}"${STAGES[b][4] ? ' stroke-dasharray="5 5"' : ""}/>`).join("");
   h += `<text class="s" x="${COLX(4) + BW / 2}" y="${ROWY[0] + BH + 18}" text-anchor="middle">eşik altı → normal, atılır</text>`;
@@ -1668,6 +1698,9 @@ function playWave(t, slow) {
   }
   for (let i = 0; i < Math.min(fills, 6); i++) dot([["prom", "collect"], ["collect", "buffer"], ["buffer", "fill"], ["fill", "find"], ...tail], C.warn, 0.4 + i * 0.15, sp);
   for (let i = 0; i < Math.min(checks, 8); i++) dot([["prom", "collect"], ["collect", "checks"], ["checks", "find"], ...tail], C.crit, 0.2 + i * 0.15, sp);
+  const mlF = det.ml_flags || 0;
+  for (let i = 0; i < 4; i++) dot([["prom", "collect"], ["collect", "buffer"], ["buffer", "ml"]], C.metric, 0.3 + i * 0.12, sp);
+  for (let i = 0; i < Math.min(mlF, 6); i++) dot([["prom", "collect"], ["collect", "buffer"], ["buffer", "ml"], ["ml", "find"], ...tail], C.crit, 0.5 + i * 0.15, sp);
   if (!checks && !fills && !cand) dot([["prom", "collect"], ["collect", "checks"]], C.metric, 0.3, sp);
 }
 function lit(id) {
@@ -1695,7 +1728,7 @@ function drawFlow(dt) {
     if (d.done) {
       const last = d.route[d.route.length - 1][1];
       d.el.style.transition = "opacity .5s, r .5s"; d.el.style.opacity = "0";
-      if (last === "z" || last === "supp" || last === "checks") d.el.setAttribute("r", "1.5");
+      if (last === "z" || last === "supp" || last === "checks" || last === "ml") d.el.setAttribute("r", "1.5");
       setTimeout(() => d.el.remove(), 520);
       continue;
     }
@@ -1710,6 +1743,7 @@ function stageInfo(id) {
   const t = S.topo || {}, p = t.pipeline || {}, src = p.source || {}, det = p.detect || {}, D = t.detector || {};
   const chk = Object.entries(det.checks || {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "hiçbiri";
   const zc = (t.pods || []).reduce((a, x) => a + SIGNALS.filter((s) => Math.abs(x[s.k + "_z"] ?? 0) >= (D.z || 5)).length, 0);
+  const ML = t.ml || {};
   const I = {
     prom: ["Prometheus", `Kümedeki ölçüm veritabanı (<span class="mono">${esc(src.url || "")}</span>). Nöbetçi ölçüm saklamaz; her turda burada sorar, açılışta da son 3 saati ve 7 günlük profili buradan okur.`,
       "Veriyi tekrar toplamak yerine var olanı okumak: tek pod, sıfır bağımlılık, kurulum basit.", [["sorgu (bu tur)", src.queries], ["sorgu süresi", `${src.query_ms ?? "—"} ms`]], "nobetci/prom.py"],
@@ -1731,7 +1765,13 @@ function stageInfo(id) {
       "Ani sıçrama değil, yavaş ve istikrarlı tırmanış: z-skoru bunu göremez, eğilim görür. Kaza olmadan önce uyarabilen tek dedektör bu.", [["bu tur", det.fills]], "detect.py:detect_fill", "eta = (limit − şimdiki) / eğim"],
     checks: ["Durum kontrolleri", "Bilinen kötü durumlar istatistiğe gerek kalmadan kural olarak sorulur: OOMKilled, CrashLoopBackOff/ImagePullBackOff, 10 dk'da yeniden başlama, 10 dk'dır Pending, hazır olmayan Deployment kopyası, NotReady node, %50 üstü CPU kısılması.",
       "Kaynak: kube-state-metrics. Her şeyi makine öğrenmesiyle yapmaya çalışmak hata olur; bilinen sorunlar için kural hem hızlı hem kesindir.", [["bu tur", chk]], "signals.py:CHECKS"],
-    find: ["Bulgu", "Üç dedektörün ham çıktısı: tür, ciddiyet (bilgi/uyarı/kritik), hangi pod ve hangi sinyal. Aynı anda birçok bulgu çıkabilir; tek tek bildirmek alarm yorgunluğu yaratır.", "Bulgu ≠ olay. Bir sonraki aşama onları gruplar.", [["bu tur", det.findings], ["toplam (türlere göre)", Object.entries(t.finding_counts || {}).map(([k, v]) => `${k} ${v}`).join(", ") || "—"]], "engine.py:Finding"],
+    train: ["Eğitim", `ML modeli için veri: son 7 günün 5 dakikalık noktaları (pod başına ~2000 an). Her iş yükü için ayrı bir orman eğitilir: ${ML.trees || 100} ağaç, her ağaç rastgele ${ML.sample || 256} an görür. Eşiği de model kendisi seçer: eğitim verisindeki skorların en tuhaf %${(100 - 100 * (ML.quantile || 0.995)).toFixed(1)}'lik diliminin biraz üstü.`,
+      `Kimse "bu arıza, bu normal" diye etiket vermez (gözetimsiz öğrenme). Model 6 saatte bir kendini yeniler; henüz modeli olmayan iş yükü varsa saatte bir dener. En az ${ML.min_samples || 144} an (12 saat) geçmiş ister.`,
+      [["eğitilmiş model", ML.models ?? "—"], ["modeli olmayan pod", ML.missing ?? "—"], ["eğitim süresi", ML.train_seconds != null ? `${ML.train_seconds} sn` : "—"], ["son eğitim", ML.trained_at ? agoTs(ML.trained_at) : "henüz yok"]], "iforest.py, engine.py:train"],
+    ml: ["Isolation Forest", "Her turda her pod'un CPU, bellek, gelen ve giden ağ değeri <b>birlikte</b> modele verilir. Ağaçlar veriyi rastgele eksenlerden rastgele yerlerden böler; kalabalığın içindeki bir nokta ancak çok bölmeyle yalnız kalır, tuhaf bir nokta birkaç bölmede. Ortalama bölme sayısı kısaldıkça skor 1'e yaklaşır.",
+      "İstatistik şeridi her ölçüme tek tek bakar. ML ise tek tek olağan olan ama birlikte tuhaf olan durumları da görür: CPU gündüz seviyesinde ama trafik gece seviyesinde, yani pod iş almadan meşgul. Skor eşiği art arda iki turda aşarsa bulgu olur.",
+      [["skorlanan pod (bu tur)", det.ml_scored ?? 0], ["eşiği aşan (bu tur)", det.ml_flags ?? 0], ["toplam ML bulgusu", (t.finding_counts || {}).ml ?? 0]], "iforest.py:IsolationForest, engine.py:_ml", "skor = 2^(−ortalama bölme sayısı / c(ψ))"],
+    find: ["Bulgu", "Dört dedektörün ham çıktısı: tür, ciddiyet (bilgi/uyarı/kritik), hangi pod ve hangi sinyal. Aynı anda birçok bulgu çıkabilir; tek tek bildirmek alarm yorgunluğu yaratır.", "Bulgu ≠ olay. Bir sonraki aşama onları gruplar.", [["bu tur", det.findings], ["toplam (türlere göre)", Object.entries(t.finding_counts || {}).map(([k, v]) => `${k} ${v}`).join(", ") || "—"]], "engine.py:Finding"],
     inc: ["Olay", `Aynı iş yüküne (ya da node'a) ait bulgular <b>tek olayda</b> toplanır: "bellek limite gidiyor" + "OOMKilled" + "yeniden başlama" aynı hikâyedir. ${Math.round((D.quiet || 600) / 60)} dk yeni bulgu gelmezse olay kapanır; ciddiyet artarsa yeniden bildirilir.`,
       "Gürültüyü azaltmanın ikinci katmanı: insanlar bulguları değil olayları okur.", [["açık olay", (t.incidents || []).length], ["son 24 saatte", t.count_24h]], "incident.py"],
     llm: ["Yorum", `Her olay için kural tabanlı bir özet ve <span class="mono">kubectl</span> komutları hep vardır. LLM açıksa (${t.llm?.enabled ? esc(t.llm.model) : "şu an kapalı"}) kanıt (sapmalar, pod durumu, Kubernetes olayları) ona üç satırlık bir yorum için gönderilir. LLM karar vermez, komut uydurmaz.`,
@@ -1747,14 +1787,17 @@ function selStage(id) {
   const [t, d, why, rows, code, formula] = stageInfo(id);
   $("#explain").innerHTML = `<div class="kind"><i style="background:var(--brain)"></i>Aşama</div><h3>${t}</h3><p>${d}</p>${formula ? `<div class="formula">${formula}</div>` : ""}<div class="why">${why}</div>
     ${kv(rows.map(([a, b]) => [a, esc(b ?? "—")]))}<p class="muted mono" style="font-size:12px">kod: ${code}</p>
-    ${["base", "z", "persist", "fill"].includes(id) ? `<button class="btn pri" onclick="document.querySelector('.lab').scrollIntoView({behavior:'smooth'})">Laboratuvarda dene ↓</button>` : ""}`;
+    ${["base", "z", "persist", "fill"].includes(id) ? `<button class="btn pri" onclick="document.querySelector('.lab').scrollIntoView({behavior:'smooth'})">Laboratuvarda dene ↓</button>` : ""}
+    ${["train", "ml"].includes(id) ? `<button class="btn pri" onclick="document.querySelector('#mlLab').scrollIntoView({behavior:'smooth'})">ML laboratuvarında dene ↓</button>` : ""}`;
 }
 const REPLAY = [["prom", "Her tur Prometheus'a soru sorarak başlar."], ["collect", "Seriler toplanır: her pod ve node için 6 sinyal, ayrıca 7 durum kontrolü."],
   ["buffer", "Yeni nokta her serinin 3 saatlik tamponuna eklenir."], ["base", "Her seri için son 60 noktanın medyanı ve MAD'i: \"bu seri için normal ne?\""],
   ["z", "Yeni değer normalden kaç ölçek uzak? Çoğu seri eşiğin altında kalır ve burada elenir (mor noktalar sönüyor)."],
   ["persist", "Eşiği aşanlar art arda iki noktada aşmış mı? Tek seferlik zıplamalar elenir."], ["profile", "Bu saat için olağan mı? Her gün tekrarlayan işler bastırılır."],
   ["fill", "Paralelde: bellek limite doğru istikrarlı tırmanıyor mu?"], ["checks", "Paralelde: OOMKilled, CrashLoop, Pending gibi bilinen kötü durumlar."],
-  ["find", "Üç dedektörün bulguları burada buluşur."], ["inc", "Aynı iş yükünün bulguları tek olay olur."], ["llm", "Olaya özet, neden ve komut eklenir."], ["out", "Ekrana, loga ve webhook'a gider. Tur bitti."]];
+  ["train", "ML için: model son 7 günün verisiyle kendi kendine eğitilir (6 saatte bir, bu adım her turda olmaz)."],
+  ["ml", "Paralelde: her pod'un 4 ölçümü birlikte Isolation Forest'a verilir. Tuhaflık skoru eşiği aşan pod'lar bulgu olur."],
+  ["find", "Dört dedektörün bulguları burada buluşur."], ["inc", "Aynı iş yükünün bulguları tek olay olur."], ["llm", "Olaya özet, neden ve komut eklenir."], ["out", "Ekrana, loga ve webhook'a gider. Tur bitti."]];
 $("#replay").onclick = () => {
   clearInterval(S.replayT);
   let i = 0;
@@ -1775,15 +1818,17 @@ function renderBrain() {
   const setN = (id, v) => { const el = $("#fn-" + id); if (el) el.textContent = v ?? ""; };
   setN("collect", p.source?.series); setN("buffer", p.source?.series); setN("persist", det.candidates); setN("profile", det.suppressed || "");
   setN("supp", det.suppressed_total || ""); setN("fill", det.fills); setN("checks", Object.values(det.checks || {}).reduce((a, b) => a + b, 0));
+  setN("ml", det.ml_flags || ""); setN("train", t.ml?.models ?? "");
   setN("find", det.findings); setN("inc", t.incidents.length); setN("llm", t.llm?.enabled ? t.llm.calls : "kapalı");
   setN("z", t.pods.reduce((a, x) => a + SIGNALS.filter((s) => Math.abs(x[s.k + "_z"] ?? 0) >= (t.detector?.z || 5)).length, 0));
   $("#cyc").innerHTML = [["tur", `#${t.cycle}`, `${p.cycle_seconds ?? "—"} sn sürdü`], ["seri", p.source?.series ?? "—", `${p.source?.queries ?? "—"} sorgu`],
-    ["aday", det.candidates ?? 0, "eşik + kalıcılık"], ["bastırılan", det.suppressed ?? 0, "saatlik profil"], ["bulgu", det.findings ?? 0, "bu tur"], ["açık olay", t.incidents.length, `son 24 sa: ${t.count_24h}`]]
+    ["aday", det.candidates ?? 0, "eşik + kalıcılık"], ["bastırılan", det.suppressed ?? 0, "saatlik profil"], ["ML işaretli", det.ml_flags ?? 0, `${det.ml_scored ?? 0} pod skorlandı`], ["bulgu", det.findings ?? 0, "bu tur"], ["açık olay", t.incidents.length, `son 24 sa: ${t.count_24h}`]]
     .map(([l, v, s]) => `<div class="stat"><div class="v num">${v}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join("");
   $("#openInc").innerHTML = t.incidents.length ? `<div class="box"><h4>Açık olaylar</h4>${t.incidents.map((i) => `<div class="inc s${i.severity}"><b>${esc(i.title)}</b><div class="muted" style="font-size:12px">${i.kinds.join(" · ")}</div></div>`).join("")}<div class="btnrow"><a class="btn" href="/">Olay ekranı →</a></div></div>`
     : `<p class="muted" style="font-size:13px">Şu an açık olay yok: bütün seriler kendi normallerinin içinde.</p>`;
   if (S.stage) selStage(S.stage);
   if (!$("#labPod").options.length) labInit();
+  mlInit();
 }
 
 /* ============================================================== algoritma laboratuvarı
@@ -1999,6 +2044,259 @@ $("#scan").onclick = () => {
   };
   tick();
 };
+
+/* ============================================================== ML laboratuvarı
+   Sunucudaki model 4 ölçümle çalışır (iforest.py). Buradaki ağaçlar seçilen iki ölçümde, aynı fikirle
+   tarayıcıda kurulur: rastgele eksen, kalabalığın iki ucu arasında rastgele bir bölme. */
+const agoTs = (ts) => { const s = Math.max(0, (S.topo?.now ?? Date.now() / 1000) - ts); return s < 90 ? "az önce" : s < 5400 ? `${Math.round(s / 60)} dk önce` : `${Math.round(s / 3600)} sa önce`; };
+const ML_AX = [["pod_cpu", "pod_net_rx", "CPU × gelen ağ"], ["pod_cpu", "pod_mem", "CPU × bellek"], ["pod_net_rx", "pod_net_tx", "gelen × giden ağ"]];
+const MLS = {key: "", d: null, ax: 0, pod: 0, iso: null, avg: null, geo: null};
+const sigOf = (name) => SIGNALS.find((s) => s.sig === name);
+const shortPod = (p) => p.length > 22 ? "…" + p.slice(-14) : p;
+function mlInit() {
+  const ml = S.topo?.ml || {}, sel = $("#mlWl");
+  if (!$("#mlAx").childElementCount) {
+    $("#mlAx").innerHTML = ML_AX.map((a, i) => `<button data-ax="${i}" aria-pressed="${i === MLS.ax}">${a[2]}</button>`).join("");
+    $$("#mlAx button").forEach((b) => b.onclick = () => {
+      MLS.ax = +b.dataset.ax; MLS.iso = null; MLS.avg = null;
+      $$("#mlAx button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); mlDraw();
+    });
+  }
+  const wls = new Map();
+  for (const p of ml.pods || []) {
+    const k = `${p.ns}|${p.workload}`, m = p.score - p.threshold;
+    if (!wls.has(k) || m > wls.get(k).m) wls.set(k, {m, p});
+  }
+  const list = [...wls.entries()].sort((a, b) => b[1].m - a[1].m || a[0].localeCompare(b[0]));
+  const cur = sel.value;
+  sel.innerHTML = list.map(([k, {m, p}]) => `<option value="${esc(k)}">${esc(p.ns)}/${esc(p.workload)}  · skor ${p.score.toFixed(2)}${m >= 0 ? " ≥ eşik" : ""}</option>`).join("");
+  if (cur && wls.has(cur)) sel.value = cur;
+  sel.style.display = list.length ? "" : "none";
+  if (!list.length) { MLS.d = null; MLS.key = ""; mlDraw(); return; }
+  mlLoad();
+}
+async function mlLoad() {
+  const key = $("#mlWl").value;
+  if (!key) return;
+  let d = null;
+  try { d = await getJSON("/api/ml?k=" + encodeURIComponent(key)); } catch { d = null; }
+  const same = MLS.key === key && MLS.d && d && MLS.d.trained_at === d.trained_at;
+  if (!same) {  // başka iş yükü ya da yeniden eğitilmiş model: ağaç gösterimi baştan
+    MLS.iso = null; MLS.avg = null;
+    MLS.pod = d ? d.pods.reduce((b, p, i, a) => (p.scores.at(-1) ?? 0) > (a[b].scores.at(-1) ?? 0) ? i : b, 0) : 0;
+  }
+  MLS.key = key; MLS.d = d;
+  if (d && MLS.pod >= d.pods.length) MLS.pod = 0;
+  mlDraw();
+}
+$("#mlWl").onchange = mlLoad;
+
+function mlAxes() {
+  const d = MLS.d, [a, b] = ML_AX[MLS.ax];
+  return {ia: d.signals.indexOf(a), ib: d.signals.indexOf(b), A: sigOf(a), B: sigOf(b)};
+}
+// Ağaç gösterimi: hedef nokta + eğitim verisinden örnekler. Her adımda kalabalık ikiye bölünür, hedefin tarafı kalır.
+function isoStart(kind) {
+  const d = MLS.d;
+  if (!d) return;
+  const {ia, ib} = mlAxes(), pts = d.preview.map((r) => [r[ia], r[ib]]);
+  let target;
+  if (kind === "now") {
+    const p = d.pods[MLS.pod];
+    if (!p) return;
+    target = [p.x[ia], p.x[ib]];
+  } else {  // kalabalığın ortasındaki sıradan bir nokta: iki eksenin medyanına en yakın örnek
+    const ua = d.units[ia], ub = d.units[ib], ma = d.median[ia], mb = d.median[ib];
+    target = pts.reduce((best, q) => Math.hypot((q[0] - ma) / ua, (q[1] - mb) / ub) < Math.hypot((best[0] - ma) / ua, (best[1] - mb) / ub) ? q : best, pts[0]);
+  }
+  const others = pts.filter((q) => q !== target);
+  const xs = [...others.map((q) => q[0]), target[0]], ys = [...others.map((q) => q[1]), target[1]];
+  MLS.iso = {kind, target, left: others, cuts: [], box: [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)], done: !others.length};
+  $("#mlStep").disabled = MLS.iso.done;
+  mlDraw();
+}
+function isoCut(st, rnd = Math.random) {
+  const all = [...st.left, st.target];
+  const axes = [0, 1].filter((j) => Math.max(...all.map((q) => q[j])) > Math.min(...all.map((q) => q[j])));
+  if (!axes.length) { st.done = true; return null; }
+  const j = axes[Math.floor(rnd() * axes.length)];
+  const lo = Math.min(...all.map((q) => q[j])), hi = Math.max(...all.map((q) => q[j])), s = lo + rnd() * (hi - lo);
+  const side = st.target[j] < s;
+  const cut = {j, s, box: [...st.box], before: st.left.length};
+  st.left = st.left.filter((q) => (q[j] < s) === side);
+  if (j === 0) st.box[side ? 1 : 0] = s; else st.box[side ? 3 : 2] = s;
+  cut.after = st.left.length;
+  st.cuts.push(cut);
+  if (!st.left.length) st.done = true;
+  return cut;
+}
+function isoCount(target, pts) {
+  const st = {target, left: pts.filter((q) => q !== target), cuts: [], box: [0, 0, 0, 0], done: false};
+  let n = 0;
+  while (!st.done && n < 60) { isoCut(st); n++; }
+  return n;
+}
+$("#mlIso").onclick = () => isoStart("now");
+$("#mlIsoN").onclick = () => isoStart("normal");
+$("#mlStep").onclick = () => {
+  const st = MLS.iso;
+  if (!st || st.done) return;
+  isoCut(st);
+  $("#mlStep").disabled = st.done;
+  mlDraw();
+};
+$("#mlAvg").onclick = () => {
+  const d = MLS.d;
+  if (!d || !d.pods[MLS.pod]) return;
+  const {ia, ib} = mlAxes(), pts = d.preview.map((r) => [r[ia], r[ib]]), p = d.pods[MLS.pod];
+  const ua = d.units[ia], ub = d.units[ib], ma = d.median[ia], mb = d.median[ib];
+  const normal = pts.reduce((best, q) => Math.hypot((q[0] - ma) / ua, (q[1] - mb) / ub) < Math.hypot((best[0] - ma) / ua, (best[1] - mb) / ub) ? q : best, pts[0]);
+  const now = [p.x[ia], p.x[ib]];
+  const sub = () => pts.slice().sort(() => Math.random() - 0.5).slice(0, 256);
+  let a = 0, b = 0;
+  for (let i = 0; i < 200; i++) { const s = sub(); a += isoCount(now, s); b += isoCount(normal, s.includes(normal) ? s : [...s, normal]); }
+  MLS.avg = {now: a / 200, normal: b / 200};
+  mlDraw();
+};
+
+const mc = $("#mlc"), mx = mc.getContext("2d"), msc = $("#mls"), msx = msc.getContext("2d");
+function canvasSize(cv, ctx) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, r.width, r.height);
+  return r;
+}
+function mlDraw() {
+  if (!mc.isConnected || S.tab !== "brain") return;
+  const ml = S.topo?.ml || {}, d = MLS.d;
+  const r = canvasSize(mc, mx), rs = canvasSize(msc, msx);
+  const say = (ctx, txt, y = 40) => { ctx.fillStyle = C.muted; ctx.font = "13px system-ui"; ctx.textAlign = "left"; txt.split("\n").forEach((l, i) => ctx.fillText(l, 20, y + i * 20)); };
+  if (!d) {
+    const msg = ml.enabled === false ? "ML kapalı (NOBETCI_ML=false)."
+      : `Henüz eğitilmiş model yok. Bir iş yükünün modeli için Prometheus'ta en az ${ml.min_samples || 144} an\n(5 dk aralıkla 12 saat) geçmiş gerekiyor. Nöbetçi saatte bir yeniden dener.`;
+    say(mx, msg);
+    $("#mlStats").innerHTML = ""; $("#mlWhy").innerHTML = ""; $("#mlNote").textContent = "";
+    $("#mlMath").innerHTML = ml.models === 0 && ml.missing ? `${ml.missing} pod model bekliyor.` : "";
+    return;
+  }
+  const {ia, ib, A, B} = mlAxes(), fa = fmt[A.unit], fb = fmt[B.unit];
+  const pts = d.preview, pods = d.pods, thr = d.threshold;
+  // ölçek: eğitim örnekleri + pod'ların şu anki noktaları
+  const xs = [...pts.map((q) => q[ia]), ...pods.map((p) => p.x[ia])], ys = [...pts.map((q) => q[ib]), ...pods.map((p) => p.x[ib])];
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const gx = Math.max((x1 - x0) * 0.08, A.min * 0.5), gy = Math.max((y1 - y0) * 0.08, B.min * 0.5);
+  x0 = Math.max(0, x0 - gx); x1 += gx; y0 = Math.max(0, y0 - gy); y1 += gy;
+  const pad = {l: 74, r: 14, t: 14, b: 40}, w = r.width - pad.l - pad.r, h = r.height - pad.t - pad.b;
+  const X = (v) => pad.l + (v - x0) / (x1 - x0) * w, Y = (v) => pad.t + h - (v - y0) / (y1 - y0) * h;
+  MLS.geo = {X, Y, ia, ib};
+  mx.strokeStyle = C.line; mx.lineWidth = 1; mx.fillStyle = C.muted; mx.font = "11px ui-monospace,Menlo,monospace";
+  for (let k = 0; k <= 4; k++) {
+    const vy = y0 + (y1 - y0) * k / 4, vx = x0 + (x1 - x0) * k / 4;
+    mx.beginPath(); mx.moveTo(pad.l, Y(vy)); mx.lineTo(pad.l + w, Y(vy)); mx.stroke();
+    mx.textAlign = "right"; mx.textBaseline = "middle"; mx.fillText(fb(vy), pad.l - 8, Y(vy));
+    mx.textAlign = k === 4 ? "right" : k === 0 ? "left" : "center"; mx.textBaseline = "top"; mx.fillText(fa(vx), X(vx), pad.t + h + 6);
+  }
+  mx.fillStyle = C.ink2; mx.font = "12px system-ui"; mx.textAlign = "center"; mx.fillText(A.t + " →", pad.l + w / 2, pad.t + h + 22);
+  mx.save(); mx.translate(14, pad.t + h / 2); mx.rotate(-Math.PI / 2); mx.fillText(B.t + " →", 0, 0); mx.restore();
+  const st = MLS.iso;
+  const inBox = (q) => !st || (q[ia] >= st.box[0] && q[ia] <= st.box[1] && q[ib] >= st.box[2] && q[ib] <= st.box[3]);
+  // bölmeler (her biri kendi kutusunun içinde çizilir)
+  if (st) {
+    st.cuts.forEach((c, i) => {
+      const last = i === st.cuts.length - 1;
+      mx.strokeStyle = last ? C.brain : alpha(C.brain, 0.45); mx.lineWidth = last ? 2 : 1.2;
+      mx.beginPath();
+      if (c.j === 0) { mx.moveTo(X(c.s), Y(c.box[2])); mx.lineTo(X(c.s), Y(c.box[3])); }
+      else { mx.moveTo(X(c.box[0]), Y(c.s)); mx.lineTo(X(c.box[1]), Y(c.s)); }
+      mx.stroke();
+      mx.fillStyle = last ? C.brain : alpha(C.brain, 0.6); mx.font = "11px system-ui"; mx.textAlign = "left"; mx.textBaseline = "bottom";
+      if (c.j === 0) mx.fillText(String(i + 1), X(c.s) + 3, Y(c.box[3]) + 14); else mx.fillText(String(i + 1), X(c.box[0]) + 3, Y(c.s) - 2);
+    });
+    mx.strokeStyle = C.ink2; mx.setLineDash([4, 4]); mx.lineWidth = 1;
+    mx.strokeRect(X(st.box[0]), Y(st.box[3]), X(st.box[1]) - X(st.box[0]), Y(st.box[2]) - Y(st.box[3])); mx.setLineDash([]);
+  }
+  // eğitim örnekleri
+  for (const q of pts) {
+    const on = st ? st.left.some((o) => o[0] === q[ia] && o[1] === q[ib]) : true;
+    mx.fillStyle = alpha(C.ink2 || "#888888", on ? (st ? 0.75 : 0.38) : 0.1);
+    mx.beginPath(); mx.arc(X(q[ia]), Y(q[ib]), on && st ? 2.6 : 2.2, 0, 7); mx.fill();
+  }
+  // pod'ların şu anki noktaları
+  pods.forEach((p, i) => {
+    const sc = p.scores.at(-1) ?? 0, bad = sc >= thr, sel = i === MLS.pod;
+    mx.fillStyle = bad ? C.crit : C.flow; mx.strokeStyle = C.surface; mx.lineWidth = 2;
+    mx.beginPath(); mx.arc(X(p.x[ia]), Y(p.x[ib]), sel ? 7 : 5.5, 0, 7); mx.fill(); mx.stroke();
+    if (sel || pods.length <= 3) {
+      mx.fillStyle = C.ink; mx.font = "11.5px system-ui"; mx.textBaseline = "middle";
+      const tx = X(p.x[ia]), right = tx < pad.l + w - 150;
+      mx.textAlign = right ? "left" : "right"; mx.fillText(`${shortPod(p.pod)} · ${sc.toFixed(2)}`, tx + (right ? 11 : -11), Y(p.x[ib]));
+    }
+  });
+  if (st) {  // hedef halkası
+    mx.strokeStyle = st.done ? C.crit : C.ink; mx.lineWidth = 2;
+    mx.beginPath(); mx.arc(X(st.target[0]), Y(st.target[1]), 11, 0, 7); mx.stroke();
+  }
+  // açıklama kutusu
+  const n = st?.cuts.length || 0, lastCut = st?.cuts.at(-1);
+  const axName = (j) => (j === 0 ? A : B).t, axF = (j) => (j === 0 ? fa : fb);
+  let m;
+  if (!st) m = `<b>Şu anki noktayı yalnızlaştır</b> de, sonra <b>Sonraki bölme →</b> ile ilerle. Her tıklamada ağaç rastgele bir eksen ve o eksende kalabalığın iki ucu arasında rastgele bir yer seçer, veriyi ikiye böler; hedefin olduğu taraf kalır. Hedef ne kadar az bölmede yalnız kalırsa o kadar tuhaftır.`;
+  else {
+    m = `hedef: <span class="hl">${st.kind === "now" ? esc(shortPod(pods[MLS.pod]?.pod || "")) + " şu an" : "kalabalığın ortasından sıradan bir an"}</span> (${fa(st.target[0])}, ${fb(st.target[1])})<br>`;
+    m += lastCut ? `bölme ${n}: ${axName(lastCut.j)} = <span class="hl">${axF(lastCut.j)(lastCut.s)}</span> çizgisinden kesildi → hedefin tarafında ${lastCut.before} noktadan <span class="hl">${lastCut.after}</span> kaldı<br>` : `${st.left.length} eğitim noktası ile başlıyor.<br>`;
+    m += st.done ? `<span class="bad">${n} bölmede yalnız kaldı.</span> ${st.kind === "now" ? "Şimdi <b>Sıradan bir noktayla dene</b> ve karşılaştır." : "Tek bir ağaç şansa bağlıdır; <b>200 ağaçta karşılaştır</b> ortalamayı gösterir."}` : `<span class="no">Sonraki bölme → ile devam et.</span>`;
+  }
+  if (MLS.avg) m += `<br>200 rastgele ağaçta ortalama: şu anki nokta <span class="hl">${MLS.avg.now.toFixed(1)}</span> bölmede, sıradan nokta <span class="hl">${MLS.avg.normal.toFixed(1)}</span> bölmede yalnız kaldı.`;
+  m += `<br><span class="no">Gerçek model bunu 4 ölçümle, ${d.trees} ağaçta yapar; ağaçlar 8 bölmede durur ve kalan kalabalık için tahmini derinlik ekler.</span>`;
+  $("#mlMath").innerHTML = m;
+  // istatistikler
+  const p = pods[MLS.pod], sc = p?.scores.at(-1);
+  $("#mlStats").innerHTML = [
+    ["skor (şu an)", sc == null ? "—" : `<span style="color:${sc >= thr ? C.crit : C.ink}">${sc.toFixed(2)}</span>`, `eşik ${thr.toFixed(2)}`],
+    ["eğitim verisi", `${d.samples} an`, `${d.pods_seen} pod · ${agoTs(d.trained_at)}`],
+    ["orman", `${d.trees} ağaç`, `her biri ${d.psi} rastgele an`],
+  ].map(([l, v, s]) => `<div class="stat"><div class="v num">${v}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join("");
+  $("#mlNote").innerHTML = `0,5 civarı sıradan, 1'e yaklaştıkça tuhaf. Kesikli çizgi modelin kendi seçtiği eşik; art arda ${S.topo?.detector?.persist || 2} turda aşılırsa bulgu olur.${pods.length > 1 ? " Grafikteki bir noktaya tıklayıp pod seçebilirsin." : ""}`;
+  if (p) {
+    const rows = d.signals.map((name, j) => {
+      const s = sigOf(name), f = fmt[s.unit], out = p.dev[j];
+      return `<div>${s.t}: <b>${f(p.x[j])}</b> <span class="muted">(normalde ${f(d.lo[j])}–${f(d.hi[j])})</span>${out ? ` <b style="color:${C.crit}">aralığın ${out > 0 ? "üstünde" : "altında"}</b>` : ""}</div>`;
+    }).join("");
+    const allIn = p.dev.every((x) => !x);
+    $("#mlWhy").innerHTML = `<b>${esc(shortPod(p.pod))}</b> şu an:${rows}<div style="margin-top:6px;color:var(--ink2)">${sc >= thr && allIn
+      ? "Dördü de tek tek olağan aralıkta, ama bu birleşim daha önce görülmedi. İstatistik şeridi bunu göremez; ML'in yakaladığı tür budur."
+      : sc >= thr ? "Model bu anı tuhaf buluyor; en çok aralığın dışındaki ölçüm katkı veriyor."
+      : "Model bu anı daha önce gördüğü normallere benzetiyor."}</div>`;
+  }
+  // skor geçmişi
+  const all = pods.flatMap((q) => q.scores);
+  const lo = 0.35, hi = Math.max(0.8, thr + 0.1, ...all) + 0.02, pd = {l: 40, r: 8, t: 8, b: 18}, sw = rs.width - pd.l - pd.r, sh = rs.height - pd.t - pd.b;
+  const n0 = Math.max(...pods.map((q) => q.scores.length), 2);
+  const SX = (i, len) => pd.l + ((i + n0 - len) / (n0 - 1)) * sw, SY = (v) => pd.t + sh - (clamp(v, lo, hi) - lo) / (hi - lo) * sh;
+  msx.font = "10.5px ui-monospace,Menlo,monospace"; msx.fillStyle = C.muted; msx.textAlign = "right"; msx.textBaseline = "middle";
+  for (const v of [0.4, 0.5, 0.6, 0.7, 0.8].filter((v) => v < hi)) { msx.strokeStyle = C.line; msx.lineWidth = 1; msx.beginPath(); msx.moveTo(pd.l, SY(v)); msx.lineTo(pd.l + sw, SY(v)); msx.stroke(); msx.fillText(v.toFixed(1), pd.l - 6, SY(v)); }
+  msx.strokeStyle = C.crit; msx.setLineDash([5, 4]); msx.beginPath(); msx.moveTo(pd.l, SY(thr)); msx.lineTo(pd.l + sw, SY(thr)); msx.stroke(); msx.setLineDash([]);
+  pods.forEach((q, k) => {
+    const sel = k === MLS.pod, len = q.scores.length;
+    msx.strokeStyle = sel ? C.flow : alpha(C.ink2 || "#888888", 0.4); msx.lineWidth = sel ? 1.8 : 1;
+    msx.beginPath(); q.scores.forEach((v, i) => (i ? msx.lineTo(SX(i, len), SY(v)) : msx.moveTo(SX(i, len), SY(v)))); msx.stroke();
+    if (sel) q.scores.forEach((v, i) => { if (v >= thr) { msx.fillStyle = C.crit; msx.beginPath(); msx.arc(SX(i, len), SY(v), 2.6, 0, 7); msx.fill(); } });
+  });
+  msx.fillStyle = C.muted; msx.textAlign = "left"; msx.textBaseline = "alphabetic";
+  const tz = (S.topo?.tz ?? 3) * 3600, sp = pods[MLS.pod];
+  if (sp?.ts.length) {
+    const hm = (t) => { const x = new Date((t + tz) * 1000); return `${String(x.getUTCHours()).padStart(2, "0")}:${String(x.getUTCMinutes()).padStart(2, "0")}`; };
+    msx.fillText(hm(sp.ts[0]), pd.l, rs.height - 4); msx.textAlign = "right"; msx.fillText(hm(sp.ts.at(-1)), pd.l + sw, rs.height - 4);
+  }
+}
+mc.addEventListener("click", (e) => {
+  const g = MLS.geo, d = MLS.d;
+  if (!g || !d) return;
+  const r = mc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = -1, bd = 14;
+  d.pods.forEach((p, i) => { const dd = Math.hypot(g.X(p.x[g.ia]) - x, g.Y(p.x[g.ib]) - y); if (dd < bd) { bd = dd; best = i; } });
+  if (best >= 0 && best !== MLS.pod) { MLS.pod = best; MLS.iso = null; MLS.avg = null; mlDraw(); }
+});
 
 /* ============================================================== ne izleyelim */
 const NOW = [
@@ -2229,11 +2527,14 @@ const LESSONS = [
   {t: "İzleme: veri nöbetçiye nasıl ulaşır?", n: ["kubelet", "ksm", "prom", "nob", "node"],
    b: `<p>Nöbetçi kümeye doğrudan bakmaz; ölçümleri <b>Prometheus</b>'tan alır. Veri üç adımda gelir:</p>
        <p><b>1.</b> Her node'daki <b>kubelet</b> (içindeki cAdvisor ile) her konteynerin CPU, bellek ve ağ kullanımını ölçer. <b>2.</b> <b>kube-state-metrics</b>, API server'daki nesnelerin <i>durumunu</i> ölçüme çevirir: yeniden başlama sayısı, bekleme nedeni (ImagePullBackOff…), istenen ve hazır kopya, limitler. <b>3.</b> <b>Prometheus</b> ikisini de düzenli aralıklarla toplar (scrape) ve zaman serisi olarak saklar.</p>
-       <p><b>Nöbetçi</b> her turda Prometheus'a PromQL ile sorar, her serinin kendi normalinden ne kadar saptığını hesaplar ve sorunları olay olarak toplar. Haritada "Veri yolu" kutusunu işaretleyince bu yol numaralarla görünür.</p>`,
+       <p><b>Nöbetçi</b> her turda Prometheus'a PromQL ile sorar, her serinin kendi normalinden ne kadar saptığını hesaplar ve sorunları olay olarak toplar. Haritada "Veri yolu" kutusunu işaretleyince bu yol numaralarla görünür.</p>
+       <p>Yanında bir de <b>makine öğrenmesi</b> çalışır: her iş yükü için son 7 günün verisiyle kendi kendine eğitilen bir <b>Isolation Forest</b>. Pod'un CPU, bellek ve ağ değerlerine <i>birlikte</i> bakar; tek tek olağan ama birlikte tuhaf durumları da yakalar.</p>`,
    q: [
      {q: "Bir pod'un CPU ve bellek kullanımını ilk kim ölçer?", o: ["O node'daki kubelet (cAdvisor)", "Prometheus", "Nöbetçi", "API server"], why: "Ölçümü kubelet'in içindeki cAdvisor yapar; Prometheus yalnızca belirli aralıklarla gelip okur ve saklar."},
      {q: "Bir pod'un yeniden başlama sayısı ve bekleme nedeni Prometheus'a nereden gelir?", o: ["kube-state-metrics", "kubelet'in CPU ölçümünden", "Nöbetçiden", "CoreDNS'ten"], why: "kube-state-metrics API'deki nesne durumlarını okuyup ölçüme çevirir (kube_pod_container_status_restarts_total gibi). Nöbetçinin kural tabanlı kontrolleri bu veriyi kullanır."},
      {q: "Nöbetçi veriyi nereden alır?", o: ["Prometheus'u PromQL ile sorgular", "Her pod'a tek tek bağlanır", "etcd'yi doğrudan okur", "kubectl logs çıktısından"], why: "Nöbetçi her turda Prometheus'a birkaç PromQL sorgusu gönderir. Kubernetes API'yi ise yalnızca bu haritayı çizmek ve olaylara bağlam eklemek için, salt okunur olarak kullanır."},
+     {q: "Bir pod'un CPU'su gündüz seviyesinde ama gelen trafiği gece seviyesinde. İkisi de tek başına olağan aralıkta. Bunu hangisi yakalar?", o: ["Isolation Forest (ölçümlere birlikte bakar)", "z-skoru (her ölçüme tek tek bakar)", "Limit tahmini", "OOMKilled kuralı"], why: "z-skoru her seriye ayrı bakar ve ikisi de normal aralıkta olduğu için susar. Isolation Forest dört ölçümü birlikte görür: bu birleşim eğitim verisinde hiç yoksa nokta birkaç bölmede yalnız kalır ve skoru yükselir. \"Nöbetçi nasıl karar veriyor?\" sekmesindeki ML laboratuvarında deneyebilirsin."},
+     {q: "Isolation Forest'a \"bu arıza, bu normal\" diye örnek veren kim?", o: ["Kimse; normali verinin kendisinden öğrenir", "Nöbetçiyi kuran kişi her hafta etiketler", "LLM etiketler", "Prometheus'un alarm kuralları"], why: "Gözetimsiz (etiketsiz) öğrenme: model yalnızca son 7 günün ölçümlerini görür, çoğunluğun normal olduğunu varsayar ve 6 saatte bir kendini yeniden eğitir. Eşiği de kendisi seçer."},
    ],
    live(t) {
      const bad = userFirst(t.pods.filter((p) => stc(p.status) === "crit" || stc(p.status) === "warn")).sort((a, b) => (stc(b.status) === "crit") - (stc(a.status) === "crit"))[0];
@@ -2652,7 +2953,7 @@ $("#themeBtn").onclick = () => {
   document.documentElement.dataset.theme = t; store("theme", t); readColors();
   S.html = ""; layout(); renderSide(false); if (S.tab === "brain") labDraw(); if (S.tab === "learn") renderCmap();
 };
-window.addEventListener("resize", () => { if (S.tab === "brain") labDraw(); });
+window.addEventListener("resize", () => { if (S.tab === "brain") { labDraw(); mlDraw(); } });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); setTab(TABS.includes(h) ? h : "map"); });
 function frame(ts) {
   const dt = Math.min(0.05, (ts - (S.last || ts)) / 1000);

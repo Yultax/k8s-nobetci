@@ -1,22 +1,27 @@
 """Toplama ve tespit: Prometheus'tan ölçümleri çeker, bulguları üretir."""
 from __future__ import annotations
 
+import random
 import re
 import time
-from collections import Counter, deque
+import zlib
+from collections import Counter, defaultdict, deque
 from dataclasses import dataclass, field
 
 from .config import Config
 from .detect import HourProfile, baseline, detect_fill, detect_jump
+from .iforest import Model
 from .prom import Prom, PromError
 from .signals import CHECKS, GAUGE, GAUGES, MEM_LIMIT_QUERY, Signal, fmt, fmt_duration, label, workload_of
 
 WINDOW = 60  # "normal" hesabında geriye bakılan nokta sayısı (detect_jump ile aynı)
+ML_SIGNALS = ("pod_cpu", "pod_mem", "pod_net_rx", "pod_net_tx")  # Isolation Forest'ın birlikte baktığı ölçümler
+ML_ROWS = 6000  # iş yükü başına en fazla eğitim satırı
 
 
 @dataclass
 class Finding:
-    kind: str       # spike | drop | fill | oom | waiting | restart | pending | unavailable | node_notready | throttle
+    kind: str       # spike | drop | fill | ml | oom | waiting | restart | pending | unavailable | node_notready | throttle
     severity: int   # 1 bilgi, 2 uyarı, 3 kritik
     scope: str      # pod | node
     namespace: str
@@ -28,7 +33,9 @@ class Finding:
 
     @property
     def key(self) -> str:
-        return f"{self.kind}|{self.signal}|{self.namespace}|{self.pod or self.workload}"
+        # ML bulgusunun sinyali "en çok sapan ölçüm"dür ve turdan tura değişebilir; anahtara girmez.
+        sig = "" if self.kind == "ml" else self.signal
+        return f"{self.kind}|{sig}|{self.namespace}|{self.pod or self.workload}"
 
     @property
     def group(self) -> tuple[str, str]:
@@ -74,6 +81,10 @@ class Engine:
         self.profiles: dict[tuple[str, str, str], HourProfile] = {}   # (sinyal, namespace, iş yükü)
         self.limits: dict[tuple[str, str], float] = {}
         self.profile_at = 0.0
+        self.models: dict[tuple[str, str], Model] = {}                # (namespace, iş yükü)
+        self.ml_scores: dict[tuple[str, str], deque] = {}             # (namespace, pod) -> (zaman, skor)
+        self.ml_missing = 0
+        self.ml_train_seconds = 0.0
         self.suppressed = 0
         self.errors: list[str] = []
         self.stats: dict = {}
@@ -117,24 +128,58 @@ class Engine:
                         self._push(sig, ident, t, v)
 
     def refresh_profiles(self, now: float) -> None:
+        """Son 7 günden saatlik profilleri kurar ve aynı veriyle Isolation Forest modellerini yeniden eğitir."""
         profiles: dict[tuple[str, str, str], HourProfile] = {}
+        rows: dict[tuple[str, str], dict[float, list[float]]] = defaultdict(dict)  # (ns, pod) -> zaman -> ölçümler
         for sig in GAUGES:
+            col = ML_SIGNALS.index(sig.name) if sig.name in ML_SIGNALS else None
             for labels, pts in self._query(self.prom.range, sig.query, now - self.cfg.profile_days * 86400, now, 300):
                 ident = self._ident(sig, labels)
                 if ident is None:
                     continue
                 ns, name = ident
                 prof = profiles.setdefault((sig.name, ns, workload_of(name) if sig.scope == "pod" else name), HourProfile())
+                at = rows[ident] if col is not None else None
                 for t, v in pts:
                     prof.add(t, v)
+                    if at is not None:
+                        at.setdefault(t, [None] * len(ML_SIGNALS))[col] = v
         if profiles:
             self.profiles = profiles
+        if self.cfg.ml and rows:
+            self.train(rows, now)
         self.profile_at = now
+
+    def train(self, rows: dict[tuple[str, str], dict[float, list]], now: float) -> None:
+        """İş yükü başına bir orman. Etiket yok: model "bu iş yükü normalde nasıl görünür"ü verinin kendisinden öğrenir."""
+        started = time.time()
+        cfg = self.cfg
+        units = [GAUGE[n].min_abs for n in ML_SIGNALS]
+        by_wl: dict[tuple[str, str], list[list[float]]] = defaultdict(list)
+        pods: Counter = Counter()
+        for (ns, pod), at in rows.items():
+            wl = workload_of(pod)
+            pods[(ns, wl)] += 1
+            # CPU ve bellek şart; ağ ölçümü olmayan pod'larda (ör. hostNetwork) ağ 0 sayılır, skorlarken de öyle.
+            by_wl[(ns, wl)] += [[v or 0.0 for v in r] for r in at.values() if r[0] is not None and r[1] is not None]
+        models = {}
+        for key, data in by_wl.items():
+            if len(data) < cfg.ml_min_samples:
+                continue
+            seed = zlib.crc32(f"{key[0]}/{key[1]}".encode())
+            if len(data) > ML_ROWS:
+                data = random.Random(seed).sample(data, ML_ROWS)
+            models[key] = Model(data, units, trees=cfg.ml_trees, sample=cfg.ml_sample, seed=seed,
+                                q=cfg.ml_quantile, trained_at=now, pods=pods[key])
+        self.models = models
+        self.ml_train_seconds = time.time() - started
 
     def collect(self, now: float) -> None:
         self.errors = []
         self.stats = {"queries": 0, "query_ms": 0.0}
-        if now - self.profile_at >= self.cfg.profile_refresh:
+        # Henüz modeli olmayan iş yükü varsa (yeni kurulum, yeni uygulama) saatte bir yeniden denenir.
+        if (now - self.profile_at >= self.cfg.profile_refresh
+                or (self.cfg.ml and self.ml_missing and now - self.profile_at >= 3600)):
             self.refresh_profiles(now)
         for sig in GAUGES:
             for labels, v in self._query(self.prom.instant, sig.query, now):
@@ -144,6 +189,8 @@ class Engine:
         stale = now - 10 * self.cfg.interval
         for key in [k for k, s in self.series.items() if s.seen < stale]:
             del self.series[key]
+        for key in [k for k in self.ml_scores if ("pod_cpu", *k) not in self.series]:
+            del self.ml_scores[key]
         limits = self._query(self.prom.instant, MEM_LIMIT_QUERY, now)
         if limits:
             self.limits = {(label(l, "namespace"), label(l, "pod")): v for l, v in limits}
@@ -184,10 +231,102 @@ class Engine:
                     out.append(Finding("fill", 3 if eta < 3600 else 2, "pod", ns, pod, wl, title, name,
                                        {"value": vs[-1], "limit": limit, "eta": round(eta)}))
         self.suppressed += suppressed
+        ml = self._ml(now)
         checks = self._checks(now)
         self.stats |= {"candidates": candidates, "suppressed": suppressed, "fills": fills,
-                       "checks": dict(Counter(f.kind for f in checks)), "findings": len(out) + len(checks)}
-        return out + checks
+                       "ml_scored": self.stats.get("ml_scored", 0), "ml_flags": len(ml),
+                       "checks": dict(Counter(f.kind for f in checks)), "findings": len(out) + len(ml) + len(checks)}
+        return out + ml + checks
+
+    def ml_vector(self, ns: str, pod: str, now: float) -> list[float] | None:
+        """Pod'un bu turdaki ölçümleri, modelin beklediği sırayla."""
+        x = []
+        for name in ML_SIGNALS:
+            s = self.series.get((name, ns, pod))
+            ok = s is not None and s.seen == now
+            if not ok and name in ("pod_cpu", "pod_mem"):
+                return None
+            x.append(s.vs[-1] if ok else 0.0)
+        return x
+
+    def _ml(self, now: float) -> list[Finding]:
+        cfg = self.cfg
+        out: list[Finding] = []
+        scored = missing = 0
+        if not cfg.ml:
+            return out
+        for (name, ns, pod), s in self.series.items():
+            if name != "pod_cpu" or s.seen != now:
+                continue
+            wl = workload_of(pod)
+            model = self.models.get((ns, wl))
+            x = self.ml_vector(ns, pod, now)
+            if model is None or x is None:
+                missing += model is None
+                continue
+            score = model.score(x)
+            scored += 1
+            hist = self.ml_scores.get((ns, pod))
+            if hist is None:
+                hist = self.ml_scores[(ns, pod)] = deque(maxlen=cfg.history_points)
+            hist.append((now, score))
+            recent = list(hist)[-cfg.persist:]
+            if len(recent) < cfg.persist or any(sc < model.threshold for _, sc in recent):
+                continue
+            if now - recent[0][0] > (cfg.persist - 1) * cfg.interval * 1.5:  # arada boşluk varsa ardışık sayılmaz
+                continue
+            devs = model.deviations(x)
+            order = sorted(range(len(ML_SIGNALS)), key=lambda j: -abs(devs[j]))
+            parts = []
+            for j in order[:2]:
+                if abs(devs[j]) >= 0.5:
+                    u = GAUGE[ML_SIGNALS[j]].unit
+                    parts.append(f"{GAUGE[ML_SIGNALS[j]].title} {fmt(x[j], u)} (normalde {fmt(model.lo[j], u)}–{fmt(model.hi[j], u)})")
+            head = f"ML: ölçümlerin birleşimi olağandışı (skor {score:.2f}, eşik {model.threshold:.2f})"
+            title = (f"{head}; {', '.join(parts)}" if parts else
+                     f"{head}; tek tek bakınca hepsi olağan aralıkta, birlikte daha önce görülmedi")
+            out.append(Finding("ml", 2 if score >= model.threshold + 0.1 else 1, "pod", ns, pod, wl, title,
+                               ML_SIGNALS[order[0]],
+                               {"score": round(score, 3), "threshold": round(model.threshold, 3),
+                                "dev": {ML_SIGNALS[j]: round(devs[j], 1) for j in range(len(ML_SIGNALS))},
+                                "values": {ML_SIGNALS[j]: _r(x[j]) for j in range(len(ML_SIGNALS))},
+                                "normal": {ML_SIGNALS[j]: [_r(model.lo[j]), _r(model.hi[j])] for j in range(len(ML_SIGNALS))}}))
+        self.ml_missing = missing
+        self.stats["ml_scored"] = scored
+        return out
+
+    def ml_view(self) -> dict:
+        """Ekran için: modellerin özeti ve pod'ların son skorları."""
+        pods = []
+        for (ns, pod), hist in self.ml_scores.items():
+            m = self.models.get((ns, workload_of(pod)))
+            if m and hist:
+                pods.append({"ns": ns, "pod": pod, "workload": workload_of(pod), "score": round(hist[-1][1], 3),
+                             "threshold": round(m.threshold, 3)})
+        pods.sort(key=lambda r: -(r["score"] - r["threshold"]))
+        return {"enabled": self.cfg.ml, "signals": list(ML_SIGNALS), "trees": self.cfg.ml_trees, "sample": self.cfg.ml_sample,
+                "min_samples": self.cfg.ml_min_samples, "quantile": self.cfg.ml_quantile,
+                "models": len(self.models), "missing": self.ml_missing, "train_seconds": round(self.ml_train_seconds, 2),
+                "trained_at": max((m.trained_at for m in self.models.values()), default=None),
+                "next_try": self.profile_at + (3600 if self.ml_missing else self.cfg.profile_refresh), "pods": pods}
+
+    def ml_detail(self, ns: str, wl: str) -> dict | None:
+        """Bir iş yükünün modeli: eğitim verisinden örnek noktalar, eşik, pod'ların skor geçmişi ve şimdiki ölçümleri."""
+        m = self.models.get((ns, wl))
+        if m is None:
+            return None
+        pods = []
+        for (pns, pod), hist in self.ml_scores.items():
+            if pns != ns or workload_of(pod) != wl or not hist:
+                continue
+            x = [self.last(n, ns, pod) or 0.0 for n in ML_SIGNALS]
+            pods.append({"pod": pod, "ts": [round(t) for t, _ in hist], "scores": [round(v, 3) for _, v in hist],
+                         "x": [_r(v) for v in x], "dev": [round(d, 1) for d in m.deviations(x)]})
+        return {"ns": ns, "workload": wl, "signals": list(ML_SIGNALS), "units": m.units, "threshold": round(m.threshold, 3),
+                "samples": m.samples, "pods_seen": m.pods, "trained_at": m.trained_at, "trees": len(m.forest.trees),
+                "psi": m.forest.psi, "median": [_r(v) for v in m.median],
+                "lo": [_r(v) for v in m.lo], "hi": [_r(v) for v in m.hi],
+                "preview": m.preview, "pods": pods}
 
     def _checks(self, now: float) -> list[Finding]:
         out: list[Finding] = []

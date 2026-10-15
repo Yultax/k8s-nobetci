@@ -249,7 +249,7 @@ def build(snap: dict | None, view: dict) -> dict:
         "source": "kube" if snap.get("pods") is not None else "prometheus", "missing": missing,
         "cluster": view.get("cluster", ""), "version": view.get("version", ""), "now": view.get("now"),
         "cycle": view.get("cycle", 0), "interval": view.get("interval"), "ready": view.get("ready", False),
-        "detector": view.get("detector", {}), "pipeline": view.get("pipeline", {}), "llm": view.get("llm", {}),
+        "detector": view.get("detector", {}), "pipeline": view.get("pipeline", {}), "llm": view.get("llm", {}), "ml": view.get("ml", {}),
         "notify": view.get("notify", {}), "finding_counts": view.get("finding_counts", {}),
         "count_24h": view.get("count_24h", 0), "errors": view.get("errors", []),
         "incidents": [{"id": i["id"], "severity": i["severity"], "title": i["title"], "scope": i["scope"],

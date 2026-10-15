@@ -40,6 +40,12 @@ def metrics(s: dict) -> str:
       [(_lbl(signal=sig, namespace=ns, target=t), round(med, 6)) for sig, ns, t, _, med, _ in s.get("exports", []) if med is not None])
     m("nobetci_deviation", "gauge", "Son değerin normalden sapması (ölçek cinsinden; + artış, − düşüş).",
       [(_lbl(signal=sig, namespace=ns, target=t), z) for sig, ns, t, _, _, z in s.get("exports", []) if z is not None])
+    ml = s.get("ml") or {}
+    m("nobetci_ml_score", "gauge", "Isolation Forest skoru (0.5 civarı sıradan, 1'e yaklaştıkça tuhaf).",
+      [(_lbl(namespace=r["ns"], target=r["pod"]), r["score"]) for r in ml.get("pods", [])])
+    m("nobetci_ml_threshold", "gauge", "İş yükünün modelinin eşiği (eğitim verisinden kendisi seçer).",
+      [(_lbl(namespace=r["ns"], target=r["pod"]), r["threshold"]) for r in ml.get("pods", [])])
+    m("nobetci_ml_models", "gauge", "Eğitilmiş Isolation Forest modeli (iş yükü) sayısı.", [("", ml.get("models", 0))])
     sev = {1: "info", 2: "warning", 3: "critical"}
     m("nobetci_open_incidents", "gauge", "Seviyesine göre açık olay sayısı.",
       [(_lbl(severity=name), sum(1 for i in s.get("open", []) if i["severity"] == k)) for k, name in sev.items()])
@@ -86,6 +92,8 @@ def serve(app) -> None:
                 return self._json(app.ping())
             if url.path == "/api/state":
                 return self._json(app.state())
+            if url.path == "/api/ml":
+                return self._json(app.ml(q.get("k", "")))
             if url.path == "/api/series":
                 return self._json(app.series(q.get("k", "")))
             if url.path == "/api/incident" and q.get("id", "").isdigit():

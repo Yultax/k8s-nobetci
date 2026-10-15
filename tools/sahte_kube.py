@@ -16,7 +16,7 @@ STATEFUL = ("cache",)
 LABEL = {"coredns": {"k8s-app": "kube-dns"}, "kube-proxy": {"k8s-app": "kube-proxy"}}
 IMAGE = {
     "web": "nginx:1.27", "api": "ghcr.io/ornek/api:2.4.1", "worker": "ghcr.io/ornek/worker:2.4.1",
-    "cache": "redis:7.4", "rapor": "ghcr.io/ornek/rapor:1.0", "coredns": "registry.k8s.io/coredns/coredns:v1.11.3",
+    "cache": "redis:7.4", "rapor": "ghcr.io/ornek/rapor:1.0", "kuyruk-isci": "ghcr.io/ornek/kuyruk:1.3", "coredns": "registry.k8s.io/coredns/coredns:v1.11.3",
     "etcd": "registry.k8s.io/etcd:3.5.15-0", "kube-apiserver": "registry.k8s.io/kube-apiserver:v1.31.0",
     "kube-scheduler": "registry.k8s.io/kube-scheduler:v1.31.0",
     "kube-controller-manager": "registry.k8s.io/kube-controller-manager:v1.31.0",

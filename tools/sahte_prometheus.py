@@ -8,6 +8,8 @@ Senaryo, ilk isteğin zamanına (T0) göre işler:
   T0+25 dk             demo/web    CPU sıçraması (12 dk)
   T0+30 dk             demo/worker OOMKilled + CrashLoopBackOff
   T0+35 dk             demo/cache  gelen trafik kesilir
+  T0+45 dk             demo/kuyruk-isci  CPU %20 artar, gelen trafik %40 düşer (15 dk). Tek tek hiçbir
+                       eşiği aşmaz; normalde ikisi birlikte artıp azaldığı için yalnızca ML yakalar.
 
 GET istekleri sahte Kubernetes API'si gibi cevaplanır (tools/sahte_kube.py); nöbetçiye
 NOBETCI_KUBE_URL=http://127.0.0.1:<port> verilirse keşif ekranındaki küme haritası da dolar.
@@ -35,6 +37,7 @@ PODS = {
     "worker-5c7d8f9b6-m4n5p":  (0.30, 150, 20e3),
     "cache-0":                 (0.05, 300, 800e3),
     "rapor-6f7c8d9b2-k5l6m":   (0.02, 90, 5e3),
+    "kuyruk-isci-7b6c5d8f9-z4x7q": (0.6, 120, 2e6),
 }
 #         pod                                       namespace             cpu    bellek  ağ
 SYSTEM = {
@@ -72,6 +75,16 @@ def pod_value(sig: str, pod: str, t: float) -> float | None:
     day = 1 + 0.25 * math.sin(2 * math.pi * (t % 86400) / 86400)
     n = noise(sig, pod, int(t // 60))
     dt = (t - T0) / 60  # senaryo dakikası
+    if pod.startswith("kuyruk"):  # işlediği iş kadar CPU yer: CPU ile gelen trafik birlikte hareket eder
+        load = 1 + 0.4 * math.sin(2 * math.pi * (t % 86400) / 86400)
+        odd = 45 <= dt < 60
+        if sig == "pod_cpu":
+            return cpu * load * (1 + 0.03 * n) * (1.2 if odd else 1)
+        if sig == "pod_mem":
+            return mem * (1 + 0.01 * n) * MiB
+        if sig == "pod_net_rx":
+            return net * load * (1 + 0.03 * n) * (0.6 if odd else 1)
+        return 60e3 * load * (1 + 0.03 * n)
     if sig == "pod_cpu":
         v = cpu * day * (1 + 0.08 * n)
         if pod.startswith("rapor") and 15 <= ((t - T0) % 86400) / 60 < 25:

@@ -47,6 +47,7 @@ class App:
         self._pending: set[int] = set()
         self._view: dict = {"now": self.clock.now(), "ready": False}
         self._charts: dict[str, dict] = {}
+        self._ml: dict[str, dict] = {}
         self._cycle = 0
         self._topo_lock = threading.Lock()
         self._topo: tuple[float, dict | None] = (0.0, None)
@@ -81,6 +82,7 @@ class App:
             if c:
                 charts[f"{name}|{ns}|{ent}"] = c
         self._charts = charts
+        self._ml = {f"{ns}|{wl}": e.ml_detail(ns, wl) for ns, wl in list(e.models)}
         pods = sorted({(ns, ent) for (name, ns, ent) in e.series if GAUGE[name].scope == "pod"})
         nodes = sorted({ent for (name, _, ent) in e.series if name == "node_cpu"})
         table = []
@@ -110,9 +112,11 @@ class App:
                            "query_ms": round(st.get("query_ms", 0))},
                 "detect": {"candidates": st.get("candidates", 0), "suppressed": st.get("suppressed", 0),
                            "suppressed_total": e.suppressed, "fills": st.get("fills", 0),
-                           "checks": st.get("checks", {}), "findings": st.get("findings", 0)},
+                           "checks": st.get("checks", {}), "findings": st.get("findings", 0),
+                           "ml_scored": st.get("ml_scored", 0), "ml_flags": st.get("ml_flags", 0)},
                 "cycle_seconds": round(seconds, 3),
             },
+            "ml": e.ml_view(),
             "heat": {sig.name: e.heat(sig.name) for sig in GAUGES if sig.scope == "pod"},
             "nodes": [c for n in nodes for c in (charts.get(f"node_cpu||{n}"), charts.get(f"node_mem||{n}")) if c],
             "pods": table,
@@ -123,6 +127,9 @@ class App:
 
     def series(self, key: str) -> dict | None:
         return self._charts.get(key)
+
+    def ml(self, key: str) -> dict | None:
+        return self._ml.get(key)
 
     def incident(self, incident_id: int) -> dict | None:
         with self.lock:

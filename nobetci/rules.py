@@ -22,6 +22,8 @@ HINTS = {
               "Aynı andaki dağıtımlara ve istek sayısına bakın; sürüyorsa kopya sayısını artırmayı düşünün."),
     "drop": ("Kullanım aniden düştü: pod trafik alamıyor, takılmış ya da bağlı olduğu bir servis kesilmiş olabilir.",
              "Pod'un Ready olup olmadığını ve önündeki Service uçlarını kontrol edin."),
+    "ml": ("Isolation Forest bu iş yükünün ölçümlerinde (CPU, bellek, ağ) geçmişte görülmeyen bir birleşim buldu; tek başına hiçbir eşiği aşmayan ama birlikte tuhaf olan durumlar böyle yakalanır.",
+           "Bulgudaki \"normalde\" değerleriyle karşılaştırın; örneğin CPU yüksekken trafik düşükse pod istek almadan meşgul olabilir (döngü, kilitlenme)."),
     "throttle": ("Konteyner CPU limitine dayanıyor ve yavaşlatılıyor.",
                  "CPU limitini yükseltin ya da yükü kopyalara dağıtın."),
 }
@@ -47,7 +49,7 @@ def commands(scope: str, namespace: str, workload: str, findings: dict[str, dict
         out.append(f"kubectl -n {namespace} describe pod {pod}")
         prev = " --previous" if kinds & {"oom", "waiting", "restart"} else ""
         out.append(f"kubectl -n {namespace} logs {pod} --tail=50{prev}")
-        if kinds & {"spike", "fill", "throttle"}:
+        if kinds & {"spike", "fill", "throttle", "ml"}:
             out.append(f"kubectl -n {namespace} top pod {pod} --containers")
     if "unavailable" in kinds or not out:
         out.append(f"kubectl -n {namespace} get pods | grep {workload}")

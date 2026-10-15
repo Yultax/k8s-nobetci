@@ -690,13 +690,15 @@ function renderKpis() {
 }
 
 // ---------------------------------------------------------------- hat şeridi
+const d0 = () => S.st.pipeline.detect;
 const EXPLAIN = {
   source: () => [h("b", null, "Kaynak · Prometheus. "), `Her ${S.st.interval} saniyede bir Prometheus'a ~${S.st.pipeline.source.queries} sorgu atılır: pod ve node başına CPU, bellek, ağ (cAdvisor) ve pod durumları (kube-state-metrics). `,
     "Nöbetçi ölçüm saklamaz; açılışta son 3 saati ve saatlik profil için son 7 günü Prometheus'tan okur. Kaynak: ", h("code", null, S.st.pipeline.source.url)],
   detect: () => [h("b", null, "Dedektörler. "), `Sıçrama/düşüş: her seri için son ${S.det.window} ölçümün medyanı "normal", medyandan sapmaların medyanı (MAD) "ölçek" kabul edilir. `,
     `Son ${S.det.persist} ölçümün hepsi normalden ${S.det.z} ölçekten fazla uzaksa aday olur; düşüş için ayrıca değerin normalin yarısının altına inmesi gerekir. `,
     `Limit tahmini: bellek son 20–60 ölçümde düz bir çizgi gibi artıyorsa eğimle limite kalan süre hesaplanır, ${dur(S.det.fill_horizon)} içindeyse bildirilir. `,
-    "Durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya, Ready olmayan node, CPU kısılması."],
+    "Durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya, Ready olmayan node, CPU kısılması. ",
+    `ML (Isolation Forest): her iş yükü için son 7 günün verisiyle kendi kendine eğitilen model, pod'un CPU, bellek ve ağ değerlerine birlikte bakar; skor art arda ${S.det.persist} ölçümde modelin eşiğini aşarsa bulgu olur. Bu tur ${S.st.ml?.models ?? 0} model, ${d0().ml_scored ?? 0} pod skorlandı.`],
   filter: () => [h("b", null, "Saatlik profil. "), "Her iş yükü için son 7 günün her saatinde görülen en düşük ve en yüksek değerlerin günler arası medyanı tutulur. ",
     "Aday sıçrama bu saat için olağan aralıktaysa (ör. her gece 03:00'te çalışan yedekleme) bastırılır. Tek bir günün anomalisi medyanı bozmaz. En az 3 günlük geçmiş gerekir."],
   incidents: () => [h("b", null, "Olay birleştirme. "), "Aynı iş yükünün (Deployment, StatefulSet…) ya da aynı node'un bulguları tek olayda toplanır: çöken bir pod'un OOMKilled, CrashLoopBackOff ve CPU düşüşü üç ayrı alarm değil, tek olaydır. ",
@@ -706,7 +708,7 @@ const EXPLAIN = {
 };
 function renderPipe() {
   const p = S.st.pipeline, src = p.source, d = p.detect, ck = Object.values(d.checks).reduce((a, b) => a + b, 0);
-  const cand = d.candidates + d.fills + ck, openN = S.st.open.length, nt = S.st.notify;
+  const cand = d.candidates + d.fills + ck + (d.ml_flags || 0), openN = S.st.open.length, nt = S.st.notify;
   const stage = (key, no, k, t, big, unit, body) => h("button", {class: "stage", "aria-expanded": String(S.explain === key),
     onclick: () => { S.explain = S.explain === key ? null : key; renderPipe(); }},
     h("span", {class: "k"}, h("b", null, no), k), h("span", {class: "t"}, t), h("span", {class: "big"}, big, h("small", null, unit)), body);
@@ -716,7 +718,7 @@ function renderPipe() {
   put($("#pipe"), 
     stage("source", 1, "Kaynak", "Prometheus", src.series, "seri", h("span", {class: "sub"}, `${src.pods} pod · ${src.nodes} node`, h("br"), `${src.queries} sorgu · ${src.query_ms} ms`)),
     arrow(`${src.series} seri`, 0),
-    stage("detect", 2, "Tespit", "Dedektörler", cand, "aday", rows([["Sıçrama / düşüş", d.candidates], ["Limit tahmini", d.fills], ["Durum kontrolü", ck]])),
+    stage("detect", 2, "Tespit", "Dedektörler", cand, "aday", rows([["Sıçrama / düşüş", d.candidates], ["Limit tahmini", d.fills], ["ML (Isolation Forest)", d.ml_flags || 0], ["Durum kontrolü", ck]])),
     arrow(`${cand} aday`, .25),
     stage("filter", 3, "Filtre", "Saatlik profil", d.suppressed ? `−${d.suppressed}` : "0", "olağan", h("span", {class: "sub"}, `${src.profiles} iş yükü profili`, h("br"), `toplam ${d.suppressed_total} bastırıldı`)),
     arrow(`${d.findings} bulgu`, .5),
@@ -734,7 +736,7 @@ function incidents() {
   return {open: S.st.open.filter(incVisible), closed: S.st.closed.filter(incVisible)};
 }
 function topFinding(inc) {
-  const order = ["node_notready", "oom", "waiting", "fill", "unavailable", "pending", "restart", "spike", "drop", "throttle"];
+  const order = ["node_notready", "oom", "waiting", "fill", "unavailable", "pending", "restart", "spike", "drop", "ml", "throttle"];
   return Object.values(inc.findings).sort((a, b) => b.severity - a.severity || order.indexOf(a.kind) - order.indexOf(b.kind) || a.first_seen - b.first_seen)[0];
 }
 function renderList() {
@@ -773,6 +775,9 @@ function explainFinding(f, unit) {
     case "pending": return "Pod 10 dakikadır Pending durumunda; zamanlayıcı yerleştirecek node bulamıyor.";
     case "unavailable": return "Deployment'ın istenen kopya sayısı 10 dakikadır karşılanamıyor.";
     case "node_notready": return "Node'un Ready koşulu true değil.";
+    case "ml": return `Isolation Forest bu iş yükünün son 7 günden öğrendiği normale göre pod'un CPU, bellek ve ağ değerlerine birlikte baktı. ` +
+      `Skor ${d.score} (eşik ${d.threshold}, art arda ${S.det.persist} ölçüm); 0,5 civarı sıradan, 1'e yaklaştıkça tuhaf. ` +
+      `Ayrıntı ve ağaçların bu noktayı nasıl yalnızlaştırdığı keşif ekranındaki ML laboratuvarında.`;
     case "throttle": return "CPU periyotlarının yarısından fazlasında konteyner limit yüzünden bekletildi.";
   }
   return f.title;

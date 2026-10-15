@@ -18,10 +18,19 @@ Prometheus ──► toplama ──► tespit ──► olay birleştirme ──
                              ├ ani artış/düşüş: son 1 saatin medyanına göre sağlam z-skoru (MAD)
                              ├ saatlik profil: her gün aynı saatte tekrarlayan iş "olağan" sayılır
                              ├ limit tahmini: bellek bu hızla limite ne zaman dayanır
+                             ├ ML: Isolation Forest, iş yükü başına; CPU/bellek/ağ birlikte, kendini eğitir
                              └ durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya...
 ```
 
 - Ölçüm saklamaz; geçmişi açılışta Prometheus'tan okur (3 saat ayrıntılı + 7 gün saatlik profil).
+- **Makine öğrenmesi (Isolation Forest, `nobetci/iforest.py`):** her iş yükü için son 7 günün 5 dakikalık
+  verisiyle (pod'un CPU, bellek, gelen ve giden ağı birlikte) bir orman eğitilir: 100 ağaç, her biri rastgele
+  256 an. Etiket istemez; 6 saatte bir kendini yeniden eğitir, modeli olmayan iş yükü için saatte bir dener
+  (en az 12 saatlik geçmiş gerekir). Eşiği de kendisi seçer: eğitim verisindeki skorların %99,5'lik dilimi + 0,03.
+  Skor art arda 2 turda eşiği aşarsa `ml` bulgusu olur ve hangi ölçümün olağan aralığın (eğitim verisinin %1–%99'u)
+  dışında olduğu yazılır. İstatistiğin tek tek göremediği birleşimleri yakalar: CPU gündüz seviyesinde ama trafik
+  gece seviyesinde gibi. Yine yalnızca standart kütüphane; 20 iş yükünün eğitimi ~7 sn, bellek ~100 MB.
+  `NOBETCI_ML=false` ile kapatılır.
 - LLM karar vermez ve komut üretmez: hazır kanıtı üç satırda (özet, neden, öneri) yorumlar.
   Önerilen `kubectl` komutları kurallardan gelir. LLM yoksa ya da cevap vermezse kural tabanlı özet kalır.
 - Kendi ölçümlerini `/metrics` ile yayınlar (`nobetci_open_incidents`, `nobetci_anomaly_score`...).
@@ -81,6 +90,9 @@ Kümeyi ve nöbetçinin nasıl karar verdiğini öğrenmek için ayrı bir sayfa
 - **Nöbetçinin beyni:** tespit hattı bu turun gerçek sayılarıyla akar; aşamalara tıklayınca parametreleriyle anlatır.
   **Algoritma laboratuvarı:** gerçek bir seride eşik, kalıcılık ve pencereyi değiştirip kararın nasıl değiştiğini,
   medyan/MAD ile ortalama/standart sapma farkını ve limit tahminini görürsünüz (hesap `detect.py` ile birebir aynı).
+  **ML laboratuvarı:** bir iş yükünün eğitim verisi iki ölçümün düzleminde; "Sonraki bölme →" ile rastgele bir ağacın
+  pod'un şu anki noktasını kaç bölmede yalnızlaştırdığını adım adım izleyip sıradan bir noktayla karşılaştırırsınız
+  (`/api/ml?k=<ns>|<iş yükü>`).
 - **Ne izleyelim?:** izlenen sinyaller ve eklenebilecek ölçümler (senaryo + PromQL); kümedeki Prometheus'ta zaten
   bulunanlar işaretlenir (`/api/olcumler`).
 
@@ -117,7 +129,7 @@ yarım dakikada oynar.
 
 Hepsi `NOBETCI_` önekli ortam değişkeni; tam liste ve varsayılanlar `nobetci/config.py` içinde.
 En sık gerekenler: `PROM_URL`, `LLM_URL`, `LLM_MODEL`, `WEBHOOK_URL`, `NS_EXCLUDE` (regex),
-`Z` (eşik, varsayılan 5), `INTERVAL` (sn, varsayılan 60).
+`Z` (eşik, varsayılan 5), `INTERVAL` (sn, varsayılan 60), `ML` (Isolation Forest, varsayılan açık), `ML_TREES`, `ML_QUANTILE`.
 
 ## Bilinen sınırlar
 
@@ -126,3 +138,6 @@ En sık gerekenler: `PROM_URL`, `LLM_URL`, `LLM_MODEL`, `WEBHOOK_URL`, `NS_EXCLU
 - Profil en az 3 günlük Prometheus geçmişi ister; daha azında yalnızca yakın geçmişe bakılır.
 - Yeni doğan pod'da ilk ~20 dakika istatistiksel tespit yapılmaz (durum kontrolleri çalışır).
 - Prophet yok: aynı işi (mevsimsellik) bağımlılıksız saatlik profil görüyor.
+- Isolation Forest günün saatini bilmez: her gün aynı saatte görülen bir durum eğitim verisinde olduğu için olağan
+  sayılır, ama alışılmadık bir saatte görülmesi tek başına tuhaf bulunmaz. Kurulumdan sonraki ilk 12 saatte
+  (Prometheus'ta daha eski geçmiş yoksa) ML modeli olmaz; o sürede istatistik ve kurallar çalışır.

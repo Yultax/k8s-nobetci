@@ -32,6 +32,11 @@ class Config:
     profile_refresh: int = 6 * 3600
     fill_horizon: int = 6 * 3600  # "limit dolacak" uyarısı için ufuk (sn)
     quiet: int = 600              # bulgu gelmeyince olayın kapanma süresi (sn)
+    ml: bool = True               # Isolation Forest (iş yükü başına, kendini yeniden eğitir)
+    ml_trees: int = 100
+    ml_sample: int = 256          # her ağacın gördüğü rastgele nokta sayısı
+    ml_min_samples: int = 144     # bir iş yükünün modeli için en az eğitim noktası (5 dk aralıkla 12 saat)
+    ml_quantile: float = 0.995    # eşik: eğitim verisinin skorlarının bu dilimi (+ küçük pay)
     ns_exclude: str = ""          # izlenmeyecek namespace'ler (regex)
     llm_url: str = ""             # OpenAI uyumlu uç: http://ollama:11434 ya da https://generativelanguage.googleapis.com/v1beta/openai
     llm_model: str = "gemma3:4b"
