@@ -24,6 +24,7 @@ class Incident:
     commands: list[str] = field(default_factory=list)
     llm_sig: str = ""     # LLM'in en son yorumladığı durumun imzası
     llm_try: float = 0.0
+    feedback: str = ""   # kullanıcının işareti: "dogru" | "yanlis" | ""
 
     @property
     def group(self) -> tuple[str, str]:

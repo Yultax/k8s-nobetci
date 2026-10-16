@@ -18,6 +18,7 @@ class Store:
             self.db = sqlite3.connect(":memory:", check_same_thread=False)
             self.path = ":memory:"
         self.db.execute("CREATE TABLE IF NOT EXISTS incidents (id INTEGER PRIMARY KEY, closed REAL, data TEXT NOT NULL)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS feedback (incident INTEGER PRIMARY KEY, at REAL, data TEXT NOT NULL)")
         self.db.commit()
 
     def save(self, inc: Incident) -> None:
@@ -38,6 +39,19 @@ class Store:
     def get(self, incident_id: int) -> Incident | None:
         row = self.db.execute("SELECT data FROM incidents WHERE id = ?", (incident_id,)).fetchone()
         return Incident(**json.loads(row[0])) if row else None
+
+    def set_feedback(self, rec: dict | None, incident_id: int) -> None:
+        """Bir olayın doğru/yanlış alarm işareti; None işareti kaldırır."""
+        if rec is None:
+            self.db.execute("DELETE FROM feedback WHERE incident = ?", (incident_id,))
+        else:
+            self.db.execute("INSERT OR REPLACE INTO feedback (incident, at, data) VALUES (?, ?, ?)",
+                            (incident_id, rec["end"], json.dumps(rec, ensure_ascii=False)))
+        self.db.commit()
+
+    def feedback(self, since: float) -> list[dict]:
+        cur = self.db.execute("SELECT data FROM feedback WHERE at >= ? ORDER BY incident", (since,))
+        return [json.loads(r[0]) for r in cur]
 
     def count_since(self, ts: float) -> int:
         return self.db.execute("SELECT COUNT(*) FROM incidents WHERE json_extract(data, '$.opened') >= ?", (ts,)).fetchone()[0]

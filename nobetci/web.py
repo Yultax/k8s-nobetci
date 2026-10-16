@@ -104,6 +104,25 @@ def serve(app) -> None:
                 return self._send(metrics(app.state()), "text/plain; version=0.0.4")
             self.send_error(404)
 
+        def do_POST(self):
+            url = urllib.parse.urlsplit(self.path)
+            if url.path != "/api/geri-bildirim":
+                return self.send_error(404)
+            # Yalnızca bu ekrandan: JSON gövdesi (başka siteden gelen form gönderimi olamaz) ve aynı köken.
+            origin = self.headers.get("Origin")
+            if origin and urllib.parse.urlsplit(origin).netloc != self.headers.get("Host"):
+                return self.send_error(403)
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send_error(415)
+            try:
+                body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length") or 0), 4096)) or b"{}")
+                inc_id, verdict = int(body["id"]), str(body.get("karar", ""))
+            except (ValueError, KeyError, TypeError):
+                return self.send_error(400)
+            if verdict not in ("dogru", "yanlis", ""):
+                return self.send_error(400)
+            return self._json(app.feedback(inc_id, verdict))
+
         def _json(self, data):
             if data is None:
                 return self.send_error(404)

@@ -17,6 +17,9 @@ from .signals import CHECKS, GAUGE, GAUGES, MEM_LIMIT_QUERY, Signal, fmt, fmt_du
 WINDOW = 60  # "normal" hesabında geriye bakılan nokta sayısı (detect_jump ile aynı)
 ML_SIGNALS = ("pod_cpu", "pod_mem", "pod_net_rx", "pod_net_tx")  # Isolation Forest'ın birlikte baktığı ölçümler
 ML_ROWS = 6000  # iş yükü başına en fazla eğitim satırı
+FEEDBACK_PAD = 300  # geri bildirim aralığı Prometheus'un 5 dk'lık noktalarını kesin kapsasın
+FEEDBACK_SHARE = 0.03  # "yanlış alarm" anları eğitim verisinin en az bu payı kadar tekrarlanır
+RETRAIN_GAP = 120  # geri bildirimden sonra yeniden eğitim için en az bekleme (sn)
 
 
 @dataclass
@@ -85,10 +88,39 @@ class Engine:
         self.ml_scores: dict[tuple[str, str], deque] = {}             # (namespace, pod) -> (zaman, skor)
         self.ml_missing = 0
         self.ml_train_seconds = 0.0
+        self.feedback: list[dict] = []                                # kullanıcının doğru/yanlış dediği olaylar
+        self.z_boost: dict[tuple[str, str, str], float] = {}          # (sinyal, namespace, iş yükü) -> eşik çarpanı
+        self.retrain_wanted = False
         self.suppressed = 0
         self.errors: list[str] = []
         self.stats: dict = {}
         self._skip = re.compile(cfg.ns_exclude) if cfg.ns_exclude else None
+
+    def hour(self, t: float) -> float:
+        """Yerel saatle günün saati (0–24, ondalıklı)."""
+        return ((t + self.cfg.tz_offset * 3600) % 86400) / 3600
+
+    def set_feedback(self, records: list[dict]) -> None:
+        """Kullanıcı geri bildirimi. Hiç gelmese de modeller kendi kendine eğitilmeye devam eder;
+        geldiğinde: ML için "yanlış" anlar normal diye öğretilir, "doğru" anlar eğitimden çıkarılır;
+        sıçrama/düşüş için "yanlış" o iş yükünün o ölçümünde eşiği 1.25 kat yükseltir (en fazla 2 kat)."""
+        # Yeniden eğitim yalnızca işaret eklenince/değişince; süren olayın aralığının uzaması bir sonraki eğitimde işlenir.
+        marks = lambda rs: {(r["incident"], r["verdict"]) for r in rs if "ml" in r["kinds"]}  # noqa: E731
+        changed = marks(records) != marks(self.feedback)
+        self.feedback = records
+        boost: dict[tuple[str, str, str], float] = {}
+        for r in records:
+            if r["verdict"] == "yanlis":
+                for sig in r.get("signals", []):
+                    key = (sig, "" if r["scope"] == "node" else r["ns"], r["wl"])
+                    boost[key] = min(2.0, boost.get(key, 1.0) * 1.25)
+        self.z_boost = boost
+        if changed:
+            self.retrain_wanted = True
+
+    def _windows(self, ns: str, wl: str) -> list[tuple[float, float, str]]:
+        return [(r["start"] - FEEDBACK_PAD, r["end"] + FEEDBACK_PAD, r["verdict"]) for r in self.feedback
+                if r["scope"] == "pod" and r["ns"] == ns and r["wl"] == wl and "ml" in r["kinds"]]
 
     # --- toplama -----------------------------------------------------------
 
@@ -155,22 +187,31 @@ class Engine:
         started = time.time()
         cfg = self.cfg
         units = [GAUGE[n].min_abs for n in ML_SIGNALS]
-        by_wl: dict[tuple[str, str], list[list[float]]] = defaultdict(list)
+        by_wl: dict[tuple[str, str], list[tuple[float, list[float]]]] = defaultdict(list)
         pods: Counter = Counter()
         for (ns, pod), at in rows.items():
             wl = workload_of(pod)
             pods[(ns, wl)] += 1
             # CPU ve bellek şart; ağ ölçümü olmayan pod'larda (ör. hostNetwork) ağ 0 sayılır, skorlarken de öyle.
-            by_wl[(ns, wl)] += [[v or 0.0 for v in r] for r in at.values() if r[0] is not None and r[1] is not None]
+            by_wl[(ns, wl)] += [(t, [v or 0.0 for v in r]) for t, r in at.items() if r[0] is not None and r[1] is not None]
         models = {}
         for key, data in by_wl.items():
+            wins = self._windows(*key)
+            verdict = lambda t: next((v for a, b, v in wins if a <= t <= b), None)  # noqa: E731
+            accept = [(t, r) for t, r in data if verdict(t) == "yanlis"]
+            data = [(t, r) for t, r in data if verdict(t) is None]  # "doğru" denen anlar normal diye öğrenilmesin
             if len(data) < cfg.ml_min_samples:
                 continue
             seed = zlib.crc32(f"{key[0]}/{key[1]}".encode())
             if len(data) > ML_ROWS:
                 data = random.Random(seed).sample(data, ML_ROWS)
-            models[key] = Model(data, units, trees=cfg.ml_trees, sample=cfg.ml_sample, seed=seed,
-                                q=cfg.ml_quantile, trained_at=now, pods=pods[key])
+            if accept:  # birkaç an binlercesinin içinde kaybolmasın: payı en az %3 olacak kadar tekrarlanır
+                data += accept * min(50, max(1, round(FEEDBACK_SHARE * len(data) / len(accept))))
+            models[key] = Model([r for _, r in data], units, trees=cfg.ml_trees, sample=cfg.ml_sample, seed=seed,
+                                q=cfg.ml_quantile, trained_at=now, pods=pods[key], hours=[self.hour(t) for t, _ in data],
+                                accept=[(r, self.hour(t)) for t, r in accept])
+            models[key].feedback = {"yanlis": sum(v == "yanlis" for *_, v in wins), "dogru": sum(v == "dogru" for *_, v in wins),
+                                    "accepted": len(accept)}
         self.models = models
         self.ml_train_seconds = time.time() - started
 
@@ -179,7 +220,9 @@ class Engine:
         self.stats = {"queries": 0, "query_ms": 0.0}
         # Henüz modeli olmayan iş yükü varsa (yeni kurulum, yeni uygulama) saatte bir yeniden denenir.
         if (now - self.profile_at >= self.cfg.profile_refresh
-                or (self.cfg.ml and self.ml_missing and now - self.profile_at >= 3600)):
+                or (self.cfg.ml and self.ml_missing and now - self.profile_at >= 3600)
+                or (self.cfg.ml and self.retrain_wanted and now - self.profile_at >= RETRAIN_GAP)):
+            self.retrain_wanted = False
             self.refresh_profiles(now)
         for sig in GAUGES:
             for labels, v in self._query(self.prom.instant, sig.query, now):
@@ -208,7 +251,8 @@ class Engine:
             vs = list(s.vs)
             pod = ent if sig.scope == "pod" else ""
             wl = workload_of(ent) if sig.scope == "pod" else ent
-            jump = detect_jump(vs, min_abs=sig.min_abs, z=cfg.z, persist=cfg.persist, warmup=cfg.warmup, window=WINDOW)
+            z = cfg.z * self.z_boost.get((name, ns, wl), 1.0)
+            jump = detect_jump(vs, min_abs=sig.min_abs, z=z, persist=cfg.persist, warmup=cfg.warmup, window=WINDOW)
             if jump:
                 candidates += 1
                 prof = self.profiles.get((name, ns, wl))
@@ -220,7 +264,8 @@ class Engine:
                     if up and jump.baseline > 0 and jump.value / jump.baseline >= 1.5:
                         title += f" ({jump.value / jump.baseline:.1f} kat)"
                     out.append(Finding("spike" if up else "drop", 2, sig.scope, ns, pod, wl, title, name,
-                                       {"value": jump.value, "baseline": jump.baseline, "score": round(jump.score, 1)}))
+                                       {"value": jump.value, "baseline": jump.baseline, "score": round(jump.score, 1),
+                                        "z": round(z, 2)}))
             if name == "pod_mem":
                 limit = self.limits.get((ns, ent))
                 eta = detect_fill(list(s.ts), vs, limit, horizon=cfg.fill_horizon) if limit else None
@@ -264,7 +309,8 @@ class Engine:
             if model is None or x is None:
                 missing += model is None
                 continue
-            score = model.score(x)
+            hour = self.hour(now)
+            score = model.score(x, hour)
             scored += 1
             hist = self.ml_scores.get((ns, pod))
             if hist is None:
@@ -275,13 +321,15 @@ class Engine:
                 continue
             if now - recent[0][0] > (cfg.persist - 1) * cfg.interval * 1.5:  # arada boşluk varsa ardışık sayılmaz
                 continue
-            devs = model.deviations(x)
+            devs = model.deviations(x, hour)
+            lo, hi, at_hour = model.range_at(hour)
             order = sorted(range(len(ML_SIGNALS)), key=lambda j: -abs(devs[j]))
             parts = []
             for j in order[:2]:
                 if abs(devs[j]) >= 0.5:
                     u = GAUGE[ML_SIGNALS[j]].unit
-                    parts.append(f"{GAUGE[ML_SIGNALS[j]].title} {fmt(x[j], u)} (normalde {fmt(model.lo[j], u)}–{fmt(model.hi[j], u)})")
+                    parts.append(f"{GAUGE[ML_SIGNALS[j]].title} {fmt(x[j], u)} "
+                                 f"({'bu saatte ' if at_hour else ''}normalde {fmt(lo[j], u)}–{fmt(hi[j], u)})")
             head = f"ML: ölçümlerin birleşimi olağandışı (skor {score:.2f}, eşik {model.threshold:.2f})"
             title = (f"{head}; {', '.join(parts)}" if parts else
                      f"{head}; tek tek bakınca hepsi olağan aralıkta, birlikte daha önce görülmedi")
@@ -290,7 +338,8 @@ class Engine:
                                {"score": round(score, 3), "threshold": round(model.threshold, 3),
                                 "dev": {ML_SIGNALS[j]: round(devs[j], 1) for j in range(len(ML_SIGNALS))},
                                 "values": {ML_SIGNALS[j]: _r(x[j]) for j in range(len(ML_SIGNALS))},
-                                "normal": {ML_SIGNALS[j]: [_r(model.lo[j]), _r(model.hi[j])] for j in range(len(ML_SIGNALS))}}))
+                                "normal": {ML_SIGNALS[j]: [_r(lo[j]), _r(hi[j])] for j in range(len(ML_SIGNALS))},
+                                "hour": round(hour, 2), "at_hour": at_hour}))
         self.ml_missing = missing
         self.stats["ml_scored"] = scored
         return out
@@ -303,12 +352,16 @@ class Engine:
             if m and hist:
                 pods.append({"ns": ns, "pod": pod, "workload": workload_of(pod), "score": round(hist[-1][1], 3),
                              "threshold": round(m.threshold, 3)})
+        fb = [getattr(m, "feedback", {}) for m in self.models.values()]
         pods.sort(key=lambda r: -(r["score"] - r["threshold"]))
         return {"enabled": self.cfg.ml, "signals": list(ML_SIGNALS), "trees": self.cfg.ml_trees, "sample": self.cfg.ml_sample,
                 "min_samples": self.cfg.ml_min_samples, "quantile": self.cfg.ml_quantile,
                 "models": len(self.models), "missing": self.ml_missing, "train_seconds": round(self.ml_train_seconds, 2),
                 "trained_at": max((m.trained_at for m in self.models.values()), default=None),
-                "next_try": self.profile_at + (3600 if self.ml_missing else self.cfg.profile_refresh), "pods": pods}
+                "next_try": self.profile_at + (3600 if self.ml_missing else self.cfg.profile_refresh), "pods": pods,
+                "uses_hour": any(m.uses_hour for m in self.models.values()), "retrain_wanted": self.retrain_wanted,
+                "taught": sum(1 for f in fb if f.get("accepted")),
+                "raised": sum(1 for m in self.models.values() if m.threshold > m.base_threshold)}
 
     def ml_detail(self, ns: str, wl: str) -> dict | None:
         """Bir iş yükünün modeli: eğitim verisinden örnek noktalar, eşik, pod'ların skor geçmişi ve şimdiki ölçümleri."""
@@ -320,12 +373,16 @@ class Engine:
             if pns != ns or workload_of(pod) != wl or not hist:
                 continue
             x = [self.last(n, ns, pod) or 0.0 for n in ML_SIGNALS]
+            hour = self.hour(hist[-1][0])
+            lo, hi, at_hour = m.range_at(hour)
             pods.append({"pod": pod, "ts": [round(t) for t, _ in hist], "scores": [round(v, 3) for _, v in hist],
-                         "x": [_r(v) for v in x], "dev": [round(d, 1) for d in m.deviations(x)]})
+                         "x": [_r(v) for v in x], "dev": [round(d, 1) for d in m.deviations(x, hour)],
+                         "lo": [_r(v) for v in lo], "hi": [_r(v) for v in hi], "at_hour": at_hour})
         return {"ns": ns, "workload": wl, "signals": list(ML_SIGNALS), "units": m.units, "threshold": round(m.threshold, 3),
                 "samples": m.samples, "pods_seen": m.pods, "trained_at": m.trained_at, "trees": len(m.forest.trees),
                 "psi": m.forest.psi, "median": [_r(v) for v in m.median],
-                "lo": [_r(v) for v in m.lo], "hi": [_r(v) for v in m.hi],
+                "lo": [_r(v) for v in m.lo], "hi": [_r(v) for v in m.hi], "uses_hour": m.uses_hour,
+                "base_threshold": round(m.base_threshold, 3), "feedback": getattr(m, "feedback", {}),
                 "preview": m.preview, "pods": pods}
 
     def _checks(self, now: float) -> list[Finding]:

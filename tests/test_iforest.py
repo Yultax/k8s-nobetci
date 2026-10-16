@@ -76,5 +76,45 @@ class ModelTest(unittest.TestCase):
         self.assertFalse(self.flagged(0.6, 125, 2e6))
 
 
+def hour_of(i):
+    return (i * 5 / 60) % 24  # busy_rows 5 dakikalık adımlarla; yük 06:00'da tepe, 18:00'de dip
+
+
+class HourTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        rows = busy_rows()
+        cls.m = Model(rows, UNITS, trees=100, sample=256, seed=3, q=0.995, trained_at=0, pods=1,
+                      hours=[hour_of(i) for i in range(len(rows))])
+
+    def test_peak_load_is_normal_at_peak_hour(self):
+        x = [0.84, 120 * MiB, 2.8e6, 50e3]
+        self.assertLess(self.m.score(x, 6.0), self.m.threshold)
+
+    def test_peak_load_at_quiet_hour_is_flagged(self):
+        # Gündüz tepesindeki yük gecenin dibinde: değerler tek tek olağan, saatle birlikte değil.
+        x = [0.84, 120 * MiB, 2.8e6, 50e3]
+        self.assertGreaterEqual(self.m.score(x, 18.0), self.m.threshold)
+        self.assertEqual(self.m.deviations(x), [0, 0, 0, 0])
+        self.assertGreater(self.m.deviations(x, 18.0)[0], 0)
+
+    def test_midnight_wraps(self):
+        self.assertAlmostEqual(self.m.score([0.6, 120 * MiB, 2e6, 50e3], 23.99),
+                               self.m.score([0.6, 120 * MiB, 2e6, 50e3], 0.0), delta=0.03)
+
+
+class FeedbackTest(unittest.TestCase):
+    def test_false_alarm_raises_threshold(self):
+        rows = busy_rows()
+        odd = [0.75, 120 * MiB, 1.25e6, 50e3]
+        plain = Model(rows, UNITS, trees=100, sample=256, seed=3, q=0.995, trained_at=0, pods=1)
+        self.assertGreaterEqual(plain.score(odd), plain.threshold)
+        taught = Model(rows + [odd] * 60, UNITS, trees=100, sample=256, seed=3, q=0.995, trained_at=0, pods=1,
+                       accept=[(odd, None)] * 3)
+        self.assertLess(taught.score(odd), taught.threshold)
+        self.assertLessEqual(taught.threshold, taught.base_threshold + 0.15)
+        self.assertEqual(taught.accepted, 3)
+
+
 if __name__ == "__main__":
     unittest.main()

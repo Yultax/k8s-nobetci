@@ -18,19 +18,28 @@ Prometheus ──► toplama ──► tespit ──► olay birleştirme ──
                              ├ ani artış/düşüş: son 1 saatin medyanına göre sağlam z-skoru (MAD)
                              ├ saatlik profil: her gün aynı saatte tekrarlayan iş "olağan" sayılır
                              ├ limit tahmini: bellek bu hızla limite ne zaman dayanır
-                             ├ ML: Isolation Forest, iş yükü başına; CPU/bellek/ağ birlikte, kendini eğitir
+                             ├ ML: Isolation Forest, iş yükü başına; CPU/bellek/ağ + saat birlikte, kendini eğitir
                              └ durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya...
 ```
 
 - Ölçüm saklamaz; geçmişi açılışta Prometheus'tan okur (3 saat ayrıntılı + 7 gün saatlik profil).
 - **Makine öğrenmesi (Isolation Forest, `nobetci/iforest.py`):** her iş yükü için son 7 günün 5 dakikalık
-  verisiyle (pod'un CPU, bellek, gelen ve giden ağı birlikte) bir orman eğitilir: 100 ağaç, her biri rastgele
+  verisiyle (pod'un CPU, bellek, gelen ve giden ağı ve günün saati birlikte) bir orman eğitilir: 100 ağaç, her biri rastgele
   256 an. Etiket istemez; 6 saatte bir kendini yeniden eğitir, modeli olmayan iş yükü için saatte bir dener
   (en az 12 saatlik geçmiş gerekir). Eşiği de kendisi seçer: eğitim verisindeki skorların %99,5'lik dilimi + 0,03.
-  Skor art arda 2 turda eşiği aşarsa `ml` bulgusu olur ve hangi ölçümün olağan aralığın (eğitim verisinin %1–%99'u)
-  dışında olduğu yazılır. İstatistiğin tek tek göremediği birleşimleri yakalar: CPU gündüz seviyesinde ama trafik
-  gece seviyesinde gibi. Yine yalnızca standart kütüphane; 20 iş yükünün eğitimi ~7 sn, bellek ~100 MB.
-  `NOBETCI_ML=false` ile kapatılır.
+  Skor art arda 2 turda eşiği aşarsa `ml` bulgusu olur ve hangi ölçümün o saatteki olağan aralığın (eğitim
+  verisinde o saatin ±1 saatinin %1–%99'u) dışında olduğu yazılır. İstatistiğin tek tek göremediği birleşimleri
+  yakalar: CPU gündüz seviyesinde ama trafik gece seviyesinde, ya da gündüz olağan olan trafik gece 03:00'te.
+  Saat, çember üzerinde iki koordinat olarak verilir (23:00 ile 00:00 yan yana). Yine yalnızca standart
+  kütüphane; 20 iş yükünün eğitimi ~7–9 sn, bellek ~100 MB. `NOBETCI_ML=false` ile kapatılır.
+- **Geri bildirim (isteğe bağlı):** ekranda her olayda "✓ Doğru" / "✗ Yanlış alarm" düğmeleri var. Hiç basılmasa
+  da modeller kendi kendine eğitilmeye devam eder. Basılırsa (son 7 gün geçerli, SQLite'ta saklanır):
+  - ML, *yanlış*: o aralığın anları eğitim verisinin en az %3'ü olacak kadar tekrarlanır ve eşik, o anların
+    %90'ını alarm saymayacak kadar yükseltilir (en fazla +0,15). Model 1–2 dakika içinde yeniden eğitilir.
+  - ML, *doğru*: o aralık eğitimden çıkarılır; model bu durumu normal diye öğrenmez.
+  - Sıçrama/düşüş, *yanlış*: o iş yükünün o ölçümünde z eşiği 1,25 kat yükselir (en fazla 2 kat).
+  - Kural bulguları (OOMKilled, CrashLoopBackOff…) kesin olgu; işaret yalnızca sayılır.
+  Uç: `POST /api/geri-bildirim` `{"id": 12, "karar": "dogru" | "yanlis" | ""}` (yalnızca JSON, aynı köken).
 - LLM karar vermez ve komut üretmez: hazır kanıtı üç satırda (özet, neden, öneri) yorumlar.
   Önerilen `kubectl` komutları kurallardan gelir. LLM yoksa ya da cevap vermezse kural tabanlı özet kalır.
 - Kendi ölçümlerini `/metrics` ile yayınlar (`nobetci_open_incidents`, `nobetci_anomaly_score`...).
@@ -63,8 +72,10 @@ Ekran, oturum kapansa da çalışan bir `port-forward` ile `http://<sunucu>:8080
 
 - **Çalışma hattı:** Prometheus → dedektörler → saatlik profil filtresi → olaylar → bildirim; her ölçüm
   turunda aşama sayıları güncellenir, aşamaya tıklayınca nasıl çalıştığını gerçek parametrelerle anlatır.
-- **Olay ayrıntısı:** neden alarm verdiği (normal, sapma, eşik), eşik zarflı grafikler (artı imleci
-  bütün grafiklerde eşzamanlı), bellek için limite dolma tahmini, bulgu zaman çizelgesi, kopyalanabilir komutlar.
+- **Olaylar:** sayfanın başında; liste kaydırırken yerinde kalır. Ayrıntıda bulgular pod'a göre gruplanır
+  (her bulgunun ilk–son görülme saatiyle), neden alarm verdiği (normal, sapma, eşik), eşik zarflı grafikler
+  (artı imleci bütün grafiklerde eşzamanlı), bellek için limite dolma tahmini, kopyalanabilir komutlar ve
+  doğru/yanlış alarm düğmeleri.
 - **Sapma haritası:** pod × son 60 ölçüm; renk değerin kendi normalinden sapması (mavi düşüş, kırmızı artış).
 - **Node grafikleri, olay zaman çizelgesi (1/6/24 sa), sıralanabilir pod tablosu.** Satıra tıklayınca pod görünümü açılır.
 - Namespace filtresi, pod arama, açık/koyu tema, yeni olayda isteğe bağlı ses; kısayollar `j`/`k`, `/`, `Esc`, `?`.
@@ -138,6 +149,6 @@ En sık gerekenler: `PROM_URL`, `LLM_URL`, `LLM_MODEL`, `WEBHOOK_URL`, `NS_EXCLU
 - Profil en az 3 günlük Prometheus geçmişi ister; daha azında yalnızca yakın geçmişe bakılır.
 - Yeni doğan pod'da ilk ~20 dakika istatistiksel tespit yapılmaz (durum kontrolleri çalışır).
 - Prophet yok: aynı işi (mevsimsellik) bağımlılıksız saatlik profil görüyor.
-- Isolation Forest günün saatini bilmez: her gün aynı saatte görülen bir durum eğitim verisinde olduğu için olağan
-  sayılır, ama alışılmadık bir saatte görülmesi tek başına tuhaf bulunmaz. Kurulumdan sonraki ilk 12 saatte
-  (Prometheus'ta daha eski geçmiş yoksa) ML modeli olmaz; o sürede istatistik ve kurallar çalışır.
+- Isolation Forest haftanın gününü bilmez: yalnızca hafta sonu görülen bir durum hafta içinde tuhaf bulunmaz.
+  Kurulumdan sonraki ilk 12 saatte (Prometheus'ta daha eski geçmiş yoksa) ML modeli olmaz; o sürede istatistik
+  ve kurallar çalışır.

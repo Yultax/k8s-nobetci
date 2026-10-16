@@ -65,7 +65,7 @@ h2{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .kpi .l{font-size:12px;color:var(--ink2);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kpi .v{font-size:26px;font-weight:650;line-height:1.2}
+.kpi .v{font-size:26px;font-weight:650;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .v small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:4px}
 .kpi .s{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
 .kpi .s .chip{font-weight:500;color:var(--ink2)}
@@ -100,7 +100,7 @@ h2{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;
 .explain code{font:12px var(--mono);background:var(--raised);padding:1px 5px;border-radius:4px;color:var(--ink)}
 
 /* filtreler */
-.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto}
 .filters select,.filters input[type=search]{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;
   padding:7px 10px;font:inherit;font-size:13px}
 .filters input[type=search]{width:240px}
@@ -109,19 +109,20 @@ h2{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;
 kbd{font:11px var(--mono);border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--ink2);background:var(--surface)}
 
 /* olaylar + ayrıntı */
-.main{display:grid;grid-template-columns:350px minmax(0,1fr);gap:16px;margin-top:14px;align-items:start}
-.list{padding:6px}
+.main{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.list{padding:6px;position:sticky;top:64px}
 .tabs{display:flex;gap:4px;padding:4px;margin-bottom:4px}
 .tab{border:0;background:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--ink2)}
 .tab[aria-selected=true]{background:var(--raised);color:var(--ink);font-weight:600}
 .tab .n{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:4px}
-.items{display:flex;flex-direction:column;gap:2px;max-height:620px;overflow:auto}
+.items{display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 140px);overflow:auto}
 .item{display:grid;grid-template-columns:18px 1fr auto;gap:2px 10px;padding:10px 10px 10px 8px;border-radius:8px;cursor:pointer;
   border:0;background:none;text-align:left;width:100%;border-left:3px solid transparent}
 .item:hover{background:var(--raised)}
 .item[aria-current=true]{background:var(--sel);border-left-color:var(--series)}
 .item .who{font:12.5px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.item .age{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.item .age{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.item .mark{font-size:11.5px;color:var(--ink2);margin-left:6px}
 .item .what{grid-column:2/4;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .spark{grid-column:2/4;margin-top:4px}
 .item.new{animation:flash 1.6s ease-out 2}
@@ -134,10 +135,23 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-bottom-width:2px
 .d-head .who{font:14px var(--mono);color:var(--ink2)}
 .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--raised);color:var(--ink2);border:1px solid var(--border)}
 .badge.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--critical);margin-right:6px;vertical-align:1px}
-.why{margin-top:14px;display:grid;gap:8px}
-.why .w{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:13.5px}
-.why .w .src{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+.why{margin-top:16px;display:flex;flex-direction:column;gap:14px}
+.why .tg{display:flex;flex-direction:column;gap:6px}
+.why .tg>.tn{font:12px var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.why .w{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:start;font-size:13.5px}
+.why .w .tm{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px}
 .why .gone{opacity:.6}
+/* geri bildirim */
+.fb{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 10px;cursor:pointer;font-size:12.5px;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button:hover{color:var(--ink);background:var(--raised)}
+.seg button[aria-pressed=true]{background:var(--raised);color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--series)}
+.seg button:disabled{opacity:.5;cursor:wait}
+.fb-note{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--raised);font-size:12.5px;color:var(--ink2)}
+.fb-note:empty{display:none}
+.fb-note div+div{margin-top:2px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:18px 0 6px}
 .legend span{display:inline-flex;gap:6px;align-items:center}
 .key-line{width:16px;height:2px;background:var(--series);border-radius:1px}
@@ -152,17 +166,14 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-bottom-width:2px
 .chart{position:relative;width:100%;outline:none}
 .chart svg{display:block;font:11px var(--font)}
 .chart:focus-visible{outline:2px solid var(--series);outline-offset:4px}
-.cols{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;margin-top:18px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--grid)}
 .box h4{margin:0 0 8px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);font-weight:650}
 .box p{margin:4px 0;font-size:13.5px}
 .cmds{display:flex;flex-direction:column;gap:4px}
-.cmd{display:flex;align-items:center;gap:8px;background:var(--raised);border-radius:8px;padding:6px 6px 6px 10px}
-.cmd code{flex:1;font:12px var(--mono);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.cmd{display:flex;align-items:flex-start;gap:8px;background:var(--raised);border-radius:8px;padding:6px 6px 6px 10px}
+.cmd code{flex:1;min-width:0;font:12px/1.5 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;padding-top:1px}
 .cmd button{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:2px 8px;font-size:11.5px;cursor:pointer;color:var(--ink2);flex:none}
 .cmd button.ok{color:var(--good);border-color:var(--good)}
-.tline{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
-.tline td{padding:5px 8px 5px 0;border-bottom:1px solid var(--grid);vertical-align:top}
-.tline td.t{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
 .calm{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:30px 8px}
 .calm .hero{font-size:52px;font-weight:650;line-height:1}
 .calm .hero small{font-size:18px;font-weight:500;color:var(--ink2);margin-left:8px}
@@ -245,10 +256,15 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
   .arrow .line::after{right:-4px;top:auto;bottom:-1px;border:5px solid transparent;border-top:7px solid var(--axis);border-bottom:0}
   .arrow .pkt{left:-3px!important;top:0;animation-name:flowv}
   @keyframes flowv{0%{top:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:calc(100% - 8px);opacity:0}}
-  .main,.row2,.cols{grid-template-columns:1fr}
+  .main,.row2,.cols{grid-template-columns:minmax(0,1fr)}
+  .list{position:static}.items{max-height:420px}
 }
 @media (max-width:640px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pipe .arrow{display:none}
+  .pipe .stage:last-child{grid-column:1/-1}
+  .fb{margin-left:0;width:100%;flex-wrap:wrap}
+  .detail{padding:14px}
   .wrap{padding:0 12px 40px}.top{margin:0 -12px 14px;padding:10px 12px}
   .cells{grid-template-columns:repeat(30,minmax(0,1fr));gap:1px}.cells i:nth-child(-n+30){display:none}
   .hrow.head{display:none}
@@ -270,7 +286,7 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
       <svg class="ring" width="20" height="20" viewBox="0 0 20 20" aria-label="sonraki ölçüme kalan süre"><circle cx="10" cy="10" r="7.5" stroke="var(--grid)"/><circle id="ringArc" cx="10" cy="10" r="7.5" stroke="var(--series)" stroke-dasharray="47.12" stroke-dashoffset="47.12" transform="rotate(-90 10 10)" stroke-linecap="round"/></svg>
     </div>
     <span id="status"></span>
-    <a class="icon-btn" href="/kesif" title="Kümenin canlı haritası, tespit hattının nasıl çalıştığı ve izlenebilecek ölçümler" style="width:auto;padding:0 10px;text-decoration:none;font-size:12px;font-weight:600;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7.5l3.5 8.5M17 7.5l-3.5 8.5M7.5 6h9"/></svg>Keşif</a>
+    <a class="icon-btn" href="/kesif" title="Kümenin canlı haritası, tespit hattının nasıl çalıştığı ve izlenebilecek ölçümler" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;text-decoration:none;font-size:12px;font-weight:600;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7.5l3.5 8.5M17 7.5l-3.5 8.5M7.5 6h9"/></svg>Keşif</a>
     <button class="icon-btn" id="soundBtn" aria-pressed="false" title="Yeni olayda ses çal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
     <button class="icon-btn" id="themeBtn" title="Açık / koyu tema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
     <button class="icon-btn" id="helpBtn" title="Kısayollar" aria-expanded="false">?</button>
@@ -287,23 +303,25 @@ table.pods .pod{font-family:var(--mono);font-size:12.5px}
   <div class="kpis" id="kpis"></div>
 
   <section>
+    <div class="sec-head"><h2>Olaylar</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Aynı iş yükünün bulguları tek olayda toplanır. Bir olaya doğru ya da yanlış alarm demek isteğe bağlıdır; demesen de modeller kendi kendine öğrenmeye devam eder.">i</button>
+      <div class="filters" role="search">
+        <select id="nsSel" aria-label="Namespace"></select>
+        <input type="search" id="q" placeholder="Pod ara…" aria-label="Pod ara">
+        <label><input type="checkbox" id="hideSys"> Sistem namespace'lerini gizle</label>
+      </div></div>
+    <div class="main">
+      <div class="card list">
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div class="items" id="items"></div>
+      </div>
+      <div class="card detail" id="detail"></div>
+    </div>
+  </section>
+
+  <section class="sec">
     <div class="sec-head"><h2>Çalışma hattı</h2><button class="info" type="button" aria-label="Açıklama" data-tip="Her ölçüm turunda veri soldan sağa akar. Bir aşamaya tıklayınca nasıl çalıştığını anlatır.">i</button></div>
     <div class="pipe" id="pipe"></div>
     <div class="card explain" id="explain"></div>
-  </section>
-
-  <div class="filters" role="search">
-    <select id="nsSel" aria-label="Namespace"></select>
-    <input type="search" id="q" placeholder="Pod ara…" aria-label="Pod ara">
-    <label><input type="checkbox" id="hideSys"> Sistem namespace'lerini gizle</label>
-  </div>
-
-  <section class="main">
-    <div class="card list">
-      <div class="tabs" role="tablist" id="tabs"></div>
-      <div class="items" id="items"></div>
-    </div>
-    <div class="card detail" id="detail"></div>
   </section>
 
   <section class="sec">
@@ -679,12 +697,18 @@ function renderKpis() {
     h("span", {class: "l"}, l, tipText ? h("button", {class: "info", type: "button", "aria-label": "Açıklama", "data-tip": tipText}, "i") : null),
     h("span", {class: "v"}, v, unit ? h("small", null, unit) : null), h("span", {class: "s"}, sub));
   const fill = open.flatMap((i) => Object.values(i.findings)).filter((f) => f.kind === "fill" && f.active).sort((a, b) => a.detail.eta - b.detail.eta)[0];
+  const split = (str) => { const m = /^([\d.,]+)\s*(.*)$/.exec(str); return m ? [m[1], m[2]] : [str, ""]; };
+  const [cpuV, cpuU] = split(node ? fmt(last(node), "cores") : "–");
+  const ml = st.ml || {}, fbm = st.feedback?.ml || {dogru: 0, yanlis: 0};
+  const mlSub = !ml.enabled ? "kapalı" : ml.retrain_wanted ? "geri bildirimle yeniden eğitiliyor" :
+    ml.trained_at ? `${dur(st.now - ml.trained_at)} önce eğitildi` : "eğitim için geçmiş bekleniyor";
   put($("#kpis"),
     tile("Açık olay", open.length, "", [chip(3, `${by(3)} kritik`), chip(2, `${by(2)} uyarı`)]),
     tile("Eşik dışı pod", hot, `/ ${out.length}`, "şu an normalinden sapan", `En az bir ölçümü normalinden ${Z} ölçekten fazla sapan pod sayısı.`),
     tile("Son 24 saat", st.count_24h, "olay", `${st.pipeline.detect.suppressed_total} sıçrama olağan sayıldı`),
-    tile("Node CPU", node ? fmt(last(node), "cores") : "–", "", node?.entity || ""),
-    tile("Node bellek", mem ? fmt(last(mem), "bytes") : "–", "", mem?.entity || ""),
+    tile("Node", cpuV, cpuU || "", [mem ? h("span", null, `bellek ${fmt(last(mem), "bytes")}`) : null, node?.entity ? h("span", null, node.entity) : null]),
+    tile("ML modeli", ml.enabled ? ml.models : "–", ml.enabled ? "iş yükü" : "", [h("span", null, mlSub), fbm.dogru + fbm.yanlis ? h("span", null, `işaret: ${fbm.dogru} doğru, ${fbm.yanlis} yanlış`) : null],
+      "Her iş yükü için ayrı bir Isolation Forest. Son 7 günün CPU, bellek, ağ ve günün saati verisiyle kendi kendine 6 saatte bir yeniden eğitilir. Olaylara doğru/yanlış demek isteğe bağlıdır; dersen bir sonraki eğitimde dikkate alınır."),
     tile("En yakın dolma", fill ? dur(fill.detail.eta) : "–", "", fill ? fill.pod : "bellek limitine giden pod yok",
       "Bellek kullanımı düz bir çizgi gibi artan pod'ların limitine kalan tahmini süre; en kısası."));
 }
@@ -698,7 +722,8 @@ const EXPLAIN = {
     `Son ${S.det.persist} ölçümün hepsi normalden ${S.det.z} ölçekten fazla uzaksa aday olur; düşüş için ayrıca değerin normalin yarısının altına inmesi gerekir. `,
     `Limit tahmini: bellek son 20–60 ölçümde düz bir çizgi gibi artıyorsa eğimle limite kalan süre hesaplanır, ${dur(S.det.fill_horizon)} içindeyse bildirilir. `,
     "Durum kontrolleri: OOMKilled, CrashLoopBackOff, Pending, hazır olmayan kopya, Ready olmayan node, CPU kısılması. ",
-    `ML (Isolation Forest): her iş yükü için son 7 günün verisiyle kendi kendine eğitilen model, pod'un CPU, bellek ve ağ değerlerine birlikte bakar; skor art arda ${S.det.persist} ölçümde modelin eşiğini aşarsa bulgu olur. Bu tur ${S.st.ml?.models ?? 0} model, ${d0().ml_scored ?? 0} pod skorlandı.`],
+    `ML (Isolation Forest): her iş yükü için son 7 günün verisiyle kendi kendine eğitilen model, pod'un CPU, bellek ve ağ değerlerine günün saatiyle birlikte bakar; skor art arda ${S.det.persist} ölçümde modelin eşiğini aşarsa bulgu olur. Bu tur ${S.st.ml?.models ?? 0} model, ${d0().ml_scored ?? 0} pod skorlandı. `,
+    "Bir olaya \"yanlış alarm\" dersen o anlar bir sonraki eğitimde normal diye öğretilir; \"doğru\" dersen eğitimden çıkarılır. Hiç işaretlemesen de model kendi kendine eğitilmeye devam eder."],
   filter: () => [h("b", null, "Saatlik profil. "), "Her iş yükü için son 7 günün her saatinde görülen en düşük ve en yüksek değerlerin günler arası medyanı tutulur. ",
     "Aday sıçrama bu saat için olağan aralıktaysa (ör. her gece 03:00'te çalışan yedekleme) bastırılır. Tek bir günün anomalisi medyanı bozmaz. En az 3 günlük geçmiş gerekir."],
   incidents: () => [h("b", null, "Olay birleştirme. "), "Aynı iş yükünün (Deployment, StatefulSet…) ya da aynı node'un bulguları tek olayda toplanır: çöken bir pod'un OOMKilled, CrashLoopBackOff ve CPU düşüşü üç ayrı alarm değil, tek olaydır. ",
@@ -752,7 +777,8 @@ function renderList() {
       onclick: () => select({type: "inc", id: inc.id})},
       chip(inc.severity, ""),
       h("span", {class: "who"}, `#${inc.id} ${inc.entity}`),
-      inc.closed ? h("span", {class: "age"}, dur(inc.closed - inc.opened)) : h("span", {class: "age", "data-since": inc.opened}, dur(serverNow() - inc.opened)),
+      h("span", {class: "age"}, inc.closed ? dur(inc.closed - inc.opened) : h("span", {"data-since": inc.opened}, dur(serverNow() - inc.opened)),
+        inc.feedback ? h("span", {class: "mark", title: "senin işaretin"}, inc.feedback === "dogru" ? "✓ doğru" : "✗ yanlış") : null),
       h("span", {class: "what"}, f.title + (more ? ` · +${more} bulgu` : "")),
       first && h("span", {class: "spark"}, sparkline(first.vs.slice(-60))));
   });
@@ -765,8 +791,10 @@ function explainFinding(f, unit) {
   switch (f.kind) {
     case "spike": case "drop": {
       const up = f.kind === "spike";
+      const z = d.z ?? Z;
       return `Son ${S.det.persist} ölçümün hepsi, önceki ${S.det.window} ölçümün normalinin (${fmt(d.baseline, unit)}) ${up ? "çok üstünde" : "çok altında"}: ` +
-        `şu an ${fmt(d.value, unit)}. Sapma ${signed(up ? d.score : -d.score)}, eşik ±${Z}.` + (up ? "" : " Değer normalin yarısının da altına indi.");
+        `şu an ${fmt(d.value, unit)}. Sapma ${signed(up ? d.score : -d.score)}, eşik ±${+z.toFixed(2)}` +
+        (z > Z ? ` (yanlış alarm işaretleriyle ${Z}'ten yükseltildi).` : ".") + (up ? "" : " Değer normalin yarısının da altına indi.");
     }
     case "fill": return `Bellek son ölçümlerde düz bir çizgi gibi artıyor. Bu eğimle ${fmt(d.limit, "bytes")} limitine yaklaşık ${dur(d.eta)} sonra ulaşır; limit dolunca konteyner OOMKilled olur.`;
     case "oom": return "kube-state-metrics, konteynerin son kapanış nedenini OOMKilled olarak bildiriyor ve son 10 dakikada yeniden başladı.";
@@ -775,7 +803,7 @@ function explainFinding(f, unit) {
     case "pending": return "Pod 10 dakikadır Pending durumunda; zamanlayıcı yerleştirecek node bulamıyor.";
     case "unavailable": return "Deployment'ın istenen kopya sayısı 10 dakikadır karşılanamıyor.";
     case "node_notready": return "Node'un Ready koşulu true değil.";
-    case "ml": return `Isolation Forest bu iş yükünün son 7 günden öğrendiği normale göre pod'un CPU, bellek ve ağ değerlerine birlikte baktı. ` +
+    case "ml": return `Isolation Forest bu iş yükünün son 7 günden öğrendiği normale göre pod'un CPU, bellek ve ağ değerlerine günün saatiyle birlikte baktı. ` +
       `Skor ${d.score} (eşik ${d.threshold}, art arda ${S.det.persist} ölçüm); 0,5 civarı sıradan, 1'e yaklaştıkça tuhaf. ` +
       `Ayrıntı ve ağaçların bu noktayı nasıl yalnızlaştırdığı keşif ekranındaki ML laboratuvarında.`;
     case "throttle": return "CPU periyotlarının yarısından fazlasında konteyner limit yüzünden bekletildi.";
@@ -807,26 +835,70 @@ async function renderDetail() {
   const charts = Object.values(inc.charts || {});
   const sinceOf = (c) => Math.min(...findings.filter((f) => f.signal === c.signal && (f.pod || f.workload) === c.entity).map((f) => f.first_seen));
   const fill = findings.find((f) => f.kind === "fill" && f.active);
-  put(box, 
+  // Bulgular hedefe (pod ya da iş yükü) göre: uzun pod adı her satırda tekrar etmesin.
+  const byTarget = new Map();
+  for (const f of findings) {
+    const k = f.pod || f.workload;
+    byTarget.has(k) || byTarget.set(k, []);
+    byTarget.get(k).push(f);
+  }
+  const row = (f) => h("div", {class: "w" + (f.active || inc.closed ? "" : " gone")}, chip(f.severity, ""),
+    h("div", null, f.title, " ", h("button", {class: "info", type: "button", "aria-label": "Neden alarm verdi?",
+      "data-tip": explainFinding(f, SIG[f.signal]?.unit) + (f.active || inc.closed ? "" : ` ${clock(f.last_seen)}'den beri görülmüyor.`)}, "i")),
+    h("span", {class: "tm", title: "ilk ve son görülme"}, `${clock(f.first_seen)}–${f.active && !inc.closed ? "sürüyor" : clock(f.last_seen)}`));
+  put(box,
     h("div", {class: "d-head"}, chip(inc.severity), h("h3", null, `#${inc.id}`), h("span", {class: "who"}, inc.entity),
       inc.closed ? h("span", {class: "badge"}, `kapandı · ${dur(inc.closed - inc.opened)} sürdü`)
-        : h("span", {class: "badge live"}, h("span", {"data-since": inc.opened}, dur(serverNow() - inc.opened)), " sürüyor")),
-    h("div", {class: "why"}, findings.map((f) => h("div", {class: "w" + (f.active || inc.closed ? "" : " gone")}, chip(f.severity, ""),
-      h("div", null, h("b", null, `${f.pod || f.workload}: `), f.title, " ",
-        h("button", {class: "info", type: "button", "aria-label": "Neden alarm verdi?",
-          "data-tip": explainFinding(f, SIG[f.signal]?.unit) + (f.active || inc.closed ? "" : ` ${clock(f.last_seen)}'den beri görülmüyor.`)}, "i"))))),
+        : h("span", {class: "badge live"}, h("span", {"data-since": inc.opened}, dur(serverNow() - inc.opened)), " sürüyor"),
+      feedbackControl(inc)),
+    h("div", {class: "fb-note", id: "fbNote"}, feedbackNote(inc)),
+    h("div", {class: "why"}, [...byTarget].map(([target, fs]) => h("div", {class: "tg"},
+      byTarget.size > 1 || target !== inc.workload ? h("span", {class: "tn", title: target}, target) : null, fs.map(row)))),
     charts.length ? [chartLegend(h("span", null, h("i", {class: "key-mark"}), "tespit anı")),
       h("div", {class: "charts"}, charts.map((c) => figure(c, {group: "inc", since: sinceOf(c),
         eta: fill && c.signal === "pod_mem" && c.entity === fill.pod ? fill.detail.eta : null})))] : null,
     h("div", {class: "cols"},
       h("div", {class: "box"}, h("h4", null, inc.summary.source === "llm" ? `Yorum · ${inc.summary.model}` : "Olası neden ve öneri"),
         inc.summary.source === "llm" ? h("p", null, inc.summary.ozet) : null,
-        h("p", null, inc.summary.source === "llm" ? h("b", null, "Olası neden: ") : null, inc.summary.neden), h("p", null, h("b", null, "Öneri: "), inc.summary.oneri),
-        h("h4", {style: "margin-top:16px"}, "Bulgu zaman çizelgesi"),
-        h("table", {class: "tline"}, findings.slice().sort((a, b) => a.first_seen - b.first_seen).map((f) => h("tr", null,
-          h("td", {class: "t"}, `${clock(f.first_seen)}–${clock(f.last_seen)}`), h("td", null, chip(f.severity, "")), h("td", null, `${f.pod || f.workload}: ${f.title}`))))),
+        h("p", null, inc.summary.source === "llm" ? h("b", null, "Olası neden: ") : null, inc.summary.neden), h("p", null, h("b", null, "Öneri: "), inc.summary.oneri)),
       h("div", {class: "box"}, h("h4", null, "İlk bakılacak komutlar"), h("div", {class: "cmds"}, inc.commands.map(cmdRow)))));
 }
+// ---------------------------------------------------------------- geri bildirim
+const KIND_GROUP = (k) => k === "ml" ? "ml" : k === "spike" || k === "drop" ? "stat" : "rule";
+function feedbackControl(inc) {
+  const btn = (v, label) => h("button", {type: "button", "aria-pressed": String(inc.feedback === v),
+    onclick: (e) => sendFeedback(inc, inc.feedback === v ? "" : v, e.currentTarget.parentNode)}, label);
+  return h("div", {class: "fb"}, h("span", null, "Bu alarm"), h("div", {class: "seg", role: "group", "aria-label": "Geri bildirim"},
+    btn("dogru", "✓ Doğru"), btn("yanlis", "✗ Yanlış alarm")));
+}
+function feedbackNote(inc) {
+  const v = inc.feedback, groups = new Set(Object.values(inc.findings).map((f) => KIND_GROUP(f.kind)));
+  if (!v) return null;
+  const sigs = [...new Set(Object.values(inc.findings).filter((f) => KIND_GROUP(f.kind) === "stat").map((f) => SIG[f.signal]?.t || f.signal))];
+  const lines = [];
+  if (groups.has("ml")) lines.push(v === "yanlis"
+    ? "ML: bu aralıktaki ölçümler normal diye öğretilecek. Model 1–2 dakika içinde yeniden eğitilir, gerekirse eşiğini biraz yükseltir."
+    : "ML: bu aralık eğitimden çıkarılır; model bu durumu ileride normal diye öğrenmez.");
+  if (groups.has("stat")) lines.push(v === "yanlis"
+    ? `Sıçrama/düşüş: ${sigs.join(", ")} için bu iş yükünde eşik 1,25 kat yükselir (7 gün geçerli, en fazla 2 kat).`
+    : "Sıçrama/düşüş: eşik olduğu gibi kalır.");
+  if (groups.has("rule")) lines.push("Kural bulguları (OOMKilled, CrashLoopBackOff, limit tahmini…) kesin olgu; işaret yalnızca sayılır.");
+  return [h("div", null, h("b", null, v === "dogru" ? "Doğru alarm olarak işaretlendi. " : "Yanlış alarm olarak işaretlendi. "), "Kaldırmak için düğmeye yeniden bas."),
+    ...lines.map((l) => h("div", null, l))];
+}
+async function sendFeedback(inc, verdict, group) {
+  group.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  const res = await fetch("/api/geri-bildirim", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({id: inc.id, karar: verdict})}).then((r) => r.ok ? r.json() : null).catch(() => null);
+  if (!res) {
+    group.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+    put($("#fbNote"), "Kaydedilemedi; nöbetçiye ulaşılamıyor olabilir.");
+    return;
+  }
+  for (const i of [...S.st.open, ...S.st.closed]) if (i.id === inc.id) i.feedback = res.feedback;
+  renderList(); renderDetail();
+}
+
 function cmdRow(text) {
   const btn = h("button", {onclick: async () => {
     let ok = false;

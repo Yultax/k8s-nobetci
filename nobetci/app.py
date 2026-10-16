@@ -40,6 +40,7 @@ class App:
         self.manager.closed = closed
         self.llm = LLM(cfg)
         self.notifier = Notifier(cfg)
+        self._feedback_dirty = True  # geri bildirim döngüde motora aktarılır (motora yalnızca döngü dokunur)
         # Kilit olay durumunu korur (döngü, LLM işçisi ve web aynı anda dokunur).
         # Engine'e yalnızca döngü dokunur; web onun hazır kopyasını (self._view) okur.
         self.lock = threading.RLock()
@@ -56,6 +57,14 @@ class App:
 
     def cycle(self, now: float) -> None:
         started = time.time()
+        with self.lock:
+            for inc in self.manager.open.values():  # açık olayın aralığı olay sürdükçe uzar
+                if inc.feedback:
+                    self.store.set_feedback(self._feedback_record(inc), inc.id)
+                    self._feedback_dirty = True
+            if self._feedback_dirty:
+                self._feedback_dirty = False
+                self.engine.set_feedback(self.store.feedback(now - self.cfg.profile_days * 86400))
         self.engine.collect(now)
         findings = self.engine.detect(now)
         with self.lock:
@@ -131,6 +140,36 @@ class App:
     def ml(self, key: str) -> dict | None:
         return self._ml.get(key)
 
+    def _feedback_record(self, inc) -> dict:
+        kinds = sorted({f["kind"] for f in inc.findings.values()})
+        return {"incident": inc.id, "verdict": inc.feedback, "scope": inc.scope, "ns": inc.namespace, "wl": inc.workload,
+                "start": inc.opened, "end": inc.closed or inc.last_seen, "kinds": kinds,
+                "signals": sorted({f["signal"] for f in inc.findings.values() if f["kind"] in ("spike", "drop")})}
+
+    def feedback(self, incident_id: int, verdict: str) -> dict | None:
+        """Kullanıcının "doğru alarm" / "yanlış alarm" işareti ("" kaldırır). Bir sonraki turda motora geçer."""
+        if verdict not in ("dogru", "yanlis", ""):
+            return None
+        with self.lock:
+            inc = self.manager.get(incident_id) or self.store.get(incident_id)
+            if inc is None:
+                return None
+            inc.feedback = verdict
+            self.store.save(inc)
+            self.store.set_feedback(self._feedback_record(inc) if verdict else None, inc.id)
+            self._feedback_dirty = True
+            return inc.to_dict()
+
+    def feedback_stats(self, now: float) -> dict:
+        """Dedektör grubuna göre doğru/yanlış sayıları (son 7 gün) ve etkisi süren eşik yükseltmeleri."""
+        groups = {"ml": ("ml",), "istatistik": ("spike", "drop"), "dolma": ("fill",)}
+        out = {g: {"dogru": 0, "yanlis": 0} for g in (*groups, "kural")}
+        for r in self.store.feedback(now - self.cfg.profile_days * 86400):
+            for g in {next((g for g, ks in groups.items() if k in ks), "kural") for k in r["kinds"]}:
+                out[g][r["verdict"]] += 1
+        return out | {"boosts": [{"signal": k[0], "ns": k[1], "wl": k[2], "factor": round(v, 2)}
+                                 for k, v in self.engine.z_boost.items()]}
+
     def incident(self, incident_id: int) -> dict | None:
         with self.lock:
             inc = self.manager.get(incident_id) or self.store.get(incident_id)
@@ -144,6 +183,7 @@ class App:
             view["closed"] = [i.to_dict() | {"charts": {}} for i in self.manager.closed if i.closed >= view["now"] - 86400]
             view["count_24h"] = self.store.count_since(view["now"] - 86400)
             view["finding_counts"] = dict(self.manager.counts)
+            view["feedback"] = self.feedback_stats(view["now"])
         view["cluster"] = self.cfg.cluster
         view["version"] = __version__
         view["tz"] = self.cfg.tz_offset
